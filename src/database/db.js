@@ -1174,7 +1174,12 @@ class InventoryDatabase {
 
   deleteCategory(id) {
     // Check if category is in use
-    const itemCount = this.db.prepare('SELECT COUNT(*) as count FROM items WHERE category = (SELECT name FROM categories WHERE id = ?)').get(id);
+    const itemCount = this.db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM items i 
+      JOIN categories c ON i.category = c.name 
+      WHERE c.id = ?
+    `).get(id);
     
     if (itemCount && itemCount.count > 0) {
       return { success: false, error: `Cannot delete category: ${itemCount.count} items are using it` };

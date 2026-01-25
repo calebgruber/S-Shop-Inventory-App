@@ -133,7 +133,7 @@ async function handleBarcodeLookup() {
 }
 
 // Show barcode scan result
-async function showBarcodeResult(item) {
+function showBarcodeResult(item) {
   const resultDiv = document.getElementById('barcodeScanResult');
   
   const quantityOut = item.quantity_total - item.quantity_available;
