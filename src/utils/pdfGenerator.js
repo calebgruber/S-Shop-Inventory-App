@@ -139,6 +139,17 @@ async function generatePullSheetPDF(pullSheet) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
+  let yPos = 15;
+  
+  // Add logo if available
+  if (pullSheet.logo) {
+    try {
+      doc.addImage(pullSheet.logo, 'PNG', 15, yPos, 30, 15);
+    } catch (error) {
+      console.log('Logo not added to PDF:', error.message);
+    }
+  }
+  
   // Header
   doc.setFontSize(20);
   doc.text('PULL SHEET', pageWidth / 2, 20, { align: 'center' });
@@ -148,7 +159,7 @@ async function generatePullSheetPDF(pullSheet) {
   const barcodeResult = generateBarcode(showBarcode);
   
   if (barcodeResult) {
-    doc.addImage(barcodeResult.dataUri, barcodeResult.format, pageWidth / 2 - 40, 25, 80, 25);
+    doc.addImage(barcodeResult.dataUri, barcodeResult.format, pageWidth / 2 - 40, 28, 80, 25);
   } else {
     // Fallback: display barcode as text
     doc.setFontSize(10);
@@ -157,7 +168,7 @@ async function generatePullSheetPDF(pullSheet) {
   
   // Show Information
   doc.setFontSize(12);
-  let yPos = 60;
+  yPos = 60;
   doc.text(`Show: ${pullSheet.show_name}`, 20, yPos);
   yPos += 7;
   if (pullSheet.venue) {
@@ -239,6 +250,17 @@ async function generatePullSheetPDF(pullSheet) {
 async function generateInventoryReportPDF(data) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+  
+  let yPos = 15;
+  
+  // Add logo if available
+  if (data.logo) {
+    try {
+      doc.addImage(data.logo, 'PNG', 15, yPos, 30, 15);
+    } catch (error) {
+      console.log('Logo not added to PDF:', error.message);
+    }
+  }
   
   // Header
   doc.setFontSize(20);
