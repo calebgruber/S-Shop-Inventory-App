@@ -5,7 +5,7 @@
 
 // Handle Squirrel events for Windows installer
 if (require('electron-squirrel-startup')) {
-  app.quit();
+  process.exit(0);
 }
 
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
