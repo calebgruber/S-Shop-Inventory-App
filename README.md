@@ -29,16 +29,20 @@ A self-contained Windows Electron application for managing theatre sound shop in
 - Windows 10/11 or macOS 10.13+ (High Sierra or later)
 - Zebra DS-series barcode scanner (optional, keyboard input also supported)
 
-**Windows Users**: If you encounter build errors during installation, **YOU MUST INSTALL VISUAL STUDIO BUILD TOOLS FIRST**. See [Windows Installation Troubleshooting](#windows-installation-troubleshooting) below for step-by-step instructions.
+### ✨ Easier Installation with Electron Forge
 
-### Quick Start (Recommended)
+This project now uses **Electron Forge**, which automatically handles native module compilation! This means:
+- ✅ **No manual Visual Studio Build Tools installation required** (Forge handles it)
+- ✅ Simplified build commands
+- ✅ Better cross-platform support
+- ✅ Automatic native module rebuilding
+
+### Quick Start
 
 **Option 1: Download Pre-Built Installer (Easiest)** ⭐
 > **Note**: Pre-built releases are not yet available. Once created, this will be the easiest installation method with no build tools required.
 
 **Option 2: Build from Source** (Current Method)
-
-> ⚠️ **Windows users**: You'll need Visual Studio Build Tools installed first (see troubleshooting section below).
 
 1. **Clone the repository**
    ```bash
@@ -51,32 +55,34 @@ A self-contained Windows Electron application for managing theatre sound shop in
    npm install
    ```
    
-   If you get errors, see troubleshooting below.
+   Electron Forge will automatically rebuild native modules. You may see warnings about deprecated packages - these are normal and can be ignored.
 
 3. **Run in development mode**
    ```bash
    npm run dev
+   # or
+   npm start
    ```
 
-4. **Build for your platform** (optional)
+4. **Build installers** (optional)
    ```bash
-   # Build for both Windows and macOS
-   npm run build
+   # Package the app (creates distributable but not installer)
+   npm run package
    
-   # Build for Windows only
-   npm run build:win
-   
-   # Build for macOS only
-   npm run build:mac
+   # Create installers for your platform
+   npm run make
    ```
+   
+   The `make` command will create:
+   - **Windows**: Squirrel installer in `out/make/squirrel.windows/`
+   - **macOS**: ZIP archive in `out/make/`
+   - **Linux**: DEB and RPM packages in `out/make/`
 
 ### Windows Installation Troubleshooting
 
-⚠️ **IMPORTANT FOR WINDOWS USERS**: If you see `gyp ERR! find VS` or `Could not find any Visual Studio installation` errors, you need to install build tools first.
+⚠️ **If you still encounter build errors**, Electron Forge should handle most issues automatically, but if you see persistent `gyp ERR! find VS` errors:
 
-**The error you're seeing is NORMAL if you don't have Visual Studio installed.** Here's how to fix it:
-
-#### Quick Fix: Install Visual Studio Build Tools (5-10 minutes)
+#### Install Visual Studio Build Tools (if needed)
 
 1. **Download Visual Studio Build Tools 2022**:
    - Go to: https://visualstudio.microsoft.com/downloads/

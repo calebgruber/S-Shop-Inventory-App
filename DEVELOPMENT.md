@@ -12,7 +12,6 @@ This guide will help you set up, develop, and deploy updates to the S-Shop Inven
 - Git
 - **For Windows builds**: Windows 10/11
 - **For macOS builds**: macOS 10.13+ (High Sierra or later)
-- **Note**: You can build for both platforms from either OS using electron-builder
 
 ### Initial Setup
 
@@ -26,10 +25,14 @@ This guide will help you set up, develop, and deploy updates to the S-Shop Inven
    ```bash
    npm install
    ```
+   
+   Electron Forge will automatically rebuild native modules for your platform.
 
 3. **Run in development mode**
    ```bash
    npm run dev
+   # or
+   npm start
    ```
    This opens DevTools automatically for debugging.
 
@@ -89,34 +92,32 @@ this.db.exec(`
 
 ## Building for Distribution
 
-### Creating Installers
+### Creating Installers with Electron Forge
 
-**Both platforms:**
+**Package the app (no installer):**
 ```bash
-npm run build
+npm run package
 ```
 
-**Windows only:**
+**Create installers for your platform:**
 ```bash
-npm run build:win
+npm run make
 ```
 
-**macOS only:**
-```bash
-npm run build:mac
-```
+This creates platform-specific installers:
+- **Windows**: Squirrel installer in `out/make/squirrel.windows/x64/`
+- **macOS**: ZIP archive in `out/make/`
+- **Linux**: DEB and RPM in `out/make/`
 
-This creates:
-- **Windows**: `dist/S-Shop Inventory Setup.exe` - NSIS installer
-- **macOS**: `dist/S-Shop Inventory-1.0.0.dmg` - DMG disk image
-
-Both include all dependencies bundled.
+All dependencies are automatically bundled.
 
 ### Build Output Locations
 
-- **Windows**: `dist/S-Shop Inventory Setup.exe`
-- **macOS**: `dist/S-Shop Inventory-<version>.dmg`
-- **Unpacked**: `dist/win-unpacked/` or `dist/mac/`
+- **Windows**: `out/make/squirrel.windows/x64/s_shop_inventory-1.0.0 Setup.exe`
+- **macOS**: `out/make/zip/darwin/x64/s-shop-inventory-darwin-x64-1.0.0.zip`
+- **Linux DEB**: `out/make/deb/x64/s-shop-inventory_1.0.0_amd64.deb`
+- **Linux RPM**: `out/make/rpm/x64/s-shop-inventory-1.0.0-1.x86_64.rpm`
+- **Packaged app**: `out/s-shop-inventory-<platform>-<arch>/`
 
 ### Code Signing (Optional but Recommended)
 
@@ -124,8 +125,8 @@ Both include all dependencies bundled.
 - Purchase a code signing certificate
 - Set environment variables:
   ```
-  WIN_CSC_LINK=path/to/cert.pfx
-  WIN_CSC_KEY_PASSWORD=your_password
+  WINDOWS_CERTIFICATE_FILE=path/to/cert.pfx
+  WINDOWS_CERTIFICATE_PASSWORD=your_password
   ```
 
 **macOS:**
@@ -133,15 +134,13 @@ Both include all dependencies bundled.
 - Create signing certificate in Xcode
 - Set environment variables:
   ```
-  CSC_LINK=path/to/cert.p12
-  CSC_KEY_PASSWORD=your_password
   APPLE_ID=your@email.com
-  APPLE_ID_PASSWORD=app-specific-password
+  APPLE_PASSWORD=app-specific-password
   ```
 
 ### Cross-Platform Building
 
-electron-builder can build for multiple platforms from a single machine, but native dependencies (like better-sqlite3) require that you build on the target platform for best results.
+Electron Forge handles native modules automatically, but for best results:
 
 **Recommendation:**
 - Build macOS apps on macOS
@@ -182,18 +181,24 @@ electron-builder can build for multiple platforms from a single machine, but nat
 
 4. **Build the installers**:
    ```bash
-   npm run build
+   npm run make
    ```
 
-5. **Create GitHub Release**:
+5. **Publish to GitHub** (automatic with Forge):
+   ```bash
+   npm run publish
+   ```
+   
+   Or manually:
    - Go to https://github.com/calebgruber/S-Shop-Inventory-App/releases
    - Click "Draft a new release"
    - Select tag: `v1.1.0`
    - Title: `Version 1.1.0`
    - Describe changes in release notes
-   - Upload both installers:
-     - `dist/S-Shop Inventory Setup.exe` (Windows)
-     - `dist/S-Shop Inventory-1.1.0.dmg` (macOS)
+   - Upload installers from `out/make/`:
+     - Windows: `squirrel.windows/x64/s_shop_inventory-1.1.0 Setup.exe`
+     - macOS: `zip/darwin/x64/s-shop-inventory-darwin-x64-1.1.0.zip`
+     - Linux: `deb/x64/` and `rpm/x64/` files
    - Click "Publish release"
 
 6. **Auto-Update Notification**:
@@ -213,12 +218,15 @@ electron-builder can build for multiple platforms from a single machine, but nat
 
 ### Configuration
 
-Auto-updater settings in `package.json`:
+Auto-updater settings in Forge config (`package.json`):
 ```json
-"publish": {
-  "provider": "github",
-  "owner": "calebgruber",
-  "repo": "S-Shop-Inventory-App",
+"publishers": [
+  {
+    "name": "@electron-forge/publisher-github",
+    "config": {
+      "repository": {
+        "owner": "calebgruber",
+        "name": "S-Shop-Inventory-App"
   "releaseType": "release"
 }
 ```

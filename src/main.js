@@ -3,6 +3,11 @@
  * Manages application lifecycle, window creation, and IPC communication
  */
 
+// Handle Squirrel events for Windows installer
+if (require('electron-squirrel-startup')) {
+  app.quit();
+}
+
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const Database = require('./database/db');

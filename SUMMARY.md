@@ -3,15 +3,24 @@
 ## Project Overview
 
 Successfully implemented a **self-contained cross-platform desktop application** for managing theatre sound shop inventory using:
-- **Electron** - Desktop application framework
+- **Electron with Electron Forge** - Desktop application framework with simplified tooling
 - **Tabler UI** - Modern Bootstrap-based interface
 - **SQLite** - Local embedded database
 - **JavaScript/Node.js** - Application logic
 
+## Build System
+
+✅ **Electron Forge** - Official Electron tooling for easier development and building
+- Automatic native module rebuilding
+- Simplified Windows setup (no manual Visual Studio configuration in most cases)
+- Better developer experience with clearer error messages
+- Integrated publishing to GitHub releases
+
 ## Platform Support
 
-✅ **Windows 10/11** - Full support with NSIS installer  
-✅ **macOS 10.13+** - Full support with DMG installer
+✅ **Windows 10/11** - Full support with Squirrel installer  
+✅ **macOS 10.13+** - Full support with ZIP archive
+✅ **Linux** - DEB and RPM packages available
 
 ## Core Features Implemented
 

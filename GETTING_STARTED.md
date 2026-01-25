@@ -6,42 +6,37 @@ The S-Shop Inventory application is **fully implemented and ready to use**. Here
 
 ## Quick Start (5 minutes)
 
-### ⚠️ Important for Windows Users
+### ✨ Now Using Electron Forge!
 
-**Before you start**: If you're on Windows and don't have Visual Studio Build Tools installed, you'll encounter build errors. Follow these steps:
-
-1. **Install Visual Studio Build Tools 2022** (one-time setup):
-   - Download from: https://visualstudio.microsoft.com/downloads/
-   - Look for "Build Tools for Visual Studio 2022"
-   - During installation, select "Desktop development with C++"
-   - This takes about 10 minutes
-
-2. **Then proceed with installation below**
+This project now uses **Electron Forge**, which makes installation much easier:
+- ✅ **Automatic native module rebuilding** - No manual configuration needed
+- ✅ **Better Windows support** - Build tools are handled automatically in most cases
+- ✅ **Simpler commands** - Just `npm install` and `npm run dev`
 
 ### Option 1: Use Pre-Built Installer (When Available)
 
 > **Note**: Pre-built installers are not yet available since this is a new project. Skip to Option 2 for now.
 
 Once releases are created:
-1. Download the `.exe` for Windows or `.dmg` for macOS
+1. Download the Windows installer or macOS archive
 2. Run it - done! No build tools needed.
 
-### Option 2: Build from Source (Current Method)
-
-**If you encounter errors during `npm install`**, you need Visual Studio Build Tools (see above).
+### Option 2: Build from Source (Current Method - Now Easier!)
 
 ### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-If this fails with `gyp ERR! find VS`:
-- You need to install Visual Studio Build Tools (see "Important for Windows Users" above)
-- After installing VS Build Tools, restart your terminal and try again
+Electron Forge will automatically rebuild native modules. You'll see some deprecation warnings - these are normal and can be ignored.
+
+> **Note for Windows users**: In most cases, Forge handles native compilation automatically. If you still encounter `gyp ERR! find VS` errors, see the troubleshooting section in README.md.
 
 ### 2. Run the Application
 ```bash
 npm run dev
+# or
+npm start
 ```
 
 The app will open and you can immediately start:
