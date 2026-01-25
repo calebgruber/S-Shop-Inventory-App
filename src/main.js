@@ -366,7 +366,8 @@ ipcMain.handle('reports:getItemsByLocation', async (event, theatreId) => {
 ipcMain.handle('pdf:generatePullSheet', async (event, pullSheetId) => {
   try {
     const pullSheet = database.getPullSheetById(pullSheetId);
-    const filePath = await generatePDF('pullsheet', pullSheet);
+    const logo = database.getSetting('company_logo');
+    const filePath = await generatePDF('pullsheet', { ...pullSheet, logo });
     logAction('PDF', `Generated pull sheet PDF for ID: ${pullSheetId}`);
     return { success: true, filePath };
   } catch (error) {
@@ -378,7 +379,8 @@ ipcMain.handle('pdf:generatePullSheet', async (event, pullSheetId) => {
 ipcMain.handle('pdf:generateInventoryReport', async (event, filters) => {
   try {
     const items = database.getAllItems(filters);
-    const filePath = await generatePDF('inventory', { items });
+    const logo = database.getSetting('company_logo');
+    const filePath = await generatePDF('inventory', { items, logo });
     logAction('PDF', 'Generated inventory report PDF');
     return { success: true, filePath };
   } catch (error) {
@@ -390,7 +392,8 @@ ipcMain.handle('pdf:generateInventoryReport', async (event, filters) => {
 ipcMain.handle('pdf:generateBarcodeLabels', async (event, itemIds, options) => {
   try {
     const items = database.getItemsForLabels({ ids: itemIds });
-    const filePath = await generatePDF('labels', { items, options });
+    const logo = database.getSetting('company_logo');
+    const filePath = await generatePDF('labels', { items, options: { ...options, logo } });
     logAction('PDF', `Generated barcode labels PDF for ${items.length} items`);
     return { success: true, filePath, count: items.length };
   } catch (error) {

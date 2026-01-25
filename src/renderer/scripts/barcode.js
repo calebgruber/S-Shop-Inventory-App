@@ -134,6 +134,58 @@ async function handleBarcodeLookup() {
 
 // Show barcode scan result
 async function showBarcodeResult(item) {
+  // Get detailed item status
+  const itemStatus = await window.api.reports.getItemStatus(item.id);
+  
+  const resultDiv = document.getElementById('barcodeScanResult');
+  
+  const quantityOut = item.quantity_total - item.quantity_available;
+  const availableClass = item.quantity_available > 0 ? 'text-success' : 'text-danger';
+  
+  resultDiv.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">${item.name}</h3>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-6">
+            <strong>Category:</strong><br>
+            ${item.category || 'N/A'}
+          </div>
+          <div class="col-6">
+            <strong>Location:</strong><br>
+            ${item.location || 'N/A'}
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-4 text-center">
+            <div class="text-muted small">Total</div>
+            <div class="h3">${item.quantity_total || 0}</div>
+          </div>
+          <div class="col-4 text-center">
+            <div class="text-muted small">Available</div>
+            <div class="h3 ${availableClass}">${item.quantity_available || 0}</div>
+          </div>
+          <div class="col-4 text-center">
+            <div class="text-muted small">Checked Out</div>
+            <div class="h3 text-info">${quantityOut}</div>
+          </div>
+        </div>
+        ${item.description ? `<p class="text-muted">${item.description}</p>` : ''}
+        ${item.barcode ? `<div class="text-mono small">Barcode: ${item.barcode}</div>` : ''}
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-primary" onclick="closeBarcodeScanAndViewItem(${item.id})">
+          <i class="ti ti-eye icon"></i> View Full Details
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// Close barcode modal and view item details
+async function closeBarcodeScanAndViewItem(itemId) {
   // Close the barcode modal
   const modal = bootstrap.Modal.getInstance(document.getElementById('barcodeScanModal'));
   if (modal) {
@@ -142,9 +194,11 @@ async function showBarcodeResult(item) {
   
   // Navigate to inventory page with callback to open item details
   await window.navigation.loadPage('inventory', () => {
-    callIfExists('editInventoryItem', item.id);
+    callIfExists('editInventoryItem', itemId);
   });
 }
+
+window.closeBarcodeScanAndViewItem = closeBarcodeScanAndViewItem;
 
 // Show barcode error
 function showBarcodeError(title, message) {

@@ -10,6 +10,49 @@ const fs = require('fs');
 const path = require('path');
 const { app, shell } = require('electron');
 
+// Cache for logo data to avoid repeated database lookups
+let cachedLogo = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 60000; // 1 minute
+
+/**
+ * Get company logo from settings
+ */
+async function getCompanyLogo() {
+  const now = Date.now();
+  
+  // Return cached logo if still valid
+  if (cachedLogo && (now - cacheTimestamp) < CACHE_DURATION) {
+    return cachedLogo;
+  }
+  
+  try {
+    // We can't directly access the database from here, so the logo needs to be passed
+    // through the data object from main.js. For now, return null.
+    // This will be implemented when the IPC handler passes logo data
+    return null;
+  } catch (error) {
+    console.error('Error loading logo:', error);
+    return null;
+  }
+}
+
+/**
+ * Add logo to PDF header
+ */
+async function addLogoToPDF(doc, logoData, x, y, maxWidth, maxHeight) {
+  if (!logoData) return y; // Return starting Y if no logo
+  
+  try {
+    // Add logo image
+    doc.addImage(logoData, 'PNG', x, y, maxWidth, maxHeight);
+    return y + maxHeight + 5; // Return new Y position after logo
+  } catch (error) {
+    console.error('Error adding logo to PDF:', error);
+    return y; // Return starting Y on error
+  }
+}
+
 /**
  * Generate a CODE128 barcode image as data URI
  * Tries canvas first, falls back to SVG with xmldom

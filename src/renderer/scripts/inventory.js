@@ -5,10 +5,12 @@
 
 let currentInventoryItems = [];
 let currentFilter = {};
+let availableCategories = [];
 
 // Render inventory page
 async function renderInventoryPage() {
   currentInventoryItems = await window.api.inventory.getAll();
+  availableCategories = await window.api.categories.getAll();
   
   return `
     <div class="row mb-3">
@@ -119,18 +121,19 @@ async function renderInventoryPage() {
                 </div>
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Category</label>
-                  <select class="form-select" id="itemCategory">
-                    <option value="">Select category...</option>
-                    <option value="Microphones">Microphones</option>
-                    <option value="Wireless">Wireless Systems</option>
-                    <option value="Cables">Cables</option>
-                    <option value="Adapters">Adapters</option>
-                    <option value="Speakers">Speakers</option>
-                    <option value="Mixers">Mixers</option>
-                    <option value="Processing">Signal Processing</option>
-                    <option value="Accessories">Accessories</option>
-                    <option value="Other">Other</option>
-                  </select>
+                  <div class="input-group">
+                    <select class="form-select" id="itemCategory">
+                      <option value="">Select category...</option>
+                      ${availableCategories.map(cat => 
+                        `<option value="${cat.name}">${cat.name}</option>`
+                      ).join('')}
+                    </select>
+                    <input type="text" class="form-control" id="itemCategoryCustom" placeholder="Or type custom..." style="display:none;">
+                    <button class="btn btn-outline-secondary" type="button" id="toggleCustomCategory" title="Use custom category">
+                      <i class="ti ti-edit icon"></i>
+                    </button>
+                  </div>
+                  <small class="form-hint">Select from list or enter custom. <a href="#" onclick="window.navigation.loadPage('settings'); return false;">Manage categories</a></small>
                 </div>
               </div>
               <div class="mb-3">
@@ -370,6 +373,24 @@ function initInventoryPage() {
   
   // Save item button
   document.getElementById('saveItemBtn')?.addEventListener('click', saveInventoryItem);
+  
+  // Custom category toggle
+  document.getElementById('toggleCustomCategory')?.addEventListener('click', () => {
+    const selectEl = document.getElementById('itemCategory');
+    const customEl = document.getElementById('itemCategoryCustom');
+    
+    if (selectEl.style.display === 'none') {
+      // Switch back to dropdown
+      selectEl.style.display = 'block';
+      customEl.style.display = 'none';
+      customEl.value = '';
+    } else {
+      // Switch to custom input
+      selectEl.style.display = 'none';
+      customEl.style.display = 'block';
+      customEl.focus();
+    }
+  });
 }
 
 // Refresh inventory table
@@ -409,12 +430,34 @@ window.updateSelectedCount = updateSelectedCount;
 function openItemModal(item = null) {
   const modal = new bootstrap.Modal(document.getElementById('itemModal'));
   const title = document.getElementById('itemModalTitle');
+  const selectEl = document.getElementById('itemCategory');
+  const customEl = document.getElementById('itemCategoryCustom');
+  
+  // Reset custom input visibility
+  if (selectEl && customEl) {
+    selectEl.style.display = 'block';
+    customEl.style.display = 'none';
+    customEl.value = '';
+  }
   
   if (item) {
     title.textContent = 'Edit Item';
     document.getElementById('itemId').value = item.id;
     document.getElementById('itemName').value = item.name || '';
-    document.getElementById('itemCategory').value = item.category || '';
+    
+    // Set category - check if it's in the dropdown, otherwise use custom
+    const categorySelect = document.getElementById('itemCategory');
+    const categoryOption = Array.from(categorySelect.options).find(opt => opt.value === item.category);
+    
+    if (categoryOption) {
+      categorySelect.value = item.category || '';
+    } else if (item.category) {
+      // Category not in list, use custom input
+      selectEl.style.display = 'none';
+      customEl.style.display = 'block';
+      customEl.value = item.category;
+    }
+    
     document.getElementById('itemDescription').value = item.description || '';
     document.getElementById('itemManufacturer').value = item.manufacturer || '';
     document.getElementById('itemModel').value = item.model || '';
@@ -444,9 +487,14 @@ async function editInventoryItem(itemId) {
 
 // Save inventory item
 async function saveInventoryItem() {
+  // Get category from either select or custom input
+  const selectEl = document.getElementById('itemCategory');
+  const customEl = document.getElementById('itemCategoryCustom');
+  const category = selectEl.style.display === 'none' ? customEl.value : selectEl.value;
+  
   const itemData = {
     name: document.getElementById('itemName').value,
-    category: document.getElementById('itemCategory').value,
+    category: category,
     description: document.getElementById('itemDescription').value,
     manufacturer: document.getElementById('itemManufacturer').value,
     model: document.getElementById('itemModel').value,
