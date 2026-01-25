@@ -80,59 +80,85 @@ This project now uses **Electron Forge**, which automatically handles native mod
 
 ### Windows Installation Troubleshooting
 
-⚠️ **If you still encounter build errors**, Electron Forge should handle most issues automatically, but if you see persistent `gyp ERR! find VS` errors:
+⚠️ **Getting `gyp ERR! find VS` errors?** This means the native SQLite module needs to be compiled, but Visual Studio Build Tools aren't installed.
 
-#### Install Visual Studio Build Tools (if needed)
+#### Quick Fix: Skip the Native Rebuild
+
+You can bypass compilation and use prebuilt binaries instead:
+
+1. **Delete node_modules and package-lock.json** (if they exist)
+   ```bash
+   rmdir /s /q node_modules
+   del package-lock.json
+   ```
+
+2. **Install with specific flags**:
+   ```bash
+   npm install --ignore-scripts
+   ```
+
+3. **Manually download prebuilt better-sqlite3**:
+   ```bash
+   npm rebuild better-sqlite3
+   ```
+   
+   If this fails, try installing a specific prebuilt version:
+   ```bash
+   npm install better-sqlite3@9.2.2 --build-from-source=false
+   ```
+
+4. **Run the app**:
+   ```bash
+   npm run dev
+   ```
+
+#### Permanent Solution: Install Visual Studio Build Tools
+
+If the quick fix doesn't work, install the build tools once:
 
 1. **Download Visual Studio Build Tools 2022**:
    - Go to: https://visualstudio.microsoft.com/downloads/
    - Scroll down to "All Downloads" → "Tools for Visual Studio"
-   - Click "Build Tools for Visual Studio 2022" → Download
+   - Download "Build Tools for Visual Studio 2022"
 
 2. **Install with C++ workload**:
    - Run the installer
    - Check the box for **"Desktop development with C++"**
-   - Click Install (this will download ~7GB)
+   - Click Install (~7GB download, 10 minutes)
 
-3. **Restart your terminal and try again**:
+3. **Restart your terminal and run**:
    ```bash
    npm install
+   npm run dev
    ```
-   
-   **Note**: You may see deprecation warnings during install - these are normal and safe to ignore. The important thing is that the install completes without errors.
 
-#### Alternative: Use Pre-Built Releases (When Available)
+#### Alternative Approaches
 
-**Note**: This project doesn't have pre-built releases yet because it's still in development. Once the first release is created, you'll be able to download a ready-to-use `.exe` installer that doesn't require any build tools.
+**Use WSL2 (Windows Subsystem for Linux)** - No Visual Studio needed:
+```bash
+# In Windows PowerShell (Administrator)
+wsl --install
 
-To create your first release:
-1. Build the project (after installing VS Build Tools above)
-2. Run `npm run build:win`
-3. The installer will be in `dist/S-Shop Inventory Setup.exe`
-4. You can then distribute this installer to others
+# Then inside WSL:
+cd /mnt/c/Users/YourName/Desktop/S-Shop-Inventory-App
+npm install
+npm run dev
+```
 
-#### Other Solutions (If Build Tools Don't Work)
-
-**Solution 3: Use a different SQLite library** (Advanced)
-If you absolutely cannot install Visual Studio Build Tools, you could modify the project to use `sql.js` instead of `better-sqlite3`, but this would require code changes and is not recommended.
-
-**Solution 4: Use WSL2 (Windows Subsystem for Linux)**
-Install WSL2 and run the project from Linux - no Visual Studio needed.
-
-**Solution 5: Clear Cache and Retry**
+**Clear npm cache** (if installation keeps failing):
 ```bash
 npm cache clean --force
-rm -rf node_modules package-lock.json
-npm install
-```
+rmdir /s /q node_modules
+del package-lock.json
 npm install
 ```
 
 **Still Having Issues?**
-- Make sure you're running Command Prompt or PowerShell as **Administrator**
-- Ensure Node.js is properly installed: `node --version` should show v16 or higher
-- Check that Python is available: `python --version` (required for node-gyp)
-- Try closing any antivirus software temporarily during installation
+- Run Command Prompt or PowerShell as **Administrator**
+- Verify Node.js: `node --version` (should be v16+)
+- Check for Python: `python --version` (node-gyp needs Python 3)
+- Temporarily disable antivirus during installation
+- Deprecation warnings are normal and can be ignored
 
 ## Platform-Specific Notes
 

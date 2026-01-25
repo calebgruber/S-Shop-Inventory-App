@@ -8,7 +8,8 @@
     "dev": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "publish": "electron-forge publish"
+    "publish": "electron-forge publish",
+    "postinstall": "electron-builder install-app-deps || echo 'Skipping native rebuild - will use prebuilt binaries'"
   },
   "keywords": [
     "electron",
@@ -39,6 +40,9 @@
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
     "quagga": "^0.12.1"
+  },
+  "optionalDependencies": {
+    "@electron/rebuild": "^3.6.0"
   },
   "config": {
     "forge": {
@@ -97,9 +101,15 @@
       "plugins": [
         {
           "name": "@electron-forge/plugin-auto-unpack-natives",
-          "config": {}
+          "config": {
+            "electronVersion": "27.0.0"
+          }
         }
-      ]
+      ],
+      "rebuildConfig": {
+        "force": false,
+        "onlyModules": ["better-sqlite3"]
+      }
     }
   }
 }

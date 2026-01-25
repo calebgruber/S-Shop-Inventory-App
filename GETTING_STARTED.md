@@ -48,7 +48,7 @@ The app will open and you can immediately start:
 
 ## Installation Troubleshooting
 
-**Getting the `gyp ERR! find VS` error?** This is NORMAL if you don't have Visual Studio Build Tools.
+**Getting the `gyp ERR! find VS` error?** This means the SQLite database needs to compile native code.
 
 ### The Error Message Explained
 
@@ -58,9 +58,35 @@ gyp ERR! find VS You need to install the latest version of Visual Studio
 gyp ERR! find VS including the "Desktop development with C++" workload.
 ```
 
-This means you need to install build tools so npm can compile the database library.
+### ⚡ Quick Workaround (No Build Tools Needed!)
 
-### Quick Fix for Windows (Required for Building from Source)
+Try these steps first to bypass compilation:
+
+1. **Clean install with ignore-scripts**:
+   ```bash
+   # Delete existing files
+   rmdir /s /q node_modules
+   del package-lock.json
+   
+   # Install without running build scripts
+   npm install --ignore-scripts
+   ```
+
+2. **Try to rebuild with prebuilt binaries**:
+   ```bash
+   npm rebuild better-sqlite3
+   ```
+
+3. **Run the app**:
+   ```bash
+   npm run dev
+   ```
+
+If the app runs successfully, you're done! If not, proceed to install Visual Studio Build Tools below.
+
+### Permanent Solution: Install Visual Studio Build Tools
+
+If the workaround doesn't work:
 
 1. **Download & Install Visual Studio Build Tools 2022**:
    - Go to: https://visualstudio.microsoft.com/downloads/
@@ -68,13 +94,30 @@ This means you need to install build tools so npm can compile the database libra
    - Download "Build Tools for Visual Studio 2022"
    - Run the installer
    - **Important**: Select "Desktop development with C++" checkbox
-   - Click Install (~7GB download)
+   - Click Install (~7GB download, takes ~10 minutes)
 
 2. **After installation completes**:
    - Restart your command prompt/terminal
    - Navigate back to the project folder
-   - Run `npm install` again
-   - It should work now!
+   - Run:
+     ```bash
+     npm install
+     npm run dev
+     ```
+
+### Alternative: Use WSL2 on Windows
+
+Run the project in Linux (no Visual Studio needed):
+
+```bash
+# In Windows PowerShell (Administrator)
+wsl --install
+
+# Restart your computer, then open WSL terminal
+cd /mnt/c/Users/YourName/Desktop/S-Shop-Inventory-App
+npm install
+npm run dev
+```
 
 ### Alternative: Wait for Pre-Built Releases
 
