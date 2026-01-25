@@ -1,0 +1,43 @@
+{
+  "name": "s-shop-inventory-app",
+  "version": "1.0.0",
+  "description": "CMFT Sound Shop Inventory - Theatre Sound Equipment Management System",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder --win",
+    "build:dir": "electron-builder --win --dir"
+  },
+  "keywords": ["electron", "inventory", "theatre", "sound", "barcode", "sqlite"],
+  "author": "CMFT",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.2.2",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
+    "jsbarcode": "^3.11.6",
+    "quagga": "^0.12.1"
+  },
+  "build": {
+    "appId": "com.cmft.sshop-inventory",
+    "productName": "S-Shop Inventory",
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    }
+  }
+}

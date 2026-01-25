@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S-Shop Inventory - Theatre Sound Equipment Management</title>
+  
+  <!-- Tabler CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div class="page">
+    <!-- Navbar -->
+    <header class="navbar navbar-expand-md navbar-dark bg-dark d-print-none">
+      <div class="container-xl">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+          <a href="#">
+            <span class="navbar-brand-text">S-Shop Inventory</span>
+          </a>
+        </h1>
+        <div class="navbar-nav flex-row order-md-last">
+          <div class="d-none d-md-flex">
+            <a href="#" class="nav-link px-0" id="barcode-scan-btn" title="Scan Barcode (F1)">
+              <i class="ti ti-scan icon"></i>
+              <span class="badge bg-red">F1</span>
+            </a>
+          </div>
+        </div>
+        <div class="collapse navbar-collapse" id="navbar-menu">
+          <div class="d-flex flex-column flex-md-row flex-fill align-items-stretch align-items-md-center">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-page="dashboard">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <i class="ti ti-home icon"></i>
+                  </span>
+                  <span class="nav-link-title">Dashboard</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-page="inventory">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <i class="ti ti-box icon"></i>
+                  </span>
+                  <span class="nav-link-title">Inventory</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-page="shows">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <i class="ti ti-theater icon"></i>
+                  </span>
+                  <span class="nav-link-title">Shows</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-page="pullsheets">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <i class="ti ti-clipboard-list icon"></i>
+                  </span>
+                  <span class="nav-link-title">Pull Sheets</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-page="returns">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <i class="ti ti-arrow-back icon"></i>
+                  </span>
+                  <span class="nav-link-title">Returns</span>
+                </a>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block">
+                    <i class="ti ti-settings icon"></i>
+                  </span>
+                  <span class="nav-link-title">Tools</span>
+                </a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="#" data-page="reports">
+                    <i class="ti ti-report icon dropdown-item-icon"></i>
+                    Reports
+                  </a>
+                  <a class="dropdown-item" href="#" data-action="backup">
+                    <i class="ti ti-database-export icon dropdown-item-icon"></i>
+                    Backup Database
+                  </a>
+                  <a class="dropdown-item" href="#" data-action="export">
+                    <i class="ti ti-download icon dropdown-item-icon"></i>
+                    Export Data
+                  </a>
+                  <div class="dropdown-divider"></div>
+                  <a class="dropdown-item" href="#" data-page="settings">
+                    <i class="ti ti-adjustments icon dropdown-item-icon"></i>
+                    Settings
+                  </a>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-wrapper">
+      <div class="container-xl">
+        <div class="page-header d-print-none">
+          <div class="row align-items-center">
+            <div class="col">
+              <h2 class="page-title" id="page-title">Dashboard</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="page-body">
+        <div class="container-xl">
+          <div id="page-content">
+            <!-- Dynamic content will be loaded here -->
+            <div class="row row-deck row-cards">
+              <div class="col-12">
+                <div class="card">
+                  <div class="card-body text-center py-5">
+                    <div class="mb-3">
+                      <i class="ti ti-box icon icon-lg text-muted"></i>
+                    </div>
+                    <h3 class="text-muted">Welcome to S-Shop Inventory</h3>
+                    <p class="text-muted">Theatre Sound Equipment Management System</p>
+                    <p class="text-muted">Press <kbd>F1</kbd> to scan a barcode or select a page from the navigation menu.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barcode Scan Modal -->
+  <div class="modal modal-blur fade" id="barcodeScanModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Scan Barcode</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Barcode Input</label>
+            <input type="text" class="form-control form-control-lg" id="barcodeInput" placeholder="Scan or enter barcode..." autofocus>
+            <small class="form-hint">Use your barcode scanner or type manually</small>
+          </div>
+          <div id="barcodeScanResult"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn me-auto" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="barcodeLookupBtn">Lookup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabler JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+  
+  <!-- Application Scripts -->
+  <script src="scripts/ipc.js"></script>
+  <script src="scripts/navigation.js"></script>
+  <script src="scripts/barcode.js"></script>
+  <script src="scripts/inventory.js"></script>
+  <script src="scripts/shows.js"></script>
+  <script src="scripts/pullsheets.js"></script>
+  <script src="scripts/returns.js"></script>
+  <script src="scripts/reports.js"></script>
+  <script src="scripts/main.js"></script>
+</body>
+</html>
