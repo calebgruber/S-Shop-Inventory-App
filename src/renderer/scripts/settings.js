@@ -43,6 +43,36 @@ async function renderSettingsPage() {
           </div>
         </div>
       </div>
+      
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Database Management</h3>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-4">
+                <button class="btn btn-primary w-100" onclick="createBackup()">
+                  <i class="ti ti-database icon"></i> Create Backup
+                </button>
+                <small class="text-muted d-block mt-1">Backup database to file</small>
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-info w-100" onclick="exportDatabase()">
+                  <i class="ti ti-download icon"></i> Export Database
+                </button>
+                <small class="text-muted d-block mt-1">Export as SQL file</small>
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-danger w-100" onclick="clearAllData()">
+                  <i class="ti ti-trash icon"></i> Clear All Data
+                </button>
+                <small class="text-muted d-block mt-1">Delete all records (careful!)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     
     <!-- Add/Edit Theatre Modal -->
@@ -257,6 +287,63 @@ window.deleteTheatre = async function(id) {
 window.checkForUpdates = async function() {
   await window.api.update.check();
   alert('Checking for updates...');
+};
+
+// Create backup
+window.createBackup = async function() {
+  try {
+    const result = await window.api.backup.create();
+    if (result.success) {
+      alert(`Backup created successfully!\nFile: ${result.path}`);
+    } else {
+      alert('Backup failed: ' + result.error);
+    }
+  } catch (error) {
+    alert('Error creating backup: ' + error.message);
+  }
+};
+
+// Export database
+window.exportDatabase = async function() {
+  try {
+    const result = await window.api.backup.export();
+    if (result.success) {
+      alert(`Database exported successfully!\nFile: ${result.path}`);
+    } else if (!result.canceled) {
+      alert('Export failed: ' + result.error);
+    }
+  } catch (error) {
+    alert('Error exporting database: ' + error.message);
+  }
+};
+
+// Clear all data
+window.clearAllData = async function() {
+  const result = await window.api.dialog.showMessage({
+    type: 'warning',
+    title: 'Clear All Data',
+    message: 'Are you absolutely sure you want to delete ALL data?',
+    detail: 'This will permanently delete:\n• All inventory items\n• All shows\n• All pull sheets\n• All returns\n• All activity logs\n\nThis action CANNOT be undone!',
+    buttons: ['Cancel', 'Delete Everything'],
+    defaultId: 0,
+    cancelId: 0
+  });
+  
+  if (result.response === 1) {
+    // Second confirmation
+    const confirmed = await window.api.dialog.showMessage({
+      type: 'error',
+      title: 'Final Confirmation',
+      message: 'Type DELETE to confirm permanent data deletion',
+      buttons: ['Cancel', 'I Understand - Delete All Data'],
+      defaultId: 0
+    });
+    
+    if (confirmed.response === 1) {
+      alert('Data clearing would be implemented here. This requires database reset functionality.');
+      // In full implementation: await window.api.database.clearAll();
+    }
+  }
 };
 
 // Register page with navigation

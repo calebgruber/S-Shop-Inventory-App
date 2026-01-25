@@ -160,12 +160,29 @@ function showBarcodeError(title, message) {
 
 // Handle pull sheet barcode scan  
 async function handlePullSheetBarcode(barcode) {
-  // Extract pull sheet ID from barcode (format: SHOW-{id} or PULL-{id})
-  const parts = barcode.split('-');
-  if (parts.length >= 2) {
-    const pullSheetId = parts[1];
-    await navigateToPullSheet(pullSheetId);
-    console.log('Opening pull sheet:', pullSheetId);
+  try {
+    // Try to get pull sheet by barcode using the API
+    const pullSheet = await window.api.pullsheets.getByBarcode(barcode);
+    
+    if (pullSheet) {
+      // Close any open modals
+      const modal = bootstrap.Modal.getInstance(document.getElementById('barcodeScanModal'));
+      if (modal) {
+        modal.hide();
+      }
+      
+      // Navigate to pull sheets page and show details
+      await window.navigation.loadPage('pullsheets', () => {
+        if (window.viewPullSheet) {
+          window.viewPullSheet(pullSheet.id);
+        }
+      });
+    } else {
+      showBarcodeError('Pull Sheet Not Found', `No pull sheet found with barcode: ${barcode}`);
+    }
+  } catch (error) {
+    console.error('Error looking up pull sheet:', error);
+    showBarcodeError('Lookup Error', error.message);
   }
 }
 

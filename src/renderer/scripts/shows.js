@@ -260,10 +260,194 @@ async function saveShow() {
 }
 
 // View show details
-function viewShowDetails(showId) {
-  // In full implementation, would show detailed view
-  console.log('Viewing show details:', showId);
-  alert('Show details view will be implemented with pull sheets and change orders.');
+async function viewShowDetails(showId) {
+  const show = await window.api.shows.getById(showId);
+  if (!show) {
+    alert('Show not found');
+    return;
+  }
+  
+  const pullSheets = await window.api.pullsheets.getByShow(showId);
+  const changeOrders = await window.api.changeOrders.getByShow(showId);
+  
+  // Create modal content
+  const modalHtml = `
+    <div class="modal modal-blur fade" id="showDetailModal" tabindex="-1">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">${show.name}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <p><strong>Status:</strong> <span class="badge ${getShowStatusClass(show.status)}">${show.status}</span></p>
+                ${show.description ? `<p><strong>Description:</strong> ${show.description}</p>` : ''}
+                ${show.venue ? `<p><strong>Venue:</strong> ${show.venue}</p>` : ''}
+              </div>
+              <div class="col-md-6">
+                ${show.start_date ? `<p><strong>Start Date:</strong> ${new Date(show.start_date).toLocaleDateString()}</p>` : ''}
+                ${show.end_date ? `<p><strong>End Date:</strong> ${new Date(show.end_date).toLocaleDateString()}</p>` : ''}
+                <p><strong>Created:</strong> ${new Date(show.created_at).toLocaleString()}</p>
+              </div>
+            </div>
+            
+            <div class="card mb-3">
+              <div class="card-header">
+                <h3 class="card-title">Pull Sheets (${pullSheets.length})</h3>
+                <div class="card-actions">
+                  <button class="btn btn-sm btn-primary" onclick="createPullSheet(${showId})">
+                    <i class="ti ti-plus icon"></i> New Pull Sheet
+                  </button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Status</th>
+                      <th>Pulled Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${pullSheets.length === 0 ? `
+                      <tr><td colspan="4" class="text-center text-muted">No pull sheets yet</td></tr>
+                    ` : pullSheets.map(ps => `
+                      <tr>
+                        <td>${ps.name || `Pull Sheet #${ps.id}`}</td>
+                        <td>${getPullSheetStatusBadge(ps.status)}</td>
+                        <td>${ps.pulled_date ? new Date(ps.pulled_date).toLocaleDateString() : '-'}</td>
+                        <td>
+                          <button class="btn btn-sm btn-ghost-primary" onclick="viewPullSheetFromShow(${ps.id})">
+                            <i class="ti ti-eye icon"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            ${changeOrders.length > 0 ? `
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Change Orders (${changeOrders.length})</h3>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${changeOrders.map(co => `
+                        <tr>
+                          <td>${co.type}</td>
+                          <td>${co.description || '-'}</td>
+                          <td><span class="badge">${co.status}</span></td>
+                          <td>${new Date(co.created_at).toLocaleDateString()}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn me-auto" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" onclick="editShow(${showId}); bootstrap.Modal.getInstance(document.getElementById('showDetailModal')).hide();">
+              <i class="ti ti-edit icon"></i> Edit Show
+            </button>
+            <button type="button" class="btn btn-danger" onclick="deleteShowWithConfirm(${showId})">
+              <i class="ti ti-trash icon"></i> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Remove old modal if exists
+  const oldModal = document.getElementById('showDetailModal');
+  if (oldModal) {
+    oldModal.remove();
+  }
+  
+  // Add modal to body
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('showDetailModal'));
+  modal.show();
+  
+  // Remove modal from DOM when closed
+  document.getElementById('showDetailModal').addEventListener('hidden.bs.modal', () => {
+    document.getElementById('showDetailModal').remove();
+  });
+}
+
+// Helper to get pull sheet status badge
+function getPullSheetStatusBadge(status) {
+  const badges = {
+    draft: '<span class="badge bg-secondary">Draft</span>',
+    finalized: '<span class="badge bg-info">Finalized</span>',
+    pulled: '<span class="badge bg-primary">Active</span>',
+    returned: '<span class="badge bg-success">Returned</span>'
+  };
+  return badges[status] || badges.draft;
+}
+
+// View pull sheet from show detail
+function viewPullSheetFromShow(pullSheetId) {
+  bootstrap.Modal.getInstance(document.getElementById('showDetailModal')).hide();
+  window.navigation.loadPage('pullsheets', () => {
+    if (window.viewPullSheet) {
+      window.viewPullSheet(pullSheetId);
+    }
+  });
+}
+
+// Delete show with confirmation
+async function deleteShowWithConfirm(showId) {
+  const show = currentShows.find(s => s.id === showId);
+  if (!show) return;
+  
+  const result = await window.api.dialog.showMessage({
+    type: 'warning',
+    title: 'Delete Show',
+    message: `Delete "${show.name}"?`,
+    detail: 'This will also delete all pull sheets and change orders for this show. This action cannot be undone.',
+    buttons: ['Cancel', 'Delete'],
+    defaultId: 0
+  });
+  
+  if (result.response === 1) {
+    try {
+      await window.api.shows.delete(showId);
+      
+      // Close modal
+      const modal = document.getElementById('showDetailModal');
+      if (modal) {
+        bootstrap.Modal.getInstance(modal).hide();
+      }
+      
+      // Refresh list
+      currentShows = await window.api.shows.getAll();
+      document.getElementById('page-content').innerHTML = await renderShowsPage();
+      initShowsPage();
+    } catch (error) {
+      alert('Error deleting show: ' + error.message);
+    }
+  }
 }
 
 // Create pull sheet for show
@@ -278,6 +462,8 @@ function createPullSheet(showId) {
 window.editShow = editShow;
 window.viewShowDetails = viewShowDetails;
 window.createPullSheet = createPullSheet;
+window.viewPullSheetFromShow = viewPullSheetFromShow;
+window.deleteShowWithConfirm = deleteShowWithConfirm;
 
 // Register page with navigation
 window.navigation.registerPage('shows', {
