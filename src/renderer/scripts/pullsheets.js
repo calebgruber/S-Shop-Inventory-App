@@ -91,6 +91,11 @@ async function renderPullSheetsPage() {
                 <input type="text" class="form-control" id="pullSheetName" placeholder="Optional - leave blank for auto-naming">
               </div>
               <div class="mb-3">
+                <label class="form-label">Created By</label>
+                <input type="text" class="form-control" id="pullSheetCreatedBy" placeholder="Your name">
+                <small class="form-hint">Person creating this pull sheet</small>
+              </div>
+              <div class="mb-3">
                 <label class="form-label">Notes</label>
                 <textarea class="form-control" id="pullSheetNotes" rows="2"></textarea>
               </div>
@@ -251,7 +256,8 @@ async function createPullSheet() {
     show_id: parseInt(showId),
     name: document.getElementById('pullSheetName').value || null,
     status: 'draft',
-    notes: document.getElementById('pullSheetNotes').value || null
+    notes: document.getElementById('pullSheetNotes').value || null,
+    pulled_by: document.getElementById('pullSheetCreatedBy').value || null
   };
   
   try {
