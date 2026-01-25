@@ -116,6 +116,22 @@ const backupAPI = {
   export: () => ipcRenderer.invoke('backup:export')
 };
 
+// Category operations
+const categoriesAPI = {
+  getAll: () => ipcRenderer.invoke('categories:getAll'),
+  getById: (id) => ipcRenderer.invoke('categories:getById', id),
+  create: (category) => ipcRenderer.invoke('categories:create', category),
+  update: (id, category) => ipcRenderer.invoke('categories:update', id, category),
+  delete: (id) => ipcRenderer.invoke('categories:delete', id)
+};
+
+// Settings operations
+const settingsAPI = {
+  get: (key) => ipcRenderer.invoke('settings:get', key),
+  set: (key, value) => ipcRenderer.invoke('settings:set', key, value),
+  getAll: () => ipcRenderer.invoke('settings:getAll')
+};
+
 // Export all APIs
 window.api = {
   inventory: inventoryAPI,
@@ -129,7 +145,9 @@ window.api = {
   barcode: barcodeAPI,
   dialog: dialogAPI,
   update: updateAPI,
-  backup: backupAPI
+  backup: backupAPI,
+  categories: categoriesAPI,
+  settings: settingsAPI
 };
 
 // Listen for update status messages

@@ -458,4 +458,48 @@ ipcMain.handle('update:getVersion', async () => {
   };
 });
 
+// Category Management
+ipcMain.handle('categories:getAll', async () => {
+  return database.getAllCategories();
+});
+
+ipcMain.handle('categories:getById', async (event, id) => {
+  return database.getCategoryById(id);
+});
+
+ipcMain.handle('categories:create', async (event, category) => {
+  const result = database.createCategory(category);
+  logAction('CATEGORY', `Created category: ${category.name}`, category);
+  return result;
+});
+
+ipcMain.handle('categories:update', async (event, id, category) => {
+  const result = database.updateCategory(id, category);
+  logAction('CATEGORY', `Updated category ID: ${id}`, category);
+  return result;
+});
+
+ipcMain.handle('categories:delete', async (event, id) => {
+  const result = database.deleteCategory(id);
+  if (result.success) {
+    logAction('CATEGORY', `Deleted category ID: ${id}`);
+  }
+  return result;
+});
+
+// Settings Management
+ipcMain.handle('settings:get', async (event, key) => {
+  return database.getSetting(key);
+});
+
+ipcMain.handle('settings:set', async (event, key, value) => {
+  const result = database.setSetting(key, value);
+  logAction('SETTINGS', `Updated setting: ${key}`);
+  return result;
+});
+
+ipcMain.handle('settings:getAll', async () => {
+  return database.getAllSettings();
+});
+
 console.log('Main process initialized');

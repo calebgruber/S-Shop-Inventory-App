@@ -181,6 +181,25 @@ class InventoryDatabase {
       )
     `);
 
+    // Categories table - stores user-defined item categories
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Settings table - stores application settings including logo
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Create indexes for performance
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_items_barcode ON items(barcode);
@@ -1124,6 +1143,66 @@ class InventoryDatabase {
     query += ' ORDER BY category, name';
     
     return this.db.prepare(query).all(...params);
+  }
+
+  // ===== CATEGORY MANAGEMENT METHODS =====
+
+  getAllCategories() {
+    return this.db.prepare('SELECT * FROM categories ORDER BY name ASC').all();
+  }
+
+  getCategoryById(id) {
+    return this.db.prepare('SELECT * FROM categories WHERE id = ?').get(id);
+  }
+
+  createCategory(category) {
+    const stmt = this.db.prepare(`
+      INSERT INTO categories (name, description) 
+      VALUES (?, ?)
+    `);
+    const result = stmt.run(category.name, category.description || null);
+    return { id: result.lastInsertRowid, ...category };
+  }
+
+  updateCategory(id, category) {
+    const stmt = this.db.prepare(`
+      UPDATE categories SET name = ?, description = ? WHERE id = ?
+    `);
+    stmt.run(category.name, category.description || null, id);
+    return { id, ...category };
+  }
+
+  deleteCategory(id) {
+    // Check if category is in use
+    const itemCount = this.db.prepare('SELECT COUNT(*) as count FROM items WHERE category = (SELECT name FROM categories WHERE id = ?)').get(id);
+    
+    if (itemCount && itemCount.count > 0) {
+      return { success: false, error: `Cannot delete category: ${itemCount.count} items are using it` };
+    }
+    
+    this.db.prepare('DELETE FROM categories WHERE id = ?').run(id);
+    return { success: true };
+  }
+
+  // ===== SETTINGS METHODS =====
+
+  getSetting(key) {
+    const result = this.db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
+    return result ? result.value : null;
+  }
+
+  setSetting(key, value) {
+    const stmt = this.db.prepare(`
+      INSERT INTO settings (key, value, updated_at) 
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
+    `);
+    stmt.run(key, value, value);
+    return { key, value };
+  }
+
+  getAllSettings() {
+    return this.db.prepare('SELECT * FROM settings').all();
   }
 
   close() {
