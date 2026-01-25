@@ -13,6 +13,7 @@ const { app, shell } = require('electron');
 /**
  * Generate a CODE128 barcode image as data URI
  * Tries canvas first, falls back to SVG with xmldom
+ * Returns an object with dataUri and format for proper PDF embedding
  */
 function generateBarcode(value, options = {}) {
   // Try canvas approach first (best compatibility with jsPDF)
@@ -30,7 +31,10 @@ function generateBarcode(value, options = {}) {
       ...options
     });
     
-    return canvas.toDataURL('image/png');
+    return {
+      dataUri: canvas.toDataURL('image/png'),
+      format: 'PNG'
+    };
   } catch (canvasError) {
     console.log('Canvas not available, trying SVG approach:', canvasError.message);
     
@@ -55,8 +59,11 @@ function generateBarcode(value, options = {}) {
       const svgString = new XMLSerializer().serializeToString(svgElement);
       const base64 = Buffer.from(svgString).toString('base64');
       
-      // Return SVG as data URI
-      return 'data:image/svg+xml;base64,' + base64;
+      // Return SVG as data URI with format info
+      return {
+        dataUri: 'data:image/svg+xml;base64,' + base64,
+        format: 'SVG'
+      };
     } catch (svgError) {
       console.error('SVG barcode generation failed:', svgError.message);
       return null;
@@ -95,10 +102,10 @@ async function generatePullSheetPDF(pullSheet) {
   
   // Show barcode - unique identifier for scanning
   const showBarcode = `SHOW-${pullSheet.id}-${Date.now()}`;
-  const barcodeImage = generateBarcode(showBarcode);
+  const barcodeResult = generateBarcode(showBarcode);
   
-  if (barcodeImage) {
-    doc.addImage(barcodeImage, 'PNG', pageWidth / 2 - 40, 25, 80, 25);
+  if (barcodeResult) {
+    doc.addImage(barcodeResult.dataUri, barcodeResult.format, pageWidth / 2 - 40, 25, 80, 25);
   } else {
     // Fallback: display barcode as text
     doc.setFontSize(10);
@@ -385,7 +392,7 @@ async function generateBarcodeLabels(items, options = {}) {
     doc.text(itemName, x + labelWidth / 2, y + 4, { align: 'center' });
     
     // Add barcode
-    const barcodeImage = generateBarcode(item.barcode, {
+    const barcodeResult = generateBarcode(item.barcode, {
       width: 1.5,
       height: 35,
       displayValue: true,
@@ -393,9 +400,9 @@ async function generateBarcodeLabels(items, options = {}) {
       margin: 0
     });
     
-    if (barcodeImage) {
+    if (barcodeResult) {
       try {
-        doc.addImage(barcodeImage, 'PNG', x + 3, y + 6, labelWidth - 6, 14);
+        doc.addImage(barcodeResult.dataUri, barcodeResult.format, x + 3, y + 6, labelWidth - 6, 14);
       } catch (error) {
         // Fallback: just show barcode text
         doc.setFontSize(10);
