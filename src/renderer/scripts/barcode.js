@@ -142,7 +142,11 @@ async function showBarcodeResult(item) {
   
   // Navigate to inventory page with callback to open item details
   await window.navigation.loadPage('inventory', () => {
-    window.editInventoryItem(item.id);
+    if (typeof window.editInventoryItem === 'function') {
+      window.editInventoryItem(item.id);
+    } else {
+      console.error('editInventoryItem function not available');
+    }
   });
 }
 
@@ -164,16 +168,20 @@ async function handlePullSheetBarcode(barcode) {
   const parts = barcode.split('-');
   if (parts.length >= 2) {
     const pullSheetId = parts[1];
-    // Navigate to pull sheets page with callback to open details
-    await window.navigation.loadPage('pullsheets', () => {
-      if (typeof window.viewPullSheet === 'function') {
-        window.viewPullSheet(pullSheetId);
-      } else {
-        console.error('viewPullSheet function not available');
-      }
-    });
+    await navigateToPullSheet(pullSheetId);
     console.log('Opening pull sheet:', pullSheetId);
   }
+}
+
+// Navigate to pull sheet details (shared utility)
+async function navigateToPullSheet(pullSheetId) {
+  await window.navigation.loadPage('pullsheets', () => {
+    if (typeof window.viewPullSheet === 'function') {
+      window.viewPullSheet(pullSheetId);
+    } else {
+      console.error('viewPullSheet function not available');
+    }
+  });
 }
 
 // Add item to current pull sheet (placeholder)
@@ -190,5 +198,6 @@ window.addItemToCurrentPullSheet = addItemToCurrentPullSheet;
 window.barcode = {
   init: initBarcodeScanning,
   process: processBarcode,
-  openModal: openBarcodeScanModal
+  openModal: openBarcodeScanModal,
+  navigateToPullSheet: navigateToPullSheet
 };

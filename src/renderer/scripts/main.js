@@ -126,14 +126,8 @@ async function handlePullSheetBarcodeInput() {
     const parts = barcode.split('-');
     if (parts.length >= 2) {
       const pullSheetId = parts[1];
-      // Navigate to pull sheets page with callback to open details
-      await window.navigation.loadPage('pullsheets', () => {
-        if (typeof window.viewPullSheet === 'function') {
-          window.viewPullSheet(pullSheetId);
-        } else {
-          console.error('viewPullSheet function not available');
-        }
-      });
+      // Use shared utility from barcode module
+      await window.barcode.navigateToPullSheet(pullSheetId);
       // Clear input
       input.value = '';
     }

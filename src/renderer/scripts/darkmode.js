@@ -72,7 +72,12 @@ function disableDarkMode() {
   
   // Restore navbar
   if (navbar) {
-    navbar.classList.add('navbar-dark', 'bg-dark');
+    if (!navbar.classList.contains('navbar-dark')) {
+      navbar.classList.add('navbar-dark');
+    }
+    if (!navbar.classList.contains('bg-dark')) {
+      navbar.classList.add('bg-dark');
+    }
     navbar.style.backgroundColor = '';
   }
   
