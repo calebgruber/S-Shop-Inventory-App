@@ -39,8 +39,8 @@
     "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.7.3",
     "jsbarcode": "^3.11.6",
-    "jspdf": "^4.0.0",
-    "jspdf-autotable": "^5.0.7",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
     "quagga": "^0.6.16"
   },
   "overrides": {

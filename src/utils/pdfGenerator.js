@@ -3,7 +3,7 @@
  * Generates PDF documents for pull sheets, inventory reports, and return summaries
  */
 
-const { jsPDF } = require('jspdf');
+const jsPDF = require('jspdf').jsPDF;
 require('jspdf-autotable');
 const JsBarcode = require('jsbarcode');
 const fs = require('fs');
