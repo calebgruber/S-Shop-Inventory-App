@@ -132,7 +132,12 @@ async function handlePullSheetBarcodeInput() {
       input.value = '';
     }
   } else {
-    alert('Invalid pull sheet barcode. Please scan a barcode starting with SHOW- or PULL-');
+    // Show error using the app's showError utility if available
+    if (typeof window.app !== 'undefined' && typeof window.app.showError === 'function') {
+      window.app.showError('Invalid pull sheet barcode. Please scan a barcode starting with SHOW- or PULL-');
+    } else {
+      alert('Invalid pull sheet barcode. Please scan a barcode starting with SHOW- or PULL-');
+    }
   }
 }
 

@@ -142,11 +142,7 @@ async function showBarcodeResult(item) {
   
   // Navigate to inventory page with callback to open item details
   await window.navigation.loadPage('inventory', () => {
-    if (typeof window.editInventoryItem === 'function') {
-      window.editInventoryItem(item.id);
-    } else {
-      console.error('editInventoryItem function not available');
-    }
+    callIfExists('editInventoryItem', item.id);
   });
 }
 
@@ -176,12 +172,17 @@ async function handlePullSheetBarcode(barcode) {
 // Navigate to pull sheet details (shared utility)
 async function navigateToPullSheet(pullSheetId) {
   await window.navigation.loadPage('pullsheets', () => {
-    if (typeof window.viewPullSheet === 'function') {
-      window.viewPullSheet(pullSheetId);
-    } else {
-      console.error('viewPullSheet function not available');
-    }
+    callIfExists('viewPullSheet', pullSheetId);
   });
+}
+
+// Utility to call a function only if it exists
+function callIfExists(functionName, ...args) {
+  if (typeof window[functionName] === 'function') {
+    window[functionName](...args);
+  } else {
+    console.error(`${functionName} function not available`);
+  }
 }
 
 // Add item to current pull sheet (placeholder)

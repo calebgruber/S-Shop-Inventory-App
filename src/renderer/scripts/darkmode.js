@@ -70,14 +70,8 @@ function disableDarkMode() {
   // Remove dark theme class from html
   htmlElement.classList.remove('theme-dark');
   
-  // Restore navbar
+  // Restore navbar background color (classes should already exist)
   if (navbar) {
-    if (!navbar.classList.contains('navbar-dark')) {
-      navbar.classList.add('navbar-dark');
-    }
-    if (!navbar.classList.contains('bg-dark')) {
-      navbar.classList.add('bg-dark');
-    }
     navbar.style.backgroundColor = '';
   }
   
