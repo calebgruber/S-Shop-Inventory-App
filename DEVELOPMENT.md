@@ -10,7 +10,9 @@ This guide will help you set up, develop, and deploy updates to the S-Shop Inven
 - Node.js 16.x or higher
 - npm (comes with Node.js)
 - Git
-- Windows 10/11 (for building Windows installers)
+- **For Windows builds**: Windows 10/11
+- **For macOS builds**: macOS 10.13+ (High Sierra or later)
+- **Note**: You can build for both platforms from either OS using electron-builder
 
 ### Initial Setup
 
@@ -87,20 +89,64 @@ this.db.exec(`
 
 ## Building for Distribution
 
-### Creating an Installer
+### Creating Installers
 
+**Both platforms:**
 ```bash
 npm run build
 ```
 
+**Windows only:**
+```bash
+npm run build:win
+```
+
+**macOS only:**
+```bash
+npm run build:mac
+```
+
 This creates:
-- `dist/S-Shop Inventory Setup.exe` - NSIS installer
-- Includes all dependencies bundled
+- **Windows**: `dist/S-Shop Inventory Setup.exe` - NSIS installer
+- **macOS**: `dist/S-Shop Inventory-1.0.0.dmg` - DMG disk image
 
-### Build Options
+Both include all dependencies bundled.
 
-- **Full installer**: `npm run build`
-- **Unpacked directory**: `npm run build:dir` (faster, for testing)
+### Build Output Locations
+
+- **Windows**: `dist/S-Shop Inventory Setup.exe`
+- **macOS**: `dist/S-Shop Inventory-<version>.dmg`
+- **Unpacked**: `dist/win-unpacked/` or `dist/mac/`
+
+### Code Signing (Optional but Recommended)
+
+**Windows:**
+- Purchase a code signing certificate
+- Set environment variables:
+  ```
+  WIN_CSC_LINK=path/to/cert.pfx
+  WIN_CSC_KEY_PASSWORD=your_password
+  ```
+
+**macOS:**
+- Enroll in Apple Developer Program
+- Create signing certificate in Xcode
+- Set environment variables:
+  ```
+  CSC_LINK=path/to/cert.p12
+  CSC_KEY_PASSWORD=your_password
+  APPLE_ID=your@email.com
+  APPLE_ID_PASSWORD=app-specific-password
+  ```
+
+### Cross-Platform Building
+
+electron-builder can build for multiple platforms from a single machine, but native dependencies (like better-sqlite3) require that you build on the target platform for best results.
+
+**Recommendation:**
+- Build macOS apps on macOS
+- Build Windows apps on Windows
+- Or use CI/CD (GitHub Actions) to build both
 
 ## Deploying Updates
 
@@ -134,7 +180,7 @@ This creates:
    git push origin v1.1.0
    ```
 
-4. **Build the installer**:
+4. **Build the installers**:
    ```bash
    npm run build
    ```
@@ -145,11 +191,13 @@ This creates:
    - Select tag: `v1.1.0`
    - Title: `Version 1.1.0`
    - Describe changes in release notes
-   - Upload `dist/S-Shop Inventory Setup.exe`
+   - Upload both installers:
+     - `dist/S-Shop Inventory Setup.exe` (Windows)
+     - `dist/S-Shop Inventory-1.1.0.dmg` (macOS)
    - Click "Publish release"
 
 6. **Auto-Update Notification**:
-   - Installed apps will check for updates on startup
+   - Windows and macOS apps will check for updates on startup
    - Users will be prompted to download and install
    - Update installs on next app restart
 

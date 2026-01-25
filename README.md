@@ -26,7 +26,7 @@ A self-contained Windows Electron application for managing theatre sound shop in
 
 ### Prerequisites
 - Node.js 16.x or higher
-- Windows 10/11 (primary target platform)
+- Windows 10/11 or macOS 10.13+ (High Sierra or later)
 - Zebra DS-series barcode scanner (optional, keyboard input also supported)
 
 ### Setup
@@ -47,10 +47,32 @@ A self-contained Windows Electron application for managing theatre sound shop in
    npm run dev
    ```
 
-4. **Build for Windows**
+4. **Build for your platform**
    ```bash
+   # Build for both Windows and macOS
    npm run build
+   
+   # Build for Windows only
+   npm run build:win
+   
+   # Build for macOS only
+   npm run build:mac
    ```
+
+## Platform-Specific Notes
+
+### Windows
+- **Installer**: NSIS installer (.exe)
+- **Database Location**: `%APPDATA%/s-shop-inventory-app/`
+- **Keyboard Shortcuts**: Work as documented
+
+### macOS
+- **Installer**: DMG disk image (.dmg)
+- **Database Location**: `~/Library/Application Support/s-shop-inventory-app/`
+- **Keyboard Shortcuts**: 
+  - `F1` for barcode scanning (may need to disable macOS function keys)
+  - Or use the scan button in the navigation bar
+- **Note**: On first run, you may need to allow the app in System Preferences → Security & Privacy
 
 ## Auto-Updates
 
@@ -235,19 +257,27 @@ Future students can maintain and extend the system with basic JavaScript knowled
 ## Troubleshooting
 
 ### Database Issues
-- Check user data directory: `%APPDATA%/s-shop-inventory-app/`
+- **Windows**: Check `%APPDATA%/s-shop-inventory-app/`
+- **macOS**: Check `~/Library/Application Support/s-shop-inventory-app/`
 - Database file: `inventory.db`
 - Restore from backup if corrupted
 
 ### Barcode Scanner
 - Ensure scanner is in keyboard wedge mode
-- Test with notepad to verify scanner output
+- Test with notepad (Windows) or TextEdit (macOS) to verify scanner output
 - Check USB connection
+- **macOS**: If F1 doesn't work, use the scan button or disable macOS function keys in System Preferences
 
 ### PDF Generation
-- PDFs saved to user data directory under `pdfs/`
+- **Windows**: PDFs saved to `%APPDATA%/s-shop-inventory-app/pdfs/`
+- **macOS**: PDFs saved to `~/Library/Application Support/s-shop-inventory-app/pdfs/`
 - Check file permissions
 - Verify jsPDF dependencies installed
+
+### macOS-Specific Issues
+- **"App can't be opened"**: Go to System Preferences → Security & Privacy and click "Open Anyway"
+- **F1 key not working**: Disable function keys or use the scan button in the toolbar
+- **Permission denied**: Grant Full Disk Access in System Preferences → Security & Privacy → Privacy
 
 ## License
 

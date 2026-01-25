@@ -541,14 +541,15 @@ class InventoryDatabase {
   // ===== REPORTING METHODS =====
 
   getShortages() {
+    // Returns items that are oversold (more out than total) or have negative availability
     return this.db.prepare(`
       SELECT i.*, 
         (i.quantity_total - i.quantity_available) as quantity_out,
         i.quantity_available as quantity_in_stock
       FROM items i
       WHERE i.quantity_available < 0 
-         OR (i.quantity_total - i.quantity_available) > i.quantity_total
-      ORDER BY i.name ASC
+         OR i.quantity_available < (i.quantity_total * 0.2)
+      ORDER BY i.quantity_available ASC, i.name ASC
     `).all();
   }
 

@@ -125,7 +125,9 @@ function generatePullSheetPDF(pullSheet) {
   const filename = `pullsheet_${pullSheet.id}_${Date.now()}.pdf`;
   const filePath = path.join(pdfsDir, filename);
   
-  fs.writeFileSync(filePath, doc.output('arraybuffer'));
+  // Convert ArrayBuffer to Buffer for fs.writeFileSync
+  const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+  fs.writeFileSync(filePath, pdfBuffer);
   
   return filePath;
 }
@@ -199,7 +201,9 @@ function generateInventoryReportPDF(data) {
   const filename = `inventory_${Date.now()}.pdf`;
   const filePath = path.join(pdfsDir, filename);
   
-  fs.writeFileSync(filePath, doc.output('arraybuffer'));
+  // Convert ArrayBuffer to Buffer for fs.writeFileSync
+  const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+  fs.writeFileSync(filePath, pdfBuffer);
   
   return filePath;
 }
@@ -268,7 +272,9 @@ function generateReturnSummaryPDF(returnData) {
   const filename = `return_${returnData.id}_${Date.now()}.pdf`;
   const filePath = path.join(pdfsDir, filename);
   
-  fs.writeFileSync(filePath, doc.output('arraybuffer'));
+  // Convert ArrayBuffer to Buffer for fs.writeFileSync
+  const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+  fs.writeFileSync(filePath, pdfBuffer);
   
   return filePath;
 }
