@@ -134,9 +134,6 @@ async function handleBarcodeLookup() {
 
 // Show barcode scan result
 async function showBarcodeResult(item) {
-  // Get detailed item status
-  const itemStatus = await window.api.reports.getItemStatus(item.id);
-  
   const resultDiv = document.getElementById('barcodeScanResult');
   
   const quantityOut = item.quantity_total - item.quantity_available;
