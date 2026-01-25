@@ -241,6 +241,22 @@ ipcMain.handle('pullsheets:removeItem', async (event, pullSheetId, itemId) => {
   return result;
 });
 
+ipcMain.handle('pullsheets:updateItem', async (event, pullSheetId, itemId, quantity, status) => {
+  const result = database.updatePullSheetItem(pullSheetId, itemId, quantity, status);
+  logAction('PULLSHEET', `Updated item ${itemId} in pull sheet ${pullSheetId}`);
+  return result;
+});
+
+ipcMain.handle('pullsheets:finalize', async (event, pullSheetId, pulledBy) => {
+  const result = database.finalizePullSheet(pullSheetId, pulledBy);
+  logAction('PULLSHEET', `Finalized pull sheet ${pullSheetId}`);
+  return result;
+});
+
+ipcMain.handle('pullsheets:getByBarcode', async (event, barcode) => {
+  return database.getPullSheetByBarcode(barcode);
+});
+
 // Change Order Management
 ipcMain.handle('changeorders:getAll', async () => {
   return database.getAllChangeOrders();
@@ -262,14 +278,48 @@ ipcMain.handle('changeorders:update', async (event, id, status) => {
   return result;
 });
 
+ipcMain.handle('changeorders:getById', async (event, id) => {
+  return database.getChangeOrderById(id);
+});
+
+ipcMain.handle('changeorders:getByPullSheet', async (event, pullSheetId) => {
+  return database.getChangeOrdersByPullSheet(pullSheetId);
+});
+
+ipcMain.handle('changeorders:addItem', async (event, changeOrderId, itemId, quantityChange, action) => {
+  const result = database.addChangeOrderItem(changeOrderId, itemId, quantityChange, action);
+  logAction('CHANGEORDER', `Added item ${itemId} to change order ${changeOrderId}`);
+  return result;
+});
+
+ipcMain.handle('changeorders:process', async (event, changeOrderId) => {
+  const result = database.processChangeOrder(changeOrderId);
+  logAction('CHANGEORDER', `Processed change order ${changeOrderId}`);
+  return result;
+});
+
 // Return Management
 ipcMain.handle('returns:getAll', async () => {
   return database.getAllReturns();
 });
 
+ipcMain.handle('returns:getById', async (event, id) => {
+  return database.getReturnById(id);
+});
+
+ipcMain.handle('returns:getByPullSheet', async (event, pullSheetId) => {
+  return database.getReturnByPullSheet(pullSheetId);
+});
+
 ipcMain.handle('returns:create', async (event, returnData) => {
   const result = database.createReturn(returnData);
   logAction('RETURN', `Created return for pull sheet ID: ${returnData.pull_sheet_id}`, returnData);
+  return result;
+});
+
+ipcMain.handle('returns:addItem', async (event, returnId, itemId, quantity, condition, notes) => {
+  const result = database.addReturnItem(returnId, itemId, quantity, condition, notes);
+  logAction('RETURN', `Added item ${itemId} to return ${returnId} in ${condition} condition`);
   return result;
 });
 
@@ -282,6 +332,22 @@ ipcMain.handle('returns:complete', async (event, id) => {
 // Reports and Analytics
 ipcMain.handle('reports:getShortages', async () => {
   return database.getShortages();
+});
+
+ipcMain.handle('reports:getLowStock', async (event, threshold) => {
+  return database.getLowStockItems(threshold);
+});
+
+ipcMain.handle('reports:getItemsOut', async () => {
+  return database.getItemsOut();
+});
+
+ipcMain.handle('reports:getShowEquipment', async (event, showId) => {
+  return database.getShowEquipmentReport(showId);
+});
+
+ipcMain.handle('reports:getDashboardStats', async () => {
+  return database.getDashboardStats();
 });
 
 ipcMain.handle('reports:getItemStatus', async (event, itemId) => {

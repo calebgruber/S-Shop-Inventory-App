@@ -40,31 +40,45 @@ const pullsheetsAPI = {
   getAll: () => ipcRenderer.invoke('pullsheets:getAll'),
   getById: (id) => ipcRenderer.invoke('pullsheets:getById', id),
   getByShow: (showId) => ipcRenderer.invoke('pullsheets:getByShow', showId),
+  getByBarcode: (barcode) => ipcRenderer.invoke('pullsheets:getByBarcode', barcode),
   create: (pullSheet) => ipcRenderer.invoke('pullsheets:create', pullSheet),
   update: (id, pullSheet) => ipcRenderer.invoke('pullsheets:update', id, pullSheet),
   delete: (id) => ipcRenderer.invoke('pullsheets:delete', id),
   addItem: (pullSheetId, itemId, quantity) => ipcRenderer.invoke('pullsheets:addItem', pullSheetId, itemId, quantity),
-  removeItem: (pullSheetId, itemId) => ipcRenderer.invoke('pullsheets:removeItem', pullSheetId, itemId)
+  removeItem: (pullSheetId, itemId) => ipcRenderer.invoke('pullsheets:removeItem', pullSheetId, itemId),
+  updateItem: (pullSheetId, itemId, quantity, status) => ipcRenderer.invoke('pullsheets:updateItem', pullSheetId, itemId, quantity, status),
+  finalize: (pullSheetId, pulledBy) => ipcRenderer.invoke('pullsheets:finalize', pullSheetId, pulledBy)
 };
 
 // Change order operations
 const changeOrdersAPI = {
   getAll: () => ipcRenderer.invoke('changeorders:getAll'),
+  getById: (id) => ipcRenderer.invoke('changeorders:getById', id),
   getByShow: (showId) => ipcRenderer.invoke('changeorders:getByShow', showId),
+  getByPullSheet: (pullSheetId) => ipcRenderer.invoke('changeorders:getByPullSheet', pullSheetId),
   create: (changeOrder) => ipcRenderer.invoke('changeorders:create', changeOrder),
+  addItem: (changeOrderId, itemId, quantityChange, action) => ipcRenderer.invoke('changeorders:addItem', changeOrderId, itemId, quantityChange, action),
+  process: (changeOrderId) => ipcRenderer.invoke('changeorders:process', changeOrderId),
   updateStatus: (id, status) => ipcRenderer.invoke('changeorders:update', id, status)
 };
 
 // Return operations
 const returnsAPI = {
   getAll: () => ipcRenderer.invoke('returns:getAll'),
+  getById: (id) => ipcRenderer.invoke('returns:getById', id),
+  getByPullSheet: (pullSheetId) => ipcRenderer.invoke('returns:getByPullSheet', pullSheetId),
   create: (returnData) => ipcRenderer.invoke('returns:create', returnData),
+  addItem: (returnId, itemId, quantity, condition, notes) => ipcRenderer.invoke('returns:addItem', returnId, itemId, quantity, condition, notes),
   complete: (id) => ipcRenderer.invoke('returns:complete', id)
 };
 
 // Reports and analytics
 const reportsAPI = {
   getShortages: () => ipcRenderer.invoke('reports:getShortages'),
+  getLowStock: (threshold) => ipcRenderer.invoke('reports:getLowStock', threshold),
+  getItemsOut: () => ipcRenderer.invoke('reports:getItemsOut'),
+  getShowEquipment: (showId) => ipcRenderer.invoke('reports:getShowEquipment', showId),
+  getDashboardStats: () => ipcRenderer.invoke('reports:getDashboardStats'),
   getItemStatus: (itemId) => ipcRenderer.invoke('reports:getItemStatus', itemId),
   getActivityLog: (filters) => ipcRenderer.invoke('reports:getActivityLog', filters),
   getItemsByLocation: (theatreId) => ipcRenderer.invoke('reports:getItemsByLocation', theatreId)

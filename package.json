@@ -32,8 +32,8 @@
     "electron": "^27.0.0"
   },
   "dependencies": {
-    "better-sqlite3": "^9.2.2",
     "@xmldom/xmldom": "^0.8.10",
+    "better-sqlite3": "^12.6.2",
     "canvas": "^2.11.2",
     "electron-log": "^5.4.3",
     "electron-squirrel-startup": "^1.0.1",
@@ -41,7 +41,10 @@
     "jsbarcode": "^3.11.6",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
-    "quagga": "^0.12.1"
+    "quagga": "^0.6.16"
+  },
+  "overrides": {
+    "better-sqlite3": "$better-sqlite3"
   },
   "optionalDependencies": {
     "@electron/rebuild": "^3.6.0"

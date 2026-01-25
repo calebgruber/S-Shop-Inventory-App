@@ -541,6 +541,74 @@ class InventoryDatabase {
     return { success: true };
   }
 
+  updatePullSheetItem(pullSheetId, itemId, quantity, status = null) {
+    const updates = ['quantity_requested = ?'];
+    const params = [quantity];
+    
+    if (status) {
+      updates.push('status = ?');
+      params.push(status);
+    }
+    
+    params.push(pullSheetId, itemId);
+    
+    this.db.prepare(`
+      UPDATE pull_sheet_items 
+      SET ${updates.join(', ')}
+      WHERE pull_sheet_id = ? AND item_id = ?
+    `).run(...params);
+    
+    return { success: true };
+  }
+
+  finalizePullSheet(pullSheetId, pulledBy) {
+    // Start a transaction
+    const finalize = this.db.transaction(() => {
+      // Get all items in the pull sheet
+      const items = this.db.prepare(`
+        SELECT item_id, quantity_requested 
+        FROM pull_sheet_items 
+        WHERE pull_sheet_id = ?
+      `).all(pullSheetId);
+      
+      // Decrement availability for each item
+      for (const item of items) {
+        this.db.prepare(`
+          UPDATE items 
+          SET quantity_available = quantity_available - ?
+          WHERE id = ?
+        `).run(item.quantity_requested, item.item_id);
+        
+        // Update pull sheet item status
+        this.db.prepare(`
+          UPDATE pull_sheet_items 
+          SET quantity_pulled = quantity_requested, status = 'pulled'
+          WHERE pull_sheet_id = ? AND item_id = ?
+        `).run(pullSheetId, item.item_id);
+      }
+      
+      // Update pull sheet status
+      this.db.prepare(`
+        UPDATE pull_sheets 
+        SET status = 'finalized', pulled_date = CURRENT_TIMESTAMP, pulled_by = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(pulledBy, pullSheetId);
+    });
+    
+    finalize();
+    return { success: true };
+  }
+
+  getPullSheetByBarcode(barcode) {
+    // Pull sheet barcodes follow pattern PULL-{id}-{timestamp}
+    const match = barcode.match(/^PULL-(\d+)/);
+    if (match) {
+      return this.getPullSheetById(parseInt(match[1]));
+    }
+    return null;
+  }
+
   // ===== CHANGE ORDER METHODS =====
 
   getAllChangeOrders() {
@@ -555,6 +623,36 @@ class InventoryDatabase {
   getChangeOrdersByShow(showId) {
     return this.db.prepare('SELECT * FROM change_orders WHERE show_id = ? ORDER BY created_at DESC')
       .all(showId);
+  }
+
+  getChangeOrdersByPullSheet(pullSheetId) {
+    return this.db.prepare(`
+      SELECT co.*, s.name as show_name
+      FROM change_orders co
+      JOIN shows s ON co.show_id = s.id
+      WHERE co.pull_sheet_id = ?
+      ORDER BY co.created_at DESC
+    `).all(pullSheetId);
+  }
+
+  getChangeOrderById(id) {
+    const changeOrder = this.db.prepare(`
+      SELECT co.*, s.name as show_name
+      FROM change_orders co
+      JOIN shows s ON co.show_id = s.id
+      WHERE co.id = ?
+    `).get(id);
+    
+    if (changeOrder) {
+      changeOrder.items = this.db.prepare(`
+        SELECT coi.*, i.name, i.barcode, i.quantity_available
+        FROM change_order_items coi
+        JOIN items i ON coi.item_id = i.id
+        WHERE coi.change_order_id = ?
+      `).all(id);
+    }
+    
+    return changeOrder;
   }
 
   createChangeOrder(changeOrder) {
@@ -573,6 +671,104 @@ class InventoryDatabase {
     );
 
     return { id: result.lastInsertRowid, ...changeOrder };
+  }
+
+  addChangeOrderItem(changeOrderId, itemId, quantityChange, action) {
+    const stmt = this.db.prepare(`
+      INSERT INTO change_order_items (change_order_id, item_id, quantity_change, action)
+      VALUES (?, ?, ?, ?)
+    `);
+    
+    const result = stmt.run(changeOrderId, itemId, quantityChange, action);
+    return { id: result.lastInsertRowid };
+  }
+
+  processChangeOrder(changeOrderId) {
+    // Start a transaction
+    const process = this.db.transaction(() => {
+      const changeOrder = this.getChangeOrderById(changeOrderId);
+      
+      if (!changeOrder || !changeOrder.pull_sheet_id) {
+        throw new Error('Invalid change order or no pull sheet associated');
+      }
+      
+      // Process each item
+      for (const item of changeOrder.items) {
+        if (item.action === 'add') {
+          // Add item to pull sheet
+          const existing = this.db.prepare(`
+            SELECT * FROM pull_sheet_items 
+            WHERE pull_sheet_id = ? AND item_id = ?
+          `).get(changeOrder.pull_sheet_id, item.item_id);
+          
+          if (existing) {
+            // Update quantity
+            this.db.prepare(`
+              UPDATE pull_sheet_items 
+              SET quantity_requested = quantity_requested + ?,
+                  quantity_pulled = quantity_pulled + ?
+              WHERE pull_sheet_id = ? AND item_id = ?
+            `).run(item.quantity_change, item.quantity_change, changeOrder.pull_sheet_id, item.item_id);
+          } else {
+            // Add new item
+            this.db.prepare(`
+              INSERT INTO pull_sheet_items (pull_sheet_id, item_id, quantity_requested, quantity_pulled, status)
+              VALUES (?, ?, ?, ?, 'pulled')
+            `).run(changeOrder.pull_sheet_id, item.item_id, item.quantity_change, item.quantity_change);
+          }
+          
+          // Decrement availability
+          this.db.prepare(`
+            UPDATE items 
+            SET quantity_available = quantity_available - ?
+            WHERE id = ?
+          `).run(item.quantity_change, item.item_id);
+          
+        } else if (item.action === 'remove') {
+          // Remove item quantity from pull sheet
+          const existing = this.db.prepare(`
+            SELECT * FROM pull_sheet_items 
+            WHERE pull_sheet_id = ? AND item_id = ?
+          `).get(changeOrder.pull_sheet_id, item.item_id);
+          
+          if (existing) {
+            const newQuantity = existing.quantity_requested - item.quantity_change;
+            if (newQuantity <= 0) {
+              // Remove item completely
+              this.db.prepare(`
+                DELETE FROM pull_sheet_items 
+                WHERE pull_sheet_id = ? AND item_id = ?
+              `).run(changeOrder.pull_sheet_id, item.item_id);
+            } else {
+              // Update quantity
+              this.db.prepare(`
+                UPDATE pull_sheet_items 
+                SET quantity_requested = ?,
+                    quantity_pulled = ?
+                WHERE pull_sheet_id = ? AND item_id = ?
+              `).run(newQuantity, newQuantity, changeOrder.pull_sheet_id, item.item_id);
+            }
+          }
+          
+          // Increment availability
+          this.db.prepare(`
+            UPDATE items 
+            SET quantity_available = quantity_available + ?
+            WHERE id = ?
+          `).run(item.quantity_change, item.item_id);
+        }
+      }
+      
+      // Mark change order as completed
+      this.db.prepare(`
+        UPDATE change_orders 
+        SET status = 'completed', completed_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(changeOrderId);
+    });
+    
+    process();
+    return { success: true };
   }
 
   updateChangeOrderStatus(id, status) {
@@ -598,6 +794,39 @@ class InventoryDatabase {
     `).all();
   }
 
+  getReturnById(id) {
+    const returnData = this.db.prepare(`
+      SELECT r.*, ps.name as pull_sheet_name, s.name as show_name
+      FROM returns r
+      JOIN pull_sheets ps ON r.pull_sheet_id = ps.id
+      JOIN shows s ON ps.show_id = s.id
+      WHERE r.id = ?
+    `).get(id);
+    
+    if (returnData) {
+      returnData.items = this.db.prepare(`
+        SELECT ri.*, i.name, i.barcode
+        FROM return_items ri
+        JOIN items i ON ri.item_id = i.id
+        WHERE ri.return_id = ?
+      `).all(id);
+    }
+    
+    return returnData;
+  }
+
+  getReturnByPullSheet(pullSheetId) {
+    return this.db.prepare(`
+      SELECT r.*, ps.name as pull_sheet_name, s.name as show_name
+      FROM returns r
+      JOIN pull_sheets ps ON r.pull_sheet_id = ps.id
+      JOIN shows s ON ps.show_id = s.id
+      WHERE r.pull_sheet_id = ? AND r.status = 'pending'
+      ORDER BY r.return_date DESC
+      LIMIT 1
+    `).get(pullSheetId);
+  }
+
   createReturn(returnData) {
     const stmt = this.db.prepare(`
       INSERT INTO returns (pull_sheet_id, returned_by, status, notes)
@@ -614,13 +843,63 @@ class InventoryDatabase {
     return { id: result.lastInsertRowid, ...returnData };
   }
 
-  completeReturn(id) {
-    this.db.prepare(`
-      UPDATE returns 
-      SET status = 'completed', completed_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(id);
+  addReturnItem(returnId, itemId, quantity, condition, notes = null) {
+    const stmt = this.db.prepare(`
+      INSERT INTO return_items (return_id, item_id, quantity, condition, notes)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    
+    const result = stmt.run(returnId, itemId, quantity, condition, notes);
+    
+    // Update inventory availability based on condition
+    if (condition === 'good' || condition === 'returned') {
+      this.db.prepare(`
+        UPDATE items 
+        SET quantity_available = quantity_available + ?
+        WHERE id = ?
+      `).run(quantity, itemId);
+    } else if (condition === 'damaged') {
+      // Increment available but maybe mark item as damaged
+      this.db.prepare(`
+        UPDATE items 
+        SET quantity_available = quantity_available + ?
+        WHERE id = ?
+      `).run(quantity, itemId);
+    }
+    // For 'lost', we don't increment availability
+    
+    return { id: result.lastInsertRowid };
+  }
 
+  completeReturn(id) {
+    // Start transaction
+    const complete = this.db.transaction(() => {
+      // Mark return as completed
+      this.db.prepare(`
+        UPDATE returns 
+        SET status = 'completed', completed_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(id);
+      
+      // Update pull sheet status
+      const returnData = this.db.prepare('SELECT pull_sheet_id FROM returns WHERE id = ?').get(id);
+      if (returnData) {
+        this.db.prepare(`
+          UPDATE pull_sheets 
+          SET status = 'returned'
+          WHERE id = ?
+        `).run(returnData.pull_sheet_id);
+        
+        // Update pull sheet items status
+        this.db.prepare(`
+          UPDATE pull_sheet_items 
+          SET status = 'returned'
+          WHERE pull_sheet_id = ?
+        `).run(returnData.pull_sheet_id);
+      }
+    });
+    
+    complete();
     return { success: true };
   }
 
@@ -637,6 +916,81 @@ class InventoryDatabase {
          OR i.quantity_available < (i.quantity_total * 0.2)
       ORDER BY i.quantity_available ASC, i.name ASC
     `).all();
+  }
+
+  getLowStockItems(threshold = 2) {
+    return this.db.prepare(`
+      SELECT * FROM items 
+      WHERE quantity_available <= ? AND quantity_available >= 0
+      ORDER BY quantity_available ASC, name ASC
+    `).all(threshold);
+  }
+
+  getItemsOut() {
+    // Get all items currently checked out
+    return this.db.prepare(`
+      SELECT 
+        i.*,
+        (i.quantity_total - i.quantity_available) as quantity_out,
+        GROUP_CONCAT(DISTINCT s.name) as show_names
+      FROM items i
+      JOIN pull_sheet_items psi ON i.id = psi.item_id
+      JOIN pull_sheets ps ON psi.pull_sheet_id = ps.id
+      JOIN shows s ON ps.show_id = s.id
+      WHERE ps.status IN ('finalized', 'pulled') 
+        AND psi.status = 'pulled'
+      GROUP BY i.id
+      HAVING quantity_out > 0
+      ORDER BY i.name ASC
+    `).all();
+  }
+
+  getShowEquipmentReport(showId) {
+    // Get all equipment for a specific show across all pull sheets
+    return this.db.prepare(`
+      SELECT 
+        i.id,
+        i.name,
+        i.barcode,
+        i.category,
+        SUM(psi.quantity_pulled) as total_quantity,
+        ps.name as pull_sheet_name,
+        ps.status as pull_sheet_status
+      FROM items i
+      JOIN pull_sheet_items psi ON i.id = psi.item_id
+      JOIN pull_sheets ps ON psi.pull_sheet_id = ps.id
+      WHERE ps.show_id = ?
+      GROUP BY i.id, ps.id
+      ORDER BY i.name ASC
+    `).all(showId);
+  }
+
+  getDashboardStats() {
+    // Get comprehensive dashboard statistics
+    const totalItems = this.db.prepare('SELECT COUNT(*) as count FROM items').get().count;
+    const availableItems = this.db.prepare('SELECT COUNT(*) as count FROM items WHERE quantity_available > 0').get().count;
+    const itemsOut = this.db.prepare(`
+      SELECT COUNT(DISTINCT i.id) as count 
+      FROM items i
+      JOIN pull_sheet_items psi ON i.id = psi.item_id
+      JOIN pull_sheets ps ON psi.pull_sheet_id = ps.id
+      WHERE ps.status IN ('finalized', 'pulled') AND psi.status = 'pulled'
+    `).get().count;
+    const activeShows = this.db.prepare('SELECT COUNT(*) as count FROM shows WHERE status IN (\'active\', \'running\')').get().count;
+    const pendingReturns = this.db.prepare('SELECT COUNT(*) as count FROM returns WHERE status = \'pending\'').get().count;
+    const shortagesCount = this.db.prepare(`
+      SELECT COUNT(*) as count FROM items 
+      WHERE quantity_available < 0 OR quantity_available < (quantity_total * 0.2)
+    `).get().count;
+    
+    return {
+      totalItems,
+      availableItems,
+      itemsOut,
+      activeShows,
+      pendingReturns,
+      shortagesCount
+    };
   }
 
   getItemStatus(itemId) {
@@ -676,7 +1030,9 @@ class InventoryDatabase {
       params.push(filters.end_date);
     }
 
-    query += ' ORDER BY created_at DESC LIMIT 1000';
+    const limit = filters.limit || 1000;
+    query += ' ORDER BY created_at DESC LIMIT ?';
+    params.push(limit);
 
     return this.db.prepare(query).all(...params);
   }
