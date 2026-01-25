@@ -280,6 +280,114 @@ function generateReturnSummaryPDF(returnData) {
 }
 
 /**
+ * Generate Barcode Labels PDF
+ * Creates printable barcode labels for inventory items
+ * Standard Avery 5160/equivalent label size: 2.625" x 1" (66.675mm x 25.4mm)
+ */
+function generateBarcodeLabels(items, options = {}) {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'letter' // 8.5" x 11" = 215.9mm x 279.4mm
+  });
+  
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  
+  // Label dimensions (Avery 5160 compatible - 3 columns x 10 rows)
+  const labelWidth = 66.675;  // 2.625 inches
+  const labelHeight = 25.4;   // 1 inch
+  const marginLeft = 4.7625;  // Left margin
+  const marginTop = 12.7;     // Top margin
+  const cols = 3;
+  const rows = 10;
+  const horizontalGap = 3.175; // Gap between columns
+  const verticalGap = 0;       // Gap between rows
+  
+  let currentPage = 0;
+  let currentRow = 0;
+  let currentCol = 0;
+  
+  items.forEach((item, index) => {
+    // Calculate position
+    const x = marginLeft + currentCol * (labelWidth + horizontalGap);
+    const y = marginTop + currentRow * (labelHeight + verticalGap);
+    
+    // Draw label border (optional - comment out for final print)
+    if (options.showBorders) {
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(x, y, labelWidth, labelHeight);
+    }
+    
+    // Add item name (truncate if too long)
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    const itemName = item.name.length > 30 ? item.name.substring(0, 27) + '...' : item.name;
+    doc.text(itemName, x + labelWidth / 2, y + 4, { align: 'center' });
+    
+    // Add barcode
+    const barcodeImage = generateBarcode(item.barcode, {
+      width: 1.5,
+      height: 35,
+      displayValue: true,
+      fontSize: 10,
+      margin: 0
+    });
+    
+    if (barcodeImage) {
+      try {
+        doc.addImage(barcodeImage, 'PNG', x + 3, y + 6, labelWidth - 6, 14);
+      } catch (error) {
+        // Fallback: just show barcode text
+        doc.setFontSize(10);
+        doc.setFont('courier', 'normal');
+        doc.text(item.barcode, x + labelWidth / 2, y + 13, { align: 'center' });
+      }
+    } else {
+      // Fallback: show barcode as text
+      doc.setFontSize(10);
+      doc.setFont('courier', 'normal');
+      doc.text(item.barcode, x + labelWidth / 2, y + 13, { align: 'center' });
+    }
+    
+    // Add category and location (small text at bottom)
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'normal');
+    const bottomText = `${item.category || 'N/A'} | ${item.location || 'N/A'}`;
+    doc.text(bottomText, x + labelWidth / 2, y + labelHeight - 2, { align: 'center' });
+    
+    // Move to next label position
+    currentCol++;
+    if (currentCol >= cols) {
+      currentCol = 0;
+      currentRow++;
+      
+      if (currentRow >= rows) {
+        currentRow = 0;
+        if (index < items.length - 1) {
+          doc.addPage();
+        }
+      }
+    }
+  });
+  
+  // Save to file
+  const userDataPath = app.getPath('userData');
+  const pdfsDir = path.join(userDataPath, 'pdfs');
+  if (!fs.existsSync(pdfsDir)) {
+    fs.mkdirSync(pdfsDir, { recursive: true });
+  }
+  
+  const filename = `barcode_labels_${Date.now()}.pdf`;
+  const filePath = path.join(pdfsDir, filename);
+  
+  const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+  fs.writeFileSync(filePath, pdfBuffer);
+  
+  return filePath;
+}
+
+/**
  * Main PDF generation function
  */
 async function generatePDF(type, data) {
@@ -290,6 +398,8 @@ async function generatePDF(type, data) {
       return generateInventoryReportPDF(data);
     case 'return':
       return generateReturnSummaryPDF(data);
+    case 'labels':
+      return generateBarcodeLabels(data.items, data.options || {});
     default:
       throw new Error(`Unknown PDF type: ${type}`);
   }
@@ -297,5 +407,6 @@ async function generatePDF(type, data) {
 
 module.exports = {
   generatePDF,
-  generateBarcode
+  generateBarcode,
+  generateBarcodeLabels
 };

@@ -7,6 +7,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 const { app } = require('electron');
+const { generateItemBarcode, generateSerialBarcode } = require('../utils/barcodeGenerator');
 
 class InventoryDatabase {
   constructor() {
@@ -233,6 +234,17 @@ class InventoryDatabase {
   }
 
   createItem(item) {
+    // Auto-generate barcode if not provided
+    let barcode = item.barcode;
+    
+    if (!barcode) {
+      // If item has serial number, generate serial-based barcode
+      if (item.serial_number) {
+        barcode = generateSerialBarcode(item.serial_number);
+      }
+      // Otherwise, we'll generate it after getting the ID
+    }
+    
     const stmt = this.db.prepare(`
       INSERT INTO items (
         name, description, category, manufacturer, model, 
@@ -248,7 +260,7 @@ class InventoryDatabase {
       item.manufacturer || null,
       item.model || null,
       item.serial_number || null,
-      item.barcode || null,
+      barcode || null,
       item.quantity_total || 0,
       item.quantity_available || item.quantity_total || 0,
       item.location || null,
@@ -256,7 +268,15 @@ class InventoryDatabase {
       item.notes || null
     );
 
-    return { id: result.lastInsertRowid, ...item };
+    const itemId = result.lastInsertRowid;
+    
+    // If no barcode was provided and no serial number, generate one based on ID
+    if (!barcode && !item.serial_number) {
+      barcode = generateItemBarcode(itemId, item.category);
+      this.db.prepare('UPDATE items SET barcode = ? WHERE id = ?').run(barcode, itemId);
+    }
+
+    return { id: itemId, ...item, barcode };
   }
 
   updateItem(id, item) {
@@ -600,6 +620,51 @@ class InventoryDatabase {
       INSERT INTO activity_log (action_type, description, data)
       VALUES (?, ?, ?)
     `).run(actionType, description, JSON.stringify(data));
+  }
+
+  /**
+   * Generate barcodes for items that don't have one
+   */
+  generateMissingBarcodes() {
+    const itemsWithoutBarcodes = this.db.prepare('SELECT * FROM items WHERE barcode IS NULL').all();
+    let updated = 0;
+    
+    for (const item of itemsWithoutBarcodes) {
+      let barcode;
+      
+      if (item.serial_number) {
+        barcode = generateSerialBarcode(item.serial_number);
+      } else {
+        barcode = generateItemBarcode(item.id, item.category);
+      }
+      
+      this.db.prepare('UPDATE items SET barcode = ? WHERE id = ?').run(barcode, item.id);
+      updated++;
+    }
+    
+    return { updated, total: itemsWithoutBarcodes.length };
+  }
+  
+  /**
+   * Get items for barcode label printing
+   */
+  getItemsForLabels(filters = {}) {
+    let query = 'SELECT id, name, barcode, category, location FROM items WHERE barcode IS NOT NULL';
+    const params = [];
+    
+    if (filters.category) {
+      query += ' AND category = ?';
+      params.push(filters.category);
+    }
+    
+    if (filters.ids && filters.ids.length > 0) {
+      query += ` AND id IN (${filters.ids.map(() => '?').join(',')})`;
+      params.push(...filters.ids);
+    }
+    
+    query += ' ORDER BY category, name';
+    
+    return this.db.prepare(query).all(...params);
   }
 
   close() {

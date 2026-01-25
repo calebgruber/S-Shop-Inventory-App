@@ -283,6 +283,30 @@ ipcMain.handle('pdf:generateInventoryReport', async (event, filters) => {
   }
 });
 
+ipcMain.handle('pdf:generateBarcodeLabels', async (event, itemIds, options) => {
+  try {
+    const items = database.getItemsForLabels({ ids: itemIds });
+    const filePath = await generatePDF('labels', { items, options });
+    logAction('PDF', `Generated barcode labels PDF for ${items.length} items`);
+    return { success: true, filePath, count: items.length };
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Barcode Generation
+ipcMain.handle('barcode:generateMissing', async () => {
+  try {
+    const result = database.generateMissingBarcodes();
+    logAction('BARCODE', `Generated ${result.updated} missing barcodes`);
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('Barcode generation error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Dialog handlers
 ipcMain.handle('dialog:showError', async (event, title, message) => {
   dialog.showErrorBox(title, message);

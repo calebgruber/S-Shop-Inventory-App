@@ -21,11 +21,40 @@ async function renderInventoryPage() {
         </div>
       </div>
       <div class="col-md-4 text-end">
-        <button class="btn btn-success" id="addInventoryItemBtn">
-          <i class="ti ti-plus icon"></i> Add Item
-        </button>
-        <button class="btn btn-secondary" id="exportInventoryBtn">
-          <i class="ti ti-download icon"></i> Export PDF
+        <div class="btn-group">
+          <button class="btn btn-success" id="addInventoryItemBtn">
+            <i class="ti ti-plus icon"></i> Add Item
+          </button>
+          <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+            <span class="visually-hidden">Toggle Dropdown</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#" id="printLabelsBtn">
+              <i class="ti ti-printer icon"></i> Print Barcode Labels
+            </a></li>
+            <li><a class="dropdown-item" href="#" id="generateBarcodesBtn">
+              <i class="ti ti-barcode icon"></i> Generate Missing Barcodes
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" id="exportInventoryBtn">
+              <i class="ti ti-download icon"></i> Export PDF Report
+            </a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <div class="btn-group" role="group">
+          <input type="checkbox" class="btn-check" id="selectAllItems">
+          <label class="btn btn-outline-secondary btn-sm" for="selectAllItems">
+            <i class="ti ti-checkbox icon"></i> Select All
+          </label>
+        </div>
+        <span class="ms-2 text-muted" id="selectedCount">0 items selected</span>
+        <button class="btn btn-sm btn-primary ms-2" id="printSelectedLabelsBtn" style="display: none;">
+          <i class="ti ti-printer icon"></i> Print Labels for Selected
         </button>
       </div>
     </div>
@@ -53,6 +82,7 @@ async function renderInventoryPage() {
         <table class="table table-hover inventory-table">
           <thead>
             <tr>
+              <th width="30"><input type="checkbox" id="selectAllCheckbox"></th>
               <th>Name</th>
               <th>Category</th>
               <th>Model</th>
@@ -125,8 +155,8 @@ async function renderInventoryPage() {
                 </div>
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Barcode</label>
-                  <input type="text" class="form-control text-mono" id="itemBarcode">
-                  <small class="form-hint">Scan or enter manually</small>
+                  <input type="text" class="form-control text-mono" id="itemBarcode" placeholder="Auto-generated if left blank">
+                  <small class="form-hint">Leave blank to auto-generate, or scan/enter manually</small>
                 </div>
               </div>
               <div class="row">
@@ -175,7 +205,7 @@ function renderInventoryRows(items) {
   if (items.length === 0) {
     return `
       <tr>
-        <td colspan="9" class="text-center text-muted py-5">
+        <td colspan="10" class="text-center text-muted py-5">
           <div class="empty-state">
             <i class="ti ti-box-off empty-state-icon"></i>
             <p>No items found. Add your first inventory item to get started.</p>
@@ -190,11 +220,14 @@ function renderInventoryRows(items) {
     const availabilityClass = item.quantity_available > 0 ? 'text-success' : 'text-danger';
     
     return `
-      <tr data-item-id="${item.id}" class="cursor-pointer" onclick="editInventoryItem(${item.id})">
-        <td><strong>${item.name}</strong></td>
+      <tr data-item-id="${item.id}">
+        <td onclick="event.stopPropagation()">
+          <input type="checkbox" class="item-checkbox" data-item-id="${item.id}" onchange="updateSelectedCount()">
+        </td>
+        <td class="cursor-pointer" onclick="editInventoryItem(${item.id})"><strong>${item.name}</strong></td>
         <td>${item.category || '-'}</td>
         <td><span class="text-mono">${item.model || '-'}</span></td>
-        <td><span class="text-mono">${item.barcode || '-'}</span></td>
+        <td><span class="text-mono">${item.barcode || '<em>No barcode</em>'}</span></td>
         <td class="text-center">${item.quantity_total || 0}</td>
         <td class="text-center ${availabilityClass}"><strong>${item.quantity_available || 0}</strong></td>
         <td>${statusBadge}</td>
@@ -274,6 +307,67 @@ function initInventoryPage() {
     }
   });
   
+  // Print labels button
+  document.getElementById('printLabelsBtn')?.addEventListener('click', async () => {
+    const result = await window.api.pdf.generateBarcodeLabels(
+      currentInventoryItems.filter(item => item.barcode).map(item => item.id),
+      {}
+    );
+    if (result.success) {
+      alert(`Barcode labels PDF generated for ${result.count} items: ${result.filePath}\n\nReady to print on standard label sheets (Avery 5160 or equivalent).`);
+    } else {
+      alert('Failed to generate barcode labels: ' + result.error);
+    }
+  });
+  
+  // Generate missing barcodes button
+  document.getElementById('generateBarcodesBtn')?.addEventListener('click', async () => {
+    const confirmed = await window.api.dialog.showMessage({
+      type: 'question',
+      title: 'Generate Barcodes',
+      message: 'Generate barcodes for items that don\'t have one?',
+      buttons: ['Cancel', 'Generate'],
+      defaultId: 1
+    });
+    
+    if (confirmed.response === 1) {
+      const result = await window.api.barcode.generateMissing();
+      if (result.success) {
+        alert(`Generated ${result.updated} barcodes for items without barcodes.`);
+        // Refresh the list
+        currentInventoryItems = await window.api.inventory.getAll(currentFilter);
+        refreshInventoryTable();
+      } else {
+        alert('Failed to generate barcodes: ' + result.error);
+      }
+    }
+  });
+  
+  // Print selected labels button
+  document.getElementById('printSelectedLabelsBtn')?.addEventListener('click', async () => {
+    const selectedIds = getSelectedItemIds();
+    if (selectedIds.length === 0) {
+      alert('No items selected');
+      return;
+    }
+    
+    const result = await window.api.pdf.generateBarcodeLabels(selectedIds, {});
+    if (result.success) {
+      alert(`Barcode labels PDF generated for ${result.count} selected items: ${result.filePath}\n\nReady to print on standard label sheets (Avery 5160 or equivalent).`);
+    } else {
+      alert('Failed to generate barcode labels: ' + result.error);
+    }
+  });
+  
+  // Select all checkbox
+  document.getElementById('selectAllCheckbox')?.addEventListener('change', (e) => {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(cb => {
+      cb.checked = e.target.checked;
+    });
+    updateSelectedCount();
+  });
+  
   // Save item button
   document.getElementById('saveItemBtn')?.addEventListener('click', saveInventoryItem);
 }
@@ -284,7 +378,32 @@ function refreshInventoryTable() {
   if (tbody) {
     tbody.innerHTML = renderInventoryRows(currentInventoryItems);
   }
+  updateSelectedCount();
 }
+
+// Get selected item IDs
+function getSelectedItemIds() {
+  const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+  return Array.from(checkboxes).map(cb => parseInt(cb.getAttribute('data-item-id')));
+}
+
+// Update selected count display
+function updateSelectedCount() {
+  const selectedIds = getSelectedItemIds();
+  const countElement = document.getElementById('selectedCount');
+  const printBtn = document.getElementById('printSelectedLabelsBtn');
+  
+  if (countElement) {
+    countElement.textContent = `${selectedIds.length} items selected`;
+  }
+  
+  if (printBtn) {
+    printBtn.style.display = selectedIds.length > 0 ? 'inline-block' : 'none';
+  }
+}
+
+// Make function globally available
+window.updateSelectedCount = updateSelectedCount;
 
 // Open item modal
 function openItemModal(item = null) {

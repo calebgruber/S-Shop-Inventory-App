@@ -63,7 +63,13 @@ const reportsAPI = {
 // PDF generation
 const pdfAPI = {
   generatePullSheet: (pullSheetId) => ipcRenderer.invoke('pdf:generatePullSheet', pullSheetId),
-  generateInventoryReport: (filters) => ipcRenderer.invoke('pdf:generateInventoryReport', filters)
+  generateInventoryReport: (filters) => ipcRenderer.invoke('pdf:generateInventoryReport', filters),
+  generateBarcodeLabels: (itemIds, options) => ipcRenderer.invoke('pdf:generateBarcodeLabels', itemIds, options)
+};
+
+// Barcode operations
+const barcodeAPI = {
+  generateMissing: () => ipcRenderer.invoke('barcode:generateMissing')
 };
 
 // Dialog helpers
@@ -94,6 +100,7 @@ window.api = {
   returns: returnsAPI,
   reports: reportsAPI,
   pdf: pdfAPI,
+  barcode: barcodeAPI,
   dialog: dialogAPI,
   update: updateAPI,
   backup: backupAPI
