@@ -6,7 +6,18 @@ The S-Shop Inventory application is **fully implemented and ready to use**. Here
 
 ## Quick Start (5 minutes)
 
-### 1. Install Dependencies (if not done)
+### Option 1: Use Pre-Built Installer (Easiest - No Installation Issues!)
+
+1. **Download the installer**
+   - Go to [Releases](https://github.com/calebgruber/S-Shop-Inventory-App/releases)
+   - Download the latest `.exe` for Windows or `.dmg` for macOS
+   - Run it - done! No `npm install` needed.
+
+### Option 2: Run from Source
+
+**If you encounter errors during `npm install`**, see the [Installation Troubleshooting](#installation-troubleshooting) section below.
+
+### 1. Install Dependencies
 ```bash
 npm install
 ```
@@ -22,6 +33,34 @@ The app will open and you can immediately start:
 - ✅ Building pull sheets
 - ✅ Scanning barcodes (press F1)
 - ✅ Generating PDFs
+
+## Installation Troubleshooting
+
+**Getting build errors?** This usually happens with `better-sqlite3` on Windows.
+
+**Quick Solutions:**
+1. **Use the pre-built installer** - Download from [Releases](https://github.com/calebgruber/S-Shop-Inventory-App/releases) (no compilation needed!)
+
+2. **Install Windows Build Tools** (if building from source):
+   ```bash
+   # Run as Administrator
+   npm install --global windows-build-tools
+   ```
+   Then try `npm install` again.
+
+3. **Try with legacy peer deps**:
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+
+4. **Clear and retry**:
+   ```bash
+   npm cache clean --force
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+For more detailed help, see the [README.md Windows Installation Troubleshooting](README.md#windows-installation-troubleshooting) section.
 
 ## What You Can Do Right Now
 

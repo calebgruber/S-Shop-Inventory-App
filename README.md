@@ -25,11 +25,20 @@ A self-contained Windows Electron application for managing theatre sound shop in
 ## Installation
 
 ### Prerequisites
-- Node.js 16.x or higher
+- **Node.js 16.x or higher** - [Download here](https://nodejs.org/)
 - Windows 10/11 or macOS 10.13+ (High Sierra or later)
 - Zebra DS-series barcode scanner (optional, keyboard input also supported)
 
-### Setup
+**Windows Users**: If you encounter build errors during installation, see [Windows Installation Troubleshooting](#windows-installation-troubleshooting) below.
+
+### Quick Start (Recommended)
+
+**Option 1: Download Pre-Built Installer (Easiest)**
+1. Go to [Releases](https://github.com/calebgruber/S-Shop-Inventory-App/releases)
+2. Download the latest `.exe` installer for Windows or `.dmg` for macOS
+3. Run the installer - no build tools required!
+
+**Option 2: Run from Source**
 
 1. **Clone the repository**
    ```bash
@@ -41,13 +50,15 @@ A self-contained Windows Electron application for managing theatre sound shop in
    ```bash
    npm install
    ```
+   
+   If you get errors, see troubleshooting below.
 
 3. **Run in development mode**
    ```bash
    npm run dev
    ```
 
-4. **Build for your platform**
+4. **Build for your platform** (optional)
    ```bash
    # Build for both Windows and macOS
    npm run build
@@ -58,6 +69,43 @@ A self-contained Windows Electron application for managing theatre sound shop in
    # Build for macOS only
    npm run build:mac
    ```
+
+### Windows Installation Troubleshooting
+
+If you see errors like `Error: command failed` or `node-gyp rebuild failed` during `npm install`, this is because better-sqlite3 (our database) needs to compile native code. Here are solutions:
+
+**Solution 1: Use Pre-Built Release (Easiest)**
+- Download the installer from [Releases](https://github.com/calebgruber/S-Shop-Inventory-App/releases)
+- No compilation required!
+
+**Solution 2: Install Build Tools**
+1. Install [Windows Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)
+   - Download "Build Tools for Visual Studio 2022"
+   - During installation, select "Desktop development with C++"
+   - Or run as Administrator: `npm install --global windows-build-tools`
+
+2. Try installation again:
+   ```bash
+   npm install
+   ```
+
+**Solution 3: Use npm with Legacy Peer Dependencies**
+```bash
+npm install --legacy-peer-deps
+```
+
+**Solution 4: Clear Cache and Retry**
+```bash
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Still Having Issues?**
+- Make sure you're running Command Prompt or PowerShell as **Administrator**
+- Ensure Node.js is properly installed: `node --version` should show v16 or higher
+- Check that Python is available: `python --version` (required for node-gyp)
+- Try closing any antivirus software temporarily during installation
 
 ## Platform-Specific Notes
 
@@ -278,6 +326,12 @@ Future students can maintain and extend the system with basic JavaScript knowled
 - **"App can't be opened"**: Go to System Preferences → Security & Privacy and click "Open Anyway"
 - **F1 key not working**: Disable function keys or use the scan button in the toolbar
 - **Permission denied**: Grant Full Disk Access in System Preferences → Security & Privacy → Privacy
+
+### Installation Issues
+- **npm install fails on Windows**: See [Windows Installation Troubleshooting](#windows-installation-troubleshooting) section above
+- **better-sqlite3 build errors**: Download the pre-built installer instead, or install Windows Build Tools
+- **Permission errors**: Run Command Prompt or PowerShell as Administrator
+- **Module not found errors**: Try `npm cache clean --force` then `npm install` again
 
 ## License
 
