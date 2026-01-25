@@ -3,6 +3,9 @@
  * Comprehensive reporting system with all report types, filters, and PDF export
  */
 
+(function() {
+'use strict';
+
 let currentTheatres = [];
 let currentCategories = [];
 let currentReport = null;
@@ -1384,3 +1387,5 @@ if (window.navigation) {
     init: initReportsPage
   });
 }
+
+})();

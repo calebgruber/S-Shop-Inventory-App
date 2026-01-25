@@ -3,6 +3,9 @@
  * Handles pull sheet creation, management, and barcode-driven workflows
  */
 
+(function() {
+'use strict';
+
 let currentPullSheets = [];
 let currentShows = [];
 let currentPullSheet = null;
@@ -622,3 +625,5 @@ window.navigation.registerPage('pullsheets', {
   render: renderPullSheetsPage,
   init: initPullSheetsPage
 });
+
+})();

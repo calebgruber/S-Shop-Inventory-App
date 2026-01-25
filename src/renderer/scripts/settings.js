@@ -3,6 +3,9 @@
  * Handles application settings including theatre and category management
  */
 
+(function() {
+'use strict';
+
 let currentTheatres = [];
 let currentCategories = [];
 
@@ -644,3 +647,5 @@ window.navigation.registerPage('settings', {
   render: renderSettingsPage,
   init: initSettingsPage
 });
+
+})();
