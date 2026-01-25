@@ -96,6 +96,10 @@
                     Export Data
                   </a>
                   <div class="dropdown-divider"></div>
+                  <a class="dropdown-item" href="#" data-action="checkUpdates">
+                    <i class="ti ti-refresh icon dropdown-item-icon"></i>
+                    Check for Updates
+                  </a>
                   <a class="dropdown-item" href="#" data-page="settings">
                     <i class="ti ti-adjustments icon dropdown-item-icon"></i>
                     Settings
@@ -141,6 +145,29 @@
           </div>
         </div>
       </div>
+      
+      <!-- Footer -->
+      <footer class="footer footer-transparent d-print-none">
+        <div class="container-xl">
+          <div class="row text-center align-items-center">
+            <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+              <ul class="list-inline list-inline-dots mb-0">
+                <li class="list-inline-item">
+                  S-Shop Inventory &copy; 2024 CMFT
+                </li>
+                <li class="list-inline-item">
+                  <span id="app-version">v1.0.0</span>
+                </li>
+                <li class="list-inline-item">
+                  <a href="#" id="update-link" class="link-secondary" onclick="window.api.update.check(); return false;">
+                    <i class="ti ti-refresh icon"></i> Check for Updates
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   </div>
 

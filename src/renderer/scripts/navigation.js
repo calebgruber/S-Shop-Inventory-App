@@ -94,6 +94,9 @@ function initNavigation() {
         case 'export':
           await handleExport();
           break;
+        case 'checkUpdates':
+          await handleCheckUpdates();
+          break;
       }
     });
   });
@@ -124,13 +127,30 @@ async function handleExport() {
     type: 'info',
     title: 'Export Data',
     message: 'Choose what to export:',
-    buttons: ['Cancel', 'Export Inventory', 'Export All Data'],
-    defaultId: 1
+    buttons: ['Cancel', 'Export Inventory', 'Export Database'],
+    defaultId: 2
   });
   
-  if (result.response > 0) {
-    alert('Export functionality will be implemented.');
+  if (result.response === 1) {
+    // Export inventory report
+    const pdfResult = await window.api.pdf.generateInventoryReport({});
+    if (pdfResult.success) {
+      alert(`Inventory report exported to: ${pdfResult.filePath}`);
+    }
+  } else if (result.response === 2) {
+    // Export entire database
+    const exportResult = await window.api.backup.export();
+    if (exportResult.success) {
+      alert(`Database exported to: ${exportResult.path}`);
+    } else if (!exportResult.canceled) {
+      alert('Failed to export database: ' + exportResult.error);
+    }
   }
+}
+
+// Handle check for updates action
+async function handleCheckUpdates() {
+  await window.api.update.check();
 }
 
 // Export functions

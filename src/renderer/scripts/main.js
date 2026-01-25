@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize barcode scanning
     window.barcode.init();
     
+    // Load and display version number
+    const versionInfo = await window.api.update.getVersion();
+    const versionElement = document.getElementById('app-version');
+    if (versionElement && versionInfo) {
+      versionElement.textContent = `v${versionInfo.current}`;
+    }
+    
     console.log('Application initialized successfully');
     
     // Show welcome message
@@ -135,6 +142,12 @@ window.showSuccessMessage = function(message) {
   }, 3000);
 };
 
+// Show update status message
+window.showUpdateStatus = function(message) {
+  console.log('Update:', message);
+  // Could show a toast notification here if desired
+};
+
 // Handle unhandled errors
 window.addEventListener('error', (event) => {
   console.error('Unhandled error:', event.error);
@@ -147,7 +160,8 @@ window.addEventListener('unhandledrejection', (event) => {
 // Export utility functions
 window.app = {
   showSuccess: window.showSuccessMessage,
-  showError: showErrorMessage
+  showError: showErrorMessage,
+  showUpdateStatus: window.showUpdateStatus
 };
 
 console.log('Main script loaded');

@@ -20,6 +20,7 @@ A self-contained Windows Electron application for managing theatre sound shop in
 - **Maintenance Tracking** - Flag serialized gear for repair, exclude from availability
 - **Activity Logging** - Complete audit trail of all actions
 - **Data Management** - Backup, restore, and export utilities
+- **Auto-Updates** - Automatic update checking and installation from GitHub releases
 
 ## Installation
 
@@ -50,6 +51,36 @@ A self-contained Windows Electron application for managing theatre sound shop in
    ```bash
    npm run build
    ```
+
+## Auto-Updates
+
+The application automatically checks for updates from GitHub releases:
+
+1. **Automatic Check** - On startup (after 10 seconds), the app silently checks for updates
+2. **Manual Check** - Click "Check for Updates" in the Tools menu or footer
+3. **Download Prompt** - If an update is available, you'll be asked if you want to download it
+4. **Background Download** - Updates download in the background while you work
+5. **Install on Restart** - Updates are installed when you close and restart the app
+
+### Publishing Updates
+
+To release a new version:
+
+1. Update version in `package.json`
+2. Commit and tag the release:
+   ```bash
+   git commit -am "Release v1.1.0"
+   git tag v1.1.0
+   git push origin main --tags
+   ```
+3. Build and create GitHub release:
+   ```bash
+   npm run build
+   # Upload dist/S-Shop Inventory Setup.exe to GitHub release
+   ```
+4. Users will be notified of the update automatically
+
+The updater uses `electron-updater` which integrates with GitHub Releases. When you create a new release on GitHub and attach the installer, all installed apps will detect and offer to download it.
 
 ## Usage
 

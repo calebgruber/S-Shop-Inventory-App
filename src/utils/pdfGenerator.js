@@ -6,25 +6,33 @@
 const { jsPDF } = require('jspdf');
 require('jspdf-autotable');
 const JsBarcode = require('jsbarcode');
-const { Canvas } = require('canvas');
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
 
 /**
  * Generate a barcode image as base64
+ * Note: Using a simpler method without canvas module for better compatibility
  */
 function generateBarcode(value, options = {}) {
-  const canvas = new Canvas(200, 80);
-  JsBarcode(canvas, value, {
-    format: 'CODE128',
-    width: 2,
-    height: 60,
-    displayValue: true,
-    fontSize: 14,
-    ...options
-  });
-  return canvas.toDataURL('image/png');
+  try {
+    // Create a virtual canvas using jsbarcode's built-in canvas support
+    const { createCanvas } = require('canvas');
+    const canvas = createCanvas(200, 80);
+    JsBarcode(canvas, value, {
+      format: 'CODE128',
+      width: 2,
+      height: 60,
+      displayValue: true,
+      fontSize: 14,
+      ...options
+    });
+    return canvas.toDataURL('image/png');
+  } catch (error) {
+    console.warn('Canvas module not available, using text representation:', error.message);
+    // Return a simple text representation if canvas fails
+    return null;
+  }
 }
 
 /**
@@ -41,7 +49,14 @@ function generatePullSheetPDF(pullSheet) {
   // Show barcode - unique identifier for scanning
   const showBarcode = `SHOW-${pullSheet.id}-${Date.now()}`;
   const barcodeImage = generateBarcode(showBarcode);
-  doc.addImage(barcodeImage, 'PNG', pageWidth / 2 - 40, 25, 80, 25);
+  
+  if (barcodeImage) {
+    doc.addImage(barcodeImage, 'PNG', pageWidth / 2 - 40, 25, 80, 25);
+  } else {
+    // Fallback: display barcode as text
+    doc.setFontSize(10);
+    doc.text(`Barcode: ${showBarcode}`, pageWidth / 2, 40, { align: 'center' });
+  }
   
   // Show Information
   doc.setFontSize(12);

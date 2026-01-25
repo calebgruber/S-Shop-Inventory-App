@@ -72,6 +72,19 @@ const dialogAPI = {
   showMessage: (options) => ipcRenderer.invoke('dialog:showMessage', options)
 };
 
+// Update helpers
+const updateAPI = {
+  check: () => ipcRenderer.invoke('update:check'),
+  getVersion: () => ipcRenderer.invoke('update:getVersion')
+};
+
+// Backup helpers
+const backupAPI = {
+  create: () => ipcRenderer.invoke('backup:create'),
+  list: () => ipcRenderer.invoke('backup:list'),
+  export: () => ipcRenderer.invoke('backup:export')
+};
+
 // Export all APIs
 window.api = {
   inventory: inventoryAPI,
@@ -81,5 +94,16 @@ window.api = {
   returns: returnsAPI,
   reports: reportsAPI,
   pdf: pdfAPI,
-  dialog: dialogAPI
+  dialog: dialogAPI,
+  update: updateAPI,
+  backup: backupAPI
 };
+
+// Listen for update status messages
+ipcRenderer.on('update-status', (event, message) => {
+  console.log('Update status:', message);
+  // Show update status in UI if needed
+  if (window.app && window.app.showUpdateStatus) {
+    window.app.showUpdateStatus(message);
+  }
+});

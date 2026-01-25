@@ -9,7 +9,14 @@
     "build": "electron-builder --win",
     "build:dir": "electron-builder --win --dir"
   },
-  "keywords": ["electron", "inventory", "theatre", "sound", "barcode", "sqlite"],
+  "keywords": [
+    "electron",
+    "inventory",
+    "theatre",
+    "sound",
+    "barcode",
+    "sqlite"
+  ],
   "author": "CMFT",
   "license": "MIT",
   "devDependencies": {
@@ -18,9 +25,11 @@
   },
   "dependencies": {
     "better-sqlite3": "^9.2.2",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.7.3",
+    "jsbarcode": "^3.11.6",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
-    "jsbarcode": "^3.11.6",
     "quagga": "^0.12.1"
   },
   "build": {
@@ -38,6 +47,18 @@
     ],
     "directories": {
       "buildResources": "assets"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "calebgruber",
+      "repo": "S-Shop-Inventory-App",
+      "releaseType": "release"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     }
   }
 }

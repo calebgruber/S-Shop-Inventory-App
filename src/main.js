@@ -9,6 +9,7 @@ const Database = require('./database/db');
 const { generatePDF } = require('./utils/pdfGenerator');
 const { logAction } = require('./utils/logger');
 const { createBackup, listBackups, exportDatabase } = require('./utils/backup');
+const { initAutoUpdater, checkForUpdates, getCurrentVersion } = require('./utils/autoUpdater');
 
 let mainWindow;
 let database;
@@ -36,6 +37,9 @@ function createWindow() {
   // Show window when ready to avoid visual flash
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    
+    // Initialize auto-updater after window is shown
+    initAutoUpdater(mainWindow);
   });
 
   // Open DevTools in development mode
@@ -299,6 +303,18 @@ ipcMain.handle('backup:list', async () => {
 
 ipcMain.handle('backup:export', async () => {
   return exportDatabase(mainWindow);
+});
+
+// Update handlers
+ipcMain.handle('update:check', async () => {
+  checkForUpdates(true);
+});
+
+ipcMain.handle('update:getVersion', async () => {
+  return {
+    current: app.getVersion(),
+    name: app.getName()
+  };
 });
 
 console.log('Main process initialized');
