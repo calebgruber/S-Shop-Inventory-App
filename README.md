@@ -29,16 +29,16 @@ A self-contained Windows Electron application for managing theatre sound shop in
 - Windows 10/11 or macOS 10.13+ (High Sierra or later)
 - Zebra DS-series barcode scanner (optional, keyboard input also supported)
 
-**Windows Users**: If you encounter build errors during installation, see [Windows Installation Troubleshooting](#windows-installation-troubleshooting) below.
+**Windows Users**: If you encounter build errors during installation, **YOU MUST INSTALL VISUAL STUDIO BUILD TOOLS FIRST**. See [Windows Installation Troubleshooting](#windows-installation-troubleshooting) below for step-by-step instructions.
 
 ### Quick Start (Recommended)
 
-**Option 1: Download Pre-Built Installer (Easiest)**
-1. Go to [Releases](https://github.com/calebgruber/S-Shop-Inventory-App/releases)
-2. Download the latest `.exe` installer for Windows or `.dmg` for macOS
-3. Run the installer - no build tools required!
+**Option 1: Download Pre-Built Installer (Easiest)** ⭐
+> **Note**: Pre-built releases are not yet available. Once created, this will be the easiest installation method with no build tools required.
 
-**Option 2: Run from Source**
+**Option 2: Build from Source** (Current Method)
+
+> ⚠️ **Windows users**: You'll need Visual Studio Build Tools installed first (see troubleshooting section below).
 
 1. **Clone the repository**
    ```bash
@@ -72,32 +72,53 @@ A self-contained Windows Electron application for managing theatre sound shop in
 
 ### Windows Installation Troubleshooting
 
-If you see errors like `Error: command failed` or `node-gyp rebuild failed` during `npm install`, this is because better-sqlite3 (our database) needs to compile native code. Here are solutions:
+⚠️ **IMPORTANT FOR WINDOWS USERS**: If you see `gyp ERR! find VS` or `Could not find any Visual Studio installation` errors, you need to install build tools first.
 
-**Solution 1: Use Pre-Built Release (Easiest)**
-- Download the installer from [Releases](https://github.com/calebgruber/S-Shop-Inventory-App/releases)
-- No compilation required!
+**The error you're seeing is NORMAL if you don't have Visual Studio installed.** Here's how to fix it:
 
-**Solution 2: Install Build Tools**
-1. Install [Windows Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)
-   - Download "Build Tools for Visual Studio 2022"
-   - During installation, select "Desktop development with C++"
-   - Or run as Administrator: `npm install --global windows-build-tools`
+#### Quick Fix: Install Visual Studio Build Tools (5-10 minutes)
 
-2. Try installation again:
+1. **Download Visual Studio Build Tools 2022**:
+   - Go to: https://visualstudio.microsoft.com/downloads/
+   - Scroll down to "All Downloads" → "Tools for Visual Studio"
+   - Click "Build Tools for Visual Studio 2022" → Download
+
+2. **Install with C++ workload**:
+   - Run the installer
+   - Check the box for **"Desktop development with C++"**
+   - Click Install (this will download ~7GB)
+
+3. **Restart your terminal and try again**:
    ```bash
    npm install
    ```
+   
+   **Note**: You may see deprecation warnings during install - these are normal and safe to ignore. The important thing is that the install completes without errors.
 
-**Solution 3: Use npm with Legacy Peer Dependencies**
-```bash
-npm install --legacy-peer-deps
-```
+#### Alternative: Use Pre-Built Releases (When Available)
 
-**Solution 4: Clear Cache and Retry**
+**Note**: This project doesn't have pre-built releases yet because it's still in development. Once the first release is created, you'll be able to download a ready-to-use `.exe` installer that doesn't require any build tools.
+
+To create your first release:
+1. Build the project (after installing VS Build Tools above)
+2. Run `npm run build:win`
+3. The installer will be in `dist/S-Shop Inventory Setup.exe`
+4. You can then distribute this installer to others
+
+#### Other Solutions (If Build Tools Don't Work)
+
+**Solution 3: Use a different SQLite library** (Advanced)
+If you absolutely cannot install Visual Studio Build Tools, you could modify the project to use `sql.js` instead of `better-sqlite3`, but this would require code changes and is not recommended.
+
+**Solution 4: Use WSL2 (Windows Subsystem for Linux)**
+Install WSL2 and run the project from Linux - no Visual Studio needed.
+
+**Solution 5: Clear Cache and Retry**
 ```bash
 npm cache clean --force
 rm -rf node_modules package-lock.json
+npm install
+```
 npm install
 ```
 

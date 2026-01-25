@@ -6,21 +6,38 @@ The S-Shop Inventory application is **fully implemented and ready to use**. Here
 
 ## Quick Start (5 minutes)
 
-### Option 1: Use Pre-Built Installer (Easiest - No Installation Issues!)
+### ⚠️ Important for Windows Users
 
-1. **Download the installer**
-   - Go to [Releases](https://github.com/calebgruber/S-Shop-Inventory-App/releases)
-   - Download the latest `.exe` for Windows or `.dmg` for macOS
-   - Run it - done! No `npm install` needed.
+**Before you start**: If you're on Windows and don't have Visual Studio Build Tools installed, you'll encounter build errors. Follow these steps:
 
-### Option 2: Run from Source
+1. **Install Visual Studio Build Tools 2022** (one-time setup):
+   - Download from: https://visualstudio.microsoft.com/downloads/
+   - Look for "Build Tools for Visual Studio 2022"
+   - During installation, select "Desktop development with C++"
+   - This takes about 10 minutes
 
-**If you encounter errors during `npm install`**, see the [Installation Troubleshooting](#installation-troubleshooting) section below.
+2. **Then proceed with installation below**
+
+### Option 1: Use Pre-Built Installer (When Available)
+
+> **Note**: Pre-built installers are not yet available since this is a new project. Skip to Option 2 for now.
+
+Once releases are created:
+1. Download the `.exe` for Windows or `.dmg` for macOS
+2. Run it - done! No build tools needed.
+
+### Option 2: Build from Source (Current Method)
+
+**If you encounter errors during `npm install`**, you need Visual Studio Build Tools (see above).
 
 ### 1. Install Dependencies
 ```bash
 npm install
 ```
+
+If this fails with `gyp ERR! find VS`:
+- You need to install Visual Studio Build Tools (see "Important for Windows Users" above)
+- After installing VS Build Tools, restart your terminal and try again
 
 ### 2. Run the Application
 ```bash
@@ -36,31 +53,46 @@ The app will open and you can immediately start:
 
 ## Installation Troubleshooting
 
-**Getting build errors?** This usually happens with `better-sqlite3` on Windows.
+**Getting the `gyp ERR! find VS` error?** This is NORMAL if you don't have Visual Studio Build Tools.
 
-**Quick Solutions:**
-1. **Use the pre-built installer** - Download from [Releases](https://github.com/calebgruber/S-Shop-Inventory-App/releases) (no compilation needed!)
+### The Error Message Explained
 
-2. **Install Windows Build Tools** (if building from source):
-   ```bash
-   # Run as Administrator
-   npm install --global windows-build-tools
-   ```
-   Then try `npm install` again.
+```
+gyp ERR! find VS Could not find any Visual Studio installation to use
+gyp ERR! find VS You need to install the latest version of Visual Studio
+gyp ERR! find VS including the "Desktop development with C++" workload.
+```
 
-3. **Try with legacy peer deps**:
-   ```bash
-   npm install --legacy-peer-deps
-   ```
+This means you need to install build tools so npm can compile the database library.
 
-4. **Clear and retry**:
-   ```bash
-   npm cache clean --force
-   rm -rf node_modules package-lock.json
-   npm install
-   ```
+### Quick Fix for Windows (Required for Building from Source)
 
-For more detailed help, see the [README.md Windows Installation Troubleshooting](README.md#windows-installation-troubleshooting) section.
+1. **Download & Install Visual Studio Build Tools 2022**:
+   - Go to: https://visualstudio.microsoft.com/downloads/
+   - Scroll to "All Downloads" → "Tools for Visual Studio"  
+   - Download "Build Tools for Visual Studio 2022"
+   - Run the installer
+   - **Important**: Select "Desktop development with C++" checkbox
+   - Click Install (~7GB download)
+
+2. **After installation completes**:
+   - Restart your command prompt/terminal
+   - Navigate back to the project folder
+   - Run `npm install` again
+   - It should work now!
+
+### Alternative: Wait for Pre-Built Releases
+
+If you don't want to install Visual Studio Build Tools, wait for the first pre-built release to be created. Then you can just download and run the `.exe` installer with no build tools needed.
+
+**To create a release yourself** (after installing VS Build Tools):
+```bash
+npm install
+npm run build:win
+# Installer will be in dist/S-Shop Inventory Setup.exe
+```
+
+### Still Having Issues?
 
 ## What You Can Do Right Now
 
