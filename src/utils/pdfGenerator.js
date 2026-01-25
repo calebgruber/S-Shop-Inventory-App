@@ -8,37 +8,84 @@ require('jspdf-autotable');
 const JsBarcode = require('jsbarcode');
 const fs = require('fs');
 const path = require('path');
-const { app } = require('electron');
+const { app, shell } = require('electron');
 
 /**
- * Generate a barcode image as base64
- * Note: Using a simpler method without canvas module for better compatibility
+ * Generate a CODE128 barcode image as data URI
+ * Tries canvas first, falls back to SVG with xmldom
  */
 function generateBarcode(value, options = {}) {
+  // Try canvas approach first (best compatibility with jsPDF)
   try {
-    // Create a virtual canvas using jsbarcode's built-in canvas support
     const { createCanvas } = require('canvas');
     const canvas = createCanvas(200, 80);
+    
     JsBarcode(canvas, value, {
       format: 'CODE128',
       width: 2,
       height: 60,
       displayValue: true,
       fontSize: 14,
+      margin: 5,
       ...options
     });
+    
     return canvas.toDataURL('image/png');
+  } catch (canvasError) {
+    console.log('Canvas not available, trying SVG approach:', canvasError.message);
+    
+    // Fallback to SVG using @xmldom/xmldom
+    try {
+      const { DOMImplementation, XMLSerializer } = require('@xmldom/xmldom');
+      const xmlDoc = new DOMImplementation().createDocument('http://www.w3.org/1999/xhtml', 'html', null);
+      const svgElement = xmlDoc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      
+      // Generate CODE128 barcode in SVG format
+      JsBarcode(svgElement, value, {
+        format: 'CODE128',
+        width: 2,
+        height: 60,
+        displayValue: true,
+        fontSize: 14,
+        margin: 5,
+        ...options
+      });
+      
+      // Serialize SVG to string
+      const svgString = new XMLSerializer().serializeToString(svgElement);
+      const base64 = Buffer.from(svgString).toString('base64');
+      
+      // Return SVG as data URI
+      return 'data:image/svg+xml;base64,' + base64;
+    } catch (svgError) {
+      console.error('SVG barcode generation failed:', svgError.message);
+      return null;
+    }
+  }
+}
+
+/**
+ * Auto-open PDF with system default viewer
+ */
+async function openPDF(filePath) {
+  try {
+    const result = await shell.openPath(filePath);
+    if (result) {
+      console.error('Failed to open PDF:', result);
+      return { success: false, error: result };
+    }
+    console.log('PDF opened successfully:', filePath);
+    return { success: true };
   } catch (error) {
-    console.warn('Canvas module not available, using text representation:', error.message);
-    // Return a simple text representation if canvas fails
-    return null;
+    console.error('Error opening PDF:', error);
+    return { success: false, error: error.message };
   }
 }
 
 /**
  * Generate Pull Sheet PDF
  */
-function generatePullSheetPDF(pullSheet) {
+async function generatePullSheetPDF(pullSheet) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
@@ -129,13 +176,17 @@ function generatePullSheetPDF(pullSheet) {
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
   fs.writeFileSync(filePath, pdfBuffer);
   
+  // Auto-open PDF
+  console.log('Pull sheet PDF generated:', filePath);
+  await openPDF(filePath);
+  
   return filePath;
 }
 
 /**
  * Generate Inventory Report PDF
  */
-function generateInventoryReportPDF(data) {
+async function generateInventoryReportPDF(data) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
@@ -205,13 +256,17 @@ function generateInventoryReportPDF(data) {
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
   fs.writeFileSync(filePath, pdfBuffer);
   
+  // Auto-open PDF
+  console.log('Inventory report PDF generated:', filePath);
+  await openPDF(filePath);
+  
   return filePath;
 }
 
 /**
  * Generate Return Summary PDF
  */
-function generateReturnSummaryPDF(returnData) {
+async function generateReturnSummaryPDF(returnData) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
@@ -276,6 +331,10 @@ function generateReturnSummaryPDF(returnData) {
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
   fs.writeFileSync(filePath, pdfBuffer);
   
+  // Auto-open PDF
+  console.log('Return summary PDF generated:', filePath);
+  await openPDF(filePath);
+  
   return filePath;
 }
 
@@ -284,7 +343,7 @@ function generateReturnSummaryPDF(returnData) {
  * Creates printable barcode labels for inventory items
  * Standard Avery 5160/equivalent label size: 2.625" x 1" (66.675mm x 25.4mm)
  */
-function generateBarcodeLabels(items, options = {}) {
+async function generateBarcodeLabels(items, options = {}) {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -384,6 +443,10 @@ function generateBarcodeLabels(items, options = {}) {
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
   fs.writeFileSync(filePath, pdfBuffer);
   
+  // Auto-open PDF
+  console.log('Barcode labels PDF generated:', filePath);
+  await openPDF(filePath);
+  
   return filePath;
 }
 
@@ -393,13 +456,13 @@ function generateBarcodeLabels(items, options = {}) {
 async function generatePDF(type, data) {
   switch (type) {
     case 'pullsheet':
-      return generatePullSheetPDF(data);
+      return await generatePullSheetPDF(data);
     case 'inventory':
-      return generateInventoryReportPDF(data);
+      return await generateInventoryReportPDF(data);
     case 'return':
-      return generateReturnSummaryPDF(data);
+      return await generateReturnSummaryPDF(data);
     case 'labels':
-      return generateBarcodeLabels(data.items, data.options || {});
+      return await generateBarcodeLabels(data.items, data.options || {});
     default:
       throw new Error(`Unknown PDF type: ${type}`);
   }

@@ -1,11 +1,12 @@
 /**
  * Barcode Utility
  * Handles barcode generation and label creation
+ * All barcodes are CODE128-compatible for use with Zebra DS-series scanners
  */
 
 /**
  * Generate a unique barcode for an item
- * Format: ITEM-{category}-{id}-{checksum}
+ * Format: ITEM-{category}-{id}-{checksum} (CODE128 compatible)
  */
 function generateItemBarcode(itemId, category = 'GEN') {
   // Create a category prefix (max 3 chars)
