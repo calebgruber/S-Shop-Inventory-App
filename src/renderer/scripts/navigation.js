@@ -11,7 +11,7 @@ function registerPage(name, module) {
 }
 
 // Load and display a page
-async function loadPage(pageName) {
+async function loadPage(pageName, onLoadComplete) {
   const pageTitle = document.getElementById('page-title');
   const pageContent = document.getElementById('page-content');
   
@@ -47,6 +47,13 @@ async function loadPage(pageName) {
       // Initialize page if it has an init function
       if (typeof pageModules[pageName].init === 'function') {
         pageModules[pageName].init();
+      }
+      
+      // Call onLoadComplete callback if provided
+      if (typeof onLoadComplete === 'function') {
+        // Wait for next tick to ensure DOM is fully ready
+        await new Promise(resolve => setTimeout(resolve, 0));
+        onLoadComplete();
       }
     } catch (error) {
       console.error(`Error loading page ${pageName}:`, error);

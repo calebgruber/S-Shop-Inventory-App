@@ -110,7 +110,7 @@ function initPullSheetBarcodeScanner() {
 }
 
 // Handle pull sheet barcode input
-function handlePullSheetBarcodeInput() {
+async function handlePullSheetBarcodeInput() {
   const input = document.getElementById('pullSheetBarcodeInput');
   if (!input) return;
   
@@ -126,12 +126,10 @@ function handlePullSheetBarcodeInput() {
     const parts = barcode.split('-');
     if (parts.length >= 2) {
       const pullSheetId = parts[1];
-      // Navigate to pull sheets page
-      window.navigation.loadPage('pullsheets');
-      // Open the specific pull sheet after a short delay
-      setTimeout(() => {
+      // Navigate to pull sheets page with callback to open details
+      await window.navigation.loadPage('pullsheets', () => {
         window.viewPullSheet(pullSheetId);
-      }, 100);
+      });
       // Clear input
       input.value = '';
     }

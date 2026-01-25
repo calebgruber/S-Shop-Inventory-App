@@ -133,20 +133,17 @@ async function handleBarcodeLookup() {
 }
 
 // Show barcode scan result
-function showBarcodeResult(item) {
+async function showBarcodeResult(item) {
   // Close the barcode modal
   const modal = bootstrap.Modal.getInstance(document.getElementById('barcodeScanModal'));
   if (modal) {
     modal.hide();
   }
   
-  // Navigate to inventory page
-  window.navigation.loadPage('inventory');
-  
-  // Wait for page to load, then open item details
-  setTimeout(() => {
+  // Navigate to inventory page with callback to open item details
+  await window.navigation.loadPage('inventory', () => {
     window.editInventoryItem(item.id);
-  }, 100);
+  });
 }
 
 // Show barcode error
@@ -175,17 +172,15 @@ function handleShowBarcode(barcode) {
 }
 
 // Handle pull sheet barcode scan  
-function handlePullSheetBarcode(barcode) {
+async function handlePullSheetBarcode(barcode) {
   // Extract pull sheet ID from barcode (format: SHOW-{id} or PULL-{id})
   const parts = barcode.split('-');
   if (parts.length >= 2) {
     const pullSheetId = parts[1];
-    // Navigate to pull sheets page
-    window.navigation.loadPage('pullsheets');
-    // Open the specific pull sheet after a short delay
-    setTimeout(() => {
+    // Navigate to pull sheets page with callback to open details
+    await window.navigation.loadPage('pullsheets', () => {
       window.viewPullSheet(pullSheetId);
-    }, 100);
+    });
     console.log('Opening pull sheet:', pullSheetId);
   }
 }
