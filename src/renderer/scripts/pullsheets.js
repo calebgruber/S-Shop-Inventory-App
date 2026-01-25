@@ -311,12 +311,24 @@ function renderPullSheetDetail() {
     ${isDraft ? `
       <div class="alert alert-info">
         <i class="ti ti-info-circle icon"></i>
-        This pull sheet is in draft mode. Add items and then finalize to check out equipment.
+        This pull sheet is in draft mode. Add items using barcode scanner or search below.
       </div>
       <div class="mb-3">
-        <button class="btn btn-primary" onclick="openAddItemsModal()">
-          <i class="ti ti-plus icon"></i> Add Items
-        </button>
+        <div class="row">
+          <div class="col-12">
+            <label class="form-label">Scan Barcode or Search for Items</label>
+            <div class="input-group input-group-lg">
+              <span class="input-group-text">
+                <i class="ti ti-barcode icon"></i>
+              </span>
+              <input type="text" class="form-control" id="quickAddItemInput" placeholder="Scan barcode or type to search..." autofocus>
+              <button class="btn btn-primary" id="quickAddSearchBtn">
+                <i class="ti ti-search icon"></i> Search
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="quickAddResults" class="mt-2"></div>
       </div>
     ` : ''}
     
@@ -336,7 +348,7 @@ function renderPullSheetDetail() {
               <th>Barcode</th>
               <th>Location</th>
               <th>Requested</th>
-              <th>Status</th>
+              <th>Available</th>
               ${isDraft ? '<th>Actions</th>' : ''}
             </tr>
           </thead>
@@ -344,16 +356,18 @@ function renderPullSheetDetail() {
             ${items.length === 0 ? `
               <tr>
                 <td colspan="${isDraft ? '6' : '5'}" class="text-center text-muted">
-                  No items added yet
+                  No items added yet. Use the search above to add items.
                 </td>
               </tr>
-            ` : items.map(item => `
+            ` : items.map(item => {
+              const availabilityClass = item.quantity_available >= item.quantity_requested ? 'text-success' : 'text-danger';
+              return `
               <tr>
                 <td><strong>${item.name}</strong>${item.description ? `<br><small class="text-muted">${item.description}</small>` : ''}</td>
                 <td><span class="text-mono">${item.barcode || '-'}</span></td>
                 <td>${item.location || '-'}</td>
                 <td class="text-center">${item.quantity_requested}</td>
-                <td><span class="badge ${item.status === 'pulled' ? 'bg-success' : 'bg-secondary'}">${item.status}</span></td>
+                <td class="text-center ${availabilityClass}"><strong>${item.quantity_available || 0}</strong></td>
                 ${isDraft ? `
                   <td>
                     <button class="btn btn-sm btn-ghost-danger" onclick="removeItemFromPullSheet(${item.item_id})">
@@ -362,7 +376,8 @@ function renderPullSheetDetail() {
                   </td>
                 ` : ''}
               </tr>
-            `).join('')}
+            `;
+            }).join('')}
           </tbody>
         </table>
       </div>
@@ -371,21 +386,29 @@ function renderPullSheetDetail() {
   
   document.getElementById('pullSheetDetailContent').innerHTML = content;
   
+  // Setup quick add functionality if in draft mode
+  if (isDraft) {
+    setupQuickAddListeners();
+  }
+  
   // Update actions
   let actions = '';
   if (isDraft && items.length > 0) {
     actions = `
       <button class="btn btn-success" onclick="finalizePullSheet()">
-        <i class="ti ti-check icon"></i> Finalize & Check Out
+        <i class="ti ti-check icon"></i> Finalize & Generate PDF
       </button>
     `;
   } else if (isFinalized) {
     actions = `
+      <button class="btn btn-info" onclick="openPickMode(${currentPullSheet.id})">
+        <i class="ti ti-scan icon"></i> Start Pick Mode
+      </button>
       <button class="btn btn-primary" onclick="startReturn(${currentPullSheet.id})">
         <i class="ti ti-arrow-back icon"></i> Start Return
       </button>
-      <button class="btn btn-secondary" onclick="createChangeOrder(${currentPullSheet.id})">
-        <i class="ti ti-edit icon"></i> Change Order
+      <button class="btn btn-secondary" onclick="generatePullSheetPDF(${currentPullSheet.id})">
+        <i class="ti ti-file-download icon"></i> Download PDF
       </button>
     `;
   }
@@ -608,6 +631,359 @@ async function refreshPullSheets() {
   currentPullSheets = await window.api.pullsheets.getAll();
   document.getElementById('pullSheetsTableBody').innerHTML = renderPullSheetRows(currentPullSheets);
 }
+
+// Setup quick add listeners for inline item addition
+function setupQuickAddListeners() {
+  const input = document.getElementById('quickAddItemInput');
+  const searchBtn = document.getElementById('quickAddSearchBtn');
+  
+  if (!input || !searchBtn) return;
+  
+  // Auto-focus the input
+  setTimeout(() => input.focus(), 100);
+  
+  // Handle barcode scan (Enter key)
+  input.addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      await quickAddItem();
+    }
+  });
+  
+  // Handle search button click
+  searchBtn.addEventListener('click', async () => {
+    await quickAddItem();
+  });
+}
+
+// Quick add item from inline search
+async function quickAddItem() {
+  const query = document.getElementById('quickAddItemInput').value.trim();
+  const resultsDiv = document.getElementById('quickAddResults');
+  
+  if (!query) {
+    resultsDiv.innerHTML = '';
+    return;
+  }
+  
+  try {
+    // Try barcode lookup first
+    const item = await window.api.inventory.getByBarcode(query);
+    
+    if (item) {
+      // Show quantity selector for this item
+      resultsDiv.innerHTML = `
+        <div class="card">
+          <div class="card-body">
+            <h4>${item.name}</h4>
+            <p class="text-muted">${item.description || ''}</p>
+            <p><strong>Available:</strong> <span class="badge bg-${item.quantity_available > 0 ? 'success' : 'danger'}">${item.quantity_available}</span></p>
+            <div class="input-group">
+              <span class="input-group-text">Quantity:</span>
+              <input type="number" class="form-control" id="quickAddQuantity" value="1" min="1" max="${item.quantity_available}">
+              <button class="btn btn-success" onclick="confirmQuickAdd(${item.id})">
+                <i class="ti ti-plus icon"></i> Add to Pull Sheet
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('quickAddQuantity').focus();
+      return;
+    }
+    
+    // Search by name if not found by barcode
+    const items = await window.api.inventory.search(query);
+    
+    if (items.length === 0) {
+      resultsDiv.innerHTML = `<div class="alert alert-warning">No items found for "${query}"</div>`;
+      return;
+    }
+    
+    // Show search results
+    resultsDiv.innerHTML = `
+      <div class="list-group">
+        ${items.map(item => `
+          <div class="list-group-item">
+            <div class="row align-items-center">
+              <div class="col">
+                <h5 class="mb-1">${item.name}</h5>
+                <p class="mb-0"><small class="text-muted">${item.barcode || 'No barcode'} | ${item.category || 'Uncategorized'}</small></p>
+              </div>
+              <div class="col-auto">
+                <span class="badge bg-${item.quantity_available > 0 ? 'success' : 'danger'} me-2">${item.quantity_available} available</span>
+                <button class="btn btn-sm btn-primary" onclick="selectQuickAddItem(${item.id}, '${item.name.replace(/'/g, "\\'")}', ${item.quantity_available})">
+                  <i class="ti ti-plus icon"></i> Add
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (error) {
+    resultsDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+  }
+}
+
+// Select item from search results
+window.selectQuickAddItem = function(itemId, itemName, available) {
+  const resultsDiv = document.getElementById('quickAddResults');
+  resultsDiv.innerHTML = `
+    <div class="card">
+      <div class="card-body">
+        <h4>${itemName}</h4>
+        <p><strong>Available:</strong> <span class="badge bg-${available > 0 ? 'success' : 'danger'}">${available}</span></p>
+        <div class="input-group">
+          <span class="input-group-text">Quantity:</span>
+          <input type="number" class="form-control" id="quickAddQuantity" value="1" min="1" max="${available}">
+          <button class="btn btn-success" onclick="confirmQuickAdd(${itemId})">
+            <i class="ti ti-plus icon"></i> Add to Pull Sheet
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('quickAddQuantity').focus();
+};
+
+// Confirm and add item
+window.confirmQuickAdd = async function(itemId) {
+  const quantity = parseInt(document.getElementById('quickAddQuantity').value) || 1;
+  
+  await addItemToPullSheet(itemId, quantity);
+  
+  // Clear input and results
+  document.getElementById('quickAddItemInput').value = '';
+  document.getElementById('quickAddResults').innerHTML = `
+    <div class="alert alert-success alert-dismissible fade show">
+      Item added successfully!
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  `;
+  
+  setTimeout(() => {
+    document.getElementById('quickAddResults').innerHTML = '';
+    document.getElementById('quickAddItemInput').focus();
+  }, 2000);
+};
+
+// Open pick mode for a finalized pull sheet
+window.openPickMode = async function(pullSheetId) {
+  const pullSheet = await window.api.pullsheets.getById(pullSheetId);
+  
+  if (!pullSheet || pullSheet.status !== 'finalized') {
+    alert('Pull sheet must be finalized to start pick mode');
+    return;
+  }
+  
+  // Close detail modal
+  const detailModal = bootstrap.Modal.getInstance(document.getElementById('pullSheetDetailModal'));
+  if (detailModal) {
+    detailModal.hide();
+  }
+  
+  // Open pick mode in a new full-screen modal
+  currentPullSheet = pullSheet;
+  renderPickMode();
+};
+
+// Render pick mode interface
+function renderPickMode() {
+  // Create a full-screen pick mode modal if it doesn't exist
+  let pickModal = document.getElementById('pickModeModal');
+  
+  if (!pickModal) {
+    pickModal = document.createElement('div');
+    pickModal.id = 'pickModeModal';
+    pickModal.className = 'modal modal-blur fade';
+    pickModal.setAttribute('data-bs-backdrop', 'static');
+    pickModal.setAttribute('data-bs-keyboard', 'false');
+    pickModal.innerHTML = `
+      <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h3 class="modal-title">Pick Mode - ${currentPullSheet.name || `Pull Sheet #${currentPullSheet.id}`}</h3>
+            <button type="button" class="btn-close btn-close-white" onclick="closePickMode()"></button>
+          </div>
+          <div class="modal-body" id="pickModeBody">
+          </div>
+          <div class="modal-footer">
+            <div id="pickModeActions"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(pickModal);
+  }
+  
+  // Initialize pick state
+  if (!window.pickState) {
+    window.pickState = {
+      items: (currentPullSheet.items || []).map(item => ({
+        ...item,
+        scanned: 0,
+        status: 'pending'
+      }))
+    };
+  }
+  
+  updatePickModeDisplay();
+  
+  const modal = new bootstrap.Modal(pickModal);
+  modal.show();
+}
+
+// Update pick mode display
+function updatePickModeDisplay() {
+  const body = document.getElementById('pickModeBody');
+  const actions = document.getElementById('pickModeActions');
+  
+  if (!window.pickState) return;
+  
+  const allComplete = window.pickState.items.every(item => item.scanned >= item.quantity_requested);
+  
+  body.innerHTML = `
+    <div class="container-fluid">
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="input-group input-group-lg">
+            <span class="input-group-text bg-primary text-white">
+              <i class="ti ti-scan icon"></i>
+            </span>
+            <input type="text" class="form-control form-control-lg" id="pickScanInput" placeholder="Scan item barcode..." autofocus>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3">
+        ${window.pickState.items.map((item, index) => {
+          const isComplete = item.scanned >= item.quantity_requested;
+          const isOver = item.scanned > item.quantity_requested;
+          const cardClass = isOver ? 'border-danger bg-danger-lt' : isComplete ? 'border-success bg-success-lt' : 'border-secondary';
+          
+          if (isComplete && !isOver) return ''; // Hide completed items
+          
+          return `
+            <div class="col-md-6 col-lg-4">
+              <div class="card ${cardClass} h-100">
+                <div class="card-body">
+                  <h3 class="card-title">${item.name}</h3>
+                  <p class="text-muted">${item.barcode || 'No barcode'}</p>
+                  <div class="row text-center mt-3">
+                    <div class="col-6">
+                      <div class="text-muted small">Scanned</div>
+                      <div class="display-6 ${isOver ? 'text-danger' : isComplete ? 'text-success' : 'text-primary'}">${item.scanned}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-muted small">Needed</div>
+                      <div class="display-6">${item.quantity_requested}</div>
+                    </div>
+                  </div>
+                  ${isOver ? `
+                    <div class="alert alert-danger mt-3">
+                      <strong>Over-scanned by ${item.scanned - item.quantity_requested}</strong>
+                      <div class="mt-2">
+                        <button class="btn btn-sm btn-danger" onclick="correctOverScan(${index})">
+                          Remove Excess
+                        </button>
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  
+  actions.innerHTML = allComplete ? `
+    <button class="btn btn-lg btn-success" onclick="completePickMode()">
+      <i class="ti ti-check icon"></i> Complete Pick & Checkout
+    </button>
+  ` : `
+    <span class="text-muted">Scan all items to complete the pick</span>
+    <button class="btn btn-outline-secondary ms-2" onclick="closePickMode()">Cancel</button>
+  `;
+  
+  // Setup scan listener
+  const scanInput = document.getElementById('pickScanInput');
+  if (scanInput) {
+    scanInput.focus();
+    scanInput.addEventListener('keypress', handlePickScan);
+  }
+}
+
+// Handle barcode scan in pick mode
+function handlePickScan(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const barcode = e.target.value.trim();
+    
+    if (!barcode) return;
+    
+    // Find item with this barcode
+    const itemIndex = window.pickState.items.findIndex(item => item.barcode === barcode);
+    
+    if (itemIndex >= 0) {
+      window.pickState.items[itemIndex].scanned++;
+      e.target.value = '';
+      updatePickModeDisplay();
+    } else {
+      alert(`Item with barcode "${barcode}" not found in this pull sheet`);
+      e.target.value = '';
+    }
+  }
+}
+
+// Correct over-scan
+window.correctOverScan = function(itemIndex) {
+  const item = window.pickState.items[itemIndex];
+  const excess = item.scanned - item.quantity_requested;
+  
+  const removed = prompt(`Remove how many items? (${excess} over-scanned)`, excess);
+  
+  if (removed !== null) {
+    const removeCount = parseInt(removed) || 0;
+    window.pickState.items[itemIndex].scanned -= removeCount;
+    updatePickModeDisplay();
+  }
+};
+
+// Complete pick mode
+window.completePickMode = async function() {
+  if (!window.pickState) return;
+  
+  try {
+    // Update pull sheet status and generate PDF
+    await window.api.pullsheets.finalize(currentPullSheet.id, 'Picker');
+    
+    // Generate PDF
+    const result = await window.api.pdf.generatePullSheet(currentPullSheet.id);
+    
+    if (result.success) {
+      alert(`Pick completed! PDF generated: ${result.filePath}`);
+    }
+    
+    closePickMode();
+    await refreshPullSheets();
+  } catch (error) {
+    alert('Error completing pick: ' + error.message);
+  }
+};
+
+// Close pick mode
+window.closePickMode = function() {
+  const pickModal = document.getElementById('pickModeModal');
+  if (pickModal) {
+    const modal = bootstrap.Modal.getInstance(pickModal);
+    if (modal) {
+      modal.hide();
+    }
+  }
+  window.pickState = null;
+};
 
 // Make functions globally available
 window.viewPullSheet = viewPullSheet;
