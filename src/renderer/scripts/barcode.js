@@ -83,6 +83,12 @@ async function processBarcode(barcode) {
     document.body.classList.remove('scanning-active');
   }, 500);
   
+  // Check if it's a show/pull sheet barcode
+  if (barcode.startsWith('SHOW-') || barcode.startsWith('PULL-')) {
+    handlePullSheetBarcode(barcode);
+    return;
+  }
+  
   // Lookup item by barcode
   try {
     const item = await window.api.inventory.getByBarcode(barcode);
@@ -90,12 +96,7 @@ async function processBarcode(barcode) {
     if (item) {
       showBarcodeResult(item);
     } else {
-      // Check if it's a show barcode
-      if (barcode.startsWith('SHOW-')) {
-        handleShowBarcode(barcode);
-      } else {
-        showBarcodeError('Item not found', `No item found with barcode: ${barcode}`);
-      }
+      showBarcodeError('Item not found', `No item found with barcode: ${barcode}`);
     }
   } catch (error) {
     console.error('Barcode lookup error:', error);
@@ -133,33 +134,19 @@ async function handleBarcodeLookup() {
 
 // Show barcode scan result
 function showBarcodeResult(item) {
-  const resultDiv = document.getElementById('barcodeScanResult');
+  // Close the barcode modal
+  const modal = bootstrap.Modal.getInstance(document.getElementById('barcodeScanModal'));
+  if (modal) {
+    modal.hide();
+  }
   
-  const availabilityBadge = item.quantity_available > 0 
-    ? `<span class="badge badge-available">Available: ${item.quantity_available}</span>`
-    : `<span class="badge badge-unavailable">Out of Stock</span>`;
+  // Navigate to inventory page
+  window.navigation.loadPage('inventory');
   
-  resultDiv.innerHTML = `
-    <div class="alert alert-success">
-      <h4 class="alert-title">Item Found</h4>
-      <div class="mb-2">
-        <strong>${item.name}</strong>
-        ${item.description ? `<br><small>${item.description}</small>` : ''}
-      </div>
-      <div class="mb-2">
-        ${availabilityBadge}
-        ${item.serial_number ? `<span class="badge bg-info ms-2">Serial: ${item.serial_number}</span>` : ''}
-      </div>
-      <div class="btn-group mt-2" role="group">
-        <button class="btn btn-sm btn-primary" onclick="viewItemDetails(${item.id})">
-          <i class="ti ti-eye icon"></i> View Details
-        </button>
-        <button class="btn btn-sm btn-success" onclick="addItemToCurrentPullSheet(${item.id})">
-          <i class="ti ti-plus icon"></i> Add to Pull Sheet
-        </button>
-      </div>
-    </div>
-  `;
+  // Wait for page to load, then open item details
+  setTimeout(() => {
+    window.editInventoryItem(item.id);
+  }, 100);
 }
 
 // Show barcode error
@@ -187,11 +174,20 @@ function handleShowBarcode(barcode) {
   }
 }
 
-// View item details (placeholder)
-function viewItemDetails(itemId) {
-  window.navigation.loadPage('inventory');
-  // In full implementation, would open item detail modal
-  console.log('Viewing item:', itemId);
+// Handle pull sheet barcode scan  
+function handlePullSheetBarcode(barcode) {
+  // Extract pull sheet ID from barcode (format: SHOW-{id} or PULL-{id})
+  const parts = barcode.split('-');
+  if (parts.length >= 2) {
+    const pullSheetId = parts[1];
+    // Navigate to pull sheets page
+    window.navigation.loadPage('pullsheets');
+    // Open the specific pull sheet after a short delay
+    setTimeout(() => {
+      window.viewPullSheet(pullSheetId);
+    }, 100);
+    console.log('Opening pull sheet:', pullSheetId);
+  }
 }
 
 // Add item to current pull sheet (placeholder)
@@ -202,7 +198,6 @@ function addItemToCurrentPullSheet(itemId) {
 }
 
 // Make functions globally available
-window.viewItemDetails = viewItemDetails;
 window.addItemToCurrentPullSheet = addItemToCurrentPullSheet;
 
 // Export functions

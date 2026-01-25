@@ -8,11 +8,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('S-Shop Inventory Application starting...');
   
   try {
+    // Initialize dark mode first (before rendering)
+    window.darkMode.init();
+    
     // Initialize navigation system
     window.navigation.initNavigation();
     
     // Initialize barcode scanning
     window.barcode.init();
+    
+    // Initialize pull sheet barcode scanner on dashboard
+    initPullSheetBarcodeScanner();
     
     // Load and display version number
     const versionInfo = await window.api.update.getVersion();
@@ -81,6 +87,56 @@ function showWelcomeMessage() {
       document.body.insertAdjacentHTML('beforeend', welcomeModal);
       localStorage.setItem('hasSeenWelcome', 'true');
     }, 500);
+  }
+}
+
+// Initialize pull sheet barcode scanner on dashboard
+function initPullSheetBarcodeScanner() {
+  const pullSheetInput = document.getElementById('pullSheetBarcodeInput');
+  const pullSheetLookupBtn = document.getElementById('pullSheetBarcodeLookupBtn');
+  
+  if (pullSheetLookupBtn) {
+    pullSheetLookupBtn.addEventListener('click', handlePullSheetBarcodeInput);
+  }
+  
+  if (pullSheetInput) {
+    pullSheetInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handlePullSheetBarcodeInput();
+      }
+    });
+  }
+}
+
+// Handle pull sheet barcode input
+function handlePullSheetBarcodeInput() {
+  const input = document.getElementById('pullSheetBarcodeInput');
+  if (!input) return;
+  
+  const barcode = input.value.trim();
+  
+  if (!barcode) {
+    return;
+  }
+  
+  // Check if it's a valid pull sheet barcode
+  if (barcode.startsWith('SHOW-') || barcode.startsWith('PULL-')) {
+    // Extract pull sheet ID from barcode
+    const parts = barcode.split('-');
+    if (parts.length >= 2) {
+      const pullSheetId = parts[1];
+      // Navigate to pull sheets page
+      window.navigation.loadPage('pullsheets');
+      // Open the specific pull sheet after a short delay
+      setTimeout(() => {
+        window.viewPullSheet(pullSheetId);
+      }, 100);
+      // Clear input
+      input.value = '';
+    }
+  } else {
+    alert('Invalid pull sheet barcode. Please scan a barcode starting with SHOW- or PULL-');
   }
 }
 

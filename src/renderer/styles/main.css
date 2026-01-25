@@ -8,6 +8,59 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Dark Mode Styles */
+.theme-dark .navbar-dark {
+  background-color: #1e293b !important;
+}
+
+.theme-dark .card {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.theme-dark .inventory-table th {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+.theme-dark .inventory-table tbody tr:hover {
+  background-color: #334155;
+}
+
+.theme-dark .barcode-display {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.theme-dark .serial-item {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.theme-dark .serial-item.checked-out {
+  background: #713f12;
+  border-color: #f59f00;
+}
+
+.theme-dark .serial-item.maintenance {
+  background: #7f1d1d;
+  border-color: #dc3545;
+}
+
+.theme-dark .empty-state {
+  color: #94a3b8;
+}
+
+.theme-dark .quick-action-btn {
+  border-color: #334155;
+}
+
+.theme-dark .quick-action-btn:hover {
+  background-color: #1e293b;
+  border-color: #428bca;
+  color: #60a5fa;
+}
+
 /* Navbar customization */
 .navbar-brand-text {
   font-weight: 600;

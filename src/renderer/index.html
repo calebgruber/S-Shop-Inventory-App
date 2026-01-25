@@ -30,6 +30,9 @@
               <i class="ti ti-scan icon"></i>
               <span class="badge bg-red">F1</span>
             </a>
+            <a href="#" class="nav-link px-0" id="dark-mode-toggle" title="Toggle Dark Mode">
+              <i class="ti ti-moon icon" id="dark-mode-icon"></i>
+            </a>
           </div>
         </div>
         <div class="collapse navbar-collapse" id="navbar-menu">
@@ -141,6 +144,33 @@
                   </div>
                 </div>
               </div>
+              <div class="col-12">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="ti ti-clipboard-list icon me-2"></i>
+                      Quick Pull Sheet Access
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row justify-content-center">
+                      <div class="col-md-8">
+                        <label class="form-label">Scan Pull Sheet Barcode</label>
+                        <div class="input-group input-group-lg">
+                          <span class="input-group-text">
+                            <i class="ti ti-barcode icon"></i>
+                          </span>
+                          <input type="text" class="form-control" id="pullSheetBarcodeInput" placeholder="Scan or enter SHOW-xxx or PULL-xxx barcode...">
+                          <button class="btn btn-primary" id="pullSheetBarcodeLookupBtn">
+                            <i class="ti ti-search icon"></i> Open
+                          </button>
+                        </div>
+                        <small class="form-hint">Scan a pull sheet barcode (SHOW-xxx or PULL-xxx) to quickly access its details</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -200,6 +230,7 @@
   
   <!-- Application Scripts -->
   <script src="scripts/ipc.js"></script>
+  <script src="scripts/darkmode.js"></script>
   <script src="scripts/navigation.js"></script>
   <script src="scripts/barcode.js"></script>
   <script src="scripts/inventory.js"></script>
