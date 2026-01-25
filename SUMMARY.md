@@ -172,6 +172,14 @@ S-Shop-Inventory-App/
 
 ✅ **CodeQL Scan**: **0 vulnerabilities found**
 
+### Security Updates Applied
+
+**jsPDF Updated to v4.0.0** (2026-01-25)
+- Fixed: jsPDF Denial of Service (DoS) vulnerability (CVE affecting ≤3.0.1)
+- Fixed: jsPDF Regular Expression Denial of Service (ReDoS) (CVE affecting <3.0.1)
+- Fixed: jsPDF Local File Inclusion/Path Traversal vulnerability (CVE affecting ≤3.0.4)
+- Updated jspdf-autotable to v5.0.7 for compatibility
+
 ### Security Features
 - **No network exposure** - Database is local only
 - **Parameterized queries** - SQL injection prevention
