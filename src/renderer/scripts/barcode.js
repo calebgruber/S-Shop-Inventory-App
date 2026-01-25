@@ -109,9 +109,11 @@ function openBarcodeScanModal() {
   const modal = new bootstrap.Modal(document.getElementById('barcodeScanModal'));
   modal.show();
   
-  // Focus input when modal is shown
+  // Focus and select input when modal is shown
   document.getElementById('barcodeScanModal').addEventListener('shown.bs.modal', () => {
-    document.getElementById('barcodeInput').focus();
+    const input = document.getElementById('barcodeInput');
+    input.focus();
+    input.select();
   });
   
   // Clear input when modal is hidden

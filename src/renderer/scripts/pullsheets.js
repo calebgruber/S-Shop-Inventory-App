@@ -547,16 +547,57 @@ async function removeItemFromPullSheet(itemId) {
 async function finalizePullSheet() {
   if (!currentPullSheet) return;
   
-  const pulledBy = prompt('Enter your name:');
-  if (!pulledBy) return;
+  // Show modal to get pulled by name
+  const modal = document.createElement('div');
+  modal.innerHTML = `
+    <div class="modal modal-blur fade show" style="display: block;" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Finalize Pull Sheet</h5>
+          </div>
+          <div class="modal-body">
+            <label class="form-label required">Your Name</label>
+            <input type="text" class="form-control" id="pulledByInput" placeholder="Enter your name" autofocus>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
+            <button type="button" class="btn btn-primary" id="confirmFinalizeBtn">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+  `;
+  document.body.appendChild(modal);
   
-  const confirmed = await window.api.dialog.showMessage({
-    type: 'question',
-    title: 'Finalize Pull Sheet',
-    message: 'Finalize this pull sheet? This will check out all items and update inventory availability.',
-    buttons: ['Cancel', 'Finalize'],
-    defaultId: 1
+  // Focus the input
+  setTimeout(() => document.getElementById('pulledByInput').focus(), 100);
+  
+  // Handle Enter key
+  document.getElementById('pulledByInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('confirmFinalizeBtn').click();
+    }
   });
+  
+  // Handle confirm
+  document.getElementById('confirmFinalizeBtn').addEventListener('click', async () => {
+    const pulledBy = document.getElementById('pulledByInput').value.trim();
+    if (!pulledBy) {
+      alert('Please enter your name');
+      return;
+    }
+    
+    modal.remove();
+    
+    const confirmed = await window.api.dialog.showMessage({
+      type: 'question',
+      title: 'Finalize Pull Sheet',
+      message: 'Finalize this pull sheet? This will check out all items and update inventory availability.',
+      buttons: ['Cancel', 'Finalize'],
+      defaultId: 1
+    });
   
   if (confirmed.response === 1) {
     try {
@@ -639,8 +680,16 @@ function setupQuickAddListeners() {
   
   if (!input || !searchBtn) return;
   
-  // Auto-focus the input
-  setTimeout(() => input.focus(), 100);
+  // Auto-focus and select all text on focus
+  setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 100);
+  
+  // Select all on focus
+  input.addEventListener('focus', () => {
+    input.select();
+  });
   
   // Handle barcode scan (Enter key)
   input.addEventListener('keypress', async (e) => {
@@ -911,6 +960,13 @@ function updatePickModeDisplay() {
   const scanInput = document.getElementById('pickScanInput');
   if (scanInput) {
     scanInput.focus();
+    scanInput.select();
+    
+    // Select all on focus
+    scanInput.addEventListener('focus', () => {
+      scanInput.select();
+    });
+    
     scanInput.addEventListener('keypress', handlePickScan);
   }
 }
@@ -942,13 +998,53 @@ window.correctOverScan = function(itemIndex) {
   const item = window.pickState.items[itemIndex];
   const excess = item.scanned - item.quantity_requested;
   
-  const removed = prompt(`Remove how many items? (${excess} over-scanned)`, excess);
+  // Show modal to get correction amount
+  const modal = document.createElement('div');
+  modal.innerHTML = `
+    <div class="modal modal-blur fade show" style="display: block;" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">Correct Over-Scan</h5>
+          </div>
+          <div class="modal-body">
+            <p><strong>${item.name}</strong></p>
+            <p class="text-danger">Over-scanned by ${excess} items</p>
+            <label class="form-label required">Remove how many items?</label>
+            <input type="number" class="form-control form-control-lg" id="removeCountInput" value="${excess}" min="0" max="${excess}" autofocus>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmRemoveBtn">Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+  `;
+  document.body.appendChild(modal);
   
-  if (removed !== null) {
-    const removeCount = parseInt(removed) || 0;
+  // Focus and select the input
+  setTimeout(() => {
+    const input = document.getElementById('removeCountInput');
+    input.focus();
+    input.select();
+  }, 100);
+  
+  // Handle Enter key
+  document.getElementById('removeCountInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('confirmRemoveBtn').click();
+    }
+  });
+  
+  // Handle confirm
+  document.getElementById('confirmRemoveBtn').addEventListener('click', () => {
+    const removeCount = parseInt(document.getElementById('removeCountInput').value) || 0;
     window.pickState.items[itemIndex].scanned -= removeCount;
+    modal.remove();
     updatePickModeDisplay();
-  }
+  });
 };
 
 // Complete pick mode

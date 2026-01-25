@@ -280,6 +280,11 @@ function initInventoryPage() {
     }
   });
   
+  // Auto-select text on focus for quick re-scanning
+  document.getElementById('inventorySearch')?.addEventListener('focus', (e) => {
+    e.target.select();
+  });
+  
   // Filter buttons
   document.querySelectorAll('[name="statusFilter"]').forEach(radio => {
     radio.addEventListener('change', async (e) => {

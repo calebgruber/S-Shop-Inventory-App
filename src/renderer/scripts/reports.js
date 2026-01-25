@@ -1380,6 +1380,15 @@ async function initReportsPage() {
   console.log('Reports page initialized');
 }
 
+// Export functions to window for onclick handlers
+window.openInventoryReport = openInventoryReport;
+window.openLocationReport = openLocationReport;
+window.openLowStockReport = openLowStockReport;
+window.openItemsOutReport = openItemsOutReport;
+window.openShowEquipmentReport = openShowEquipmentReport;
+window.openActivityLogReport = openActivityLogReport;
+window.exportReportToPDF = exportReportToPDF;
+
 // Register page with navigation system
 if (window.navigation) {
   window.navigation.registerPage('reports', {
