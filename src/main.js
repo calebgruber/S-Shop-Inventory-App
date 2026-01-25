@@ -169,6 +169,35 @@ ipcMain.handle('shows:delete', async (event, id) => {
   return result;
 });
 
+// Theatre Management
+ipcMain.handle('theatres:getAll', async () => {
+  return database.getAllTheatres();
+});
+
+ipcMain.handle('theatres:getById', async (event, id) => {
+  return database.getTheatreById(id);
+});
+
+ipcMain.handle('theatres:create', async (event, theatre) => {
+  const result = database.createTheatre(theatre);
+  logAction('THEATRE', `Created theatre: ${theatre.name}`, theatre);
+  return result;
+});
+
+ipcMain.handle('theatres:update', async (event, id, theatre) => {
+  const result = database.updateTheatre(id, theatre);
+  logAction('THEATRE', `Updated theatre ID: ${id}`, theatre);
+  return result;
+});
+
+ipcMain.handle('theatres:delete', async (event, id) => {
+  const result = database.deleteTheatre(id);
+  if (result.success) {
+    logAction('THEATRE', `Deleted theatre ID: ${id}`);
+  }
+  return result;
+});
+
 // Pull Sheet Management
 ipcMain.handle('pullsheets:getAll', async () => {
   return database.getAllPullSheets();
@@ -263,6 +292,10 @@ ipcMain.handle('reports:getActivityLog', async (event, filters) => {
   return database.getActivityLog(filters);
 });
 
+ipcMain.handle('reports:getItemsByLocation', async (event, theatreId) => {
+  return database.getItemsByLocation(theatreId);
+});
+
 // PDF Generation
 ipcMain.handle('pdf:generatePullSheet', async (event, pullSheetId) => {
   try {
@@ -294,6 +327,19 @@ ipcMain.handle('pdf:generateBarcodeLabels', async (event, itemIds, options) => {
     const filePath = await generatePDF('labels', { items, options });
     logAction('PDF', `Generated barcode labels PDF for ${items.length} items`);
     return { success: true, filePath, count: items.length };
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('pdf:generateLocationReport', async (event, theatreId) => {
+  try {
+    const theatres = theatreId ? [database.getTheatreById(theatreId)] : database.getAllTheatres();
+    const items = database.getItemsByLocation(theatreId);
+    const filePath = await generatePDF('location', { theatres, items });
+    logAction('PDF', `Generated location report PDF`);
+    return { success: true, filePath };
   } catch (error) {
     console.error('PDF generation error:', error);
     return { success: false, error: error.message };

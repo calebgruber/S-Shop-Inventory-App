@@ -59,12 +59,14 @@ class InventoryDatabase {
         name TEXT NOT NULL,
         description TEXT,
         venue TEXT,
+        theatre_id INTEGER,
         start_date DATE,
         end_date DATE,
         status TEXT DEFAULT 'planning',
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (theatre_id) REFERENCES theatres(id) ON DELETE SET NULL
       )
     `);
 
@@ -129,6 +131,16 @@ class InventoryDatabase {
       )
     `);
 
+    // Theatres table - stores theatre/space information
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS theatres (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Returns table - tracks equipment returns
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS returns (
@@ -175,6 +187,7 @@ class InventoryDatabase {
       CREATE INDEX IF NOT EXISTS idx_items_serial ON items(serial_number);
       CREATE INDEX IF NOT EXISTS idx_items_status ON items(status);
       CREATE INDEX IF NOT EXISTS idx_shows_status ON shows(status);
+      CREATE INDEX IF NOT EXISTS idx_shows_theatre ON shows(theatre_id);
       CREATE INDEX IF NOT EXISTS idx_pull_sheets_show ON pull_sheets(show_id);
       CREATE INDEX IF NOT EXISTS idx_pull_sheets_status ON pull_sheets(status);
       CREATE INDEX IF NOT EXISTS idx_change_orders_show ON change_orders(show_id);
@@ -338,14 +351,15 @@ class InventoryDatabase {
 
   createShow(show) {
     const stmt = this.db.prepare(`
-      INSERT INTO shows (name, description, venue, start_date, end_date, status, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO shows (name, description, venue, theatre_id, start_date, end_date, status, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
       show.name,
       show.description || null,
       show.venue || null,
+      show.theatre_id || null,
       show.start_date || null,
       show.end_date || null,
       show.status || 'planning',
@@ -358,7 +372,7 @@ class InventoryDatabase {
   updateShow(id, show) {
     const stmt = this.db.prepare(`
       UPDATE shows SET 
-        name = ?, description = ?, venue = ?, start_date = ?, 
+        name = ?, description = ?, venue = ?, theatre_id = ?, start_date = ?, 
         end_date = ?, status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
@@ -367,6 +381,7 @@ class InventoryDatabase {
       show.name,
       show.description,
       show.venue,
+      show.theatre_id,
       show.start_date,
       show.end_date,
       show.status,
@@ -379,6 +394,57 @@ class InventoryDatabase {
 
   deleteShow(id) {
     this.db.prepare('DELETE FROM shows WHERE id = ?').run(id);
+    return { success: true };
+  }
+
+  // ===== THEATRE METHODS =====
+
+  getAllTheatres() {
+    return this.db.prepare('SELECT * FROM theatres ORDER BY name ASC').all();
+  }
+
+  getTheatreById(id) {
+    return this.db.prepare('SELECT * FROM theatres WHERE id = ?').get(id);
+  }
+
+  createTheatre(theatre) {
+    const stmt = this.db.prepare(`
+      INSERT INTO theatres (name, description)
+      VALUES (?, ?)
+    `);
+
+    const result = stmt.run(
+      theatre.name,
+      theatre.description || null
+    );
+
+    return { id: result.lastInsertRowid, ...theatre };
+  }
+
+  updateTheatre(id, theatre) {
+    const stmt = this.db.prepare(`
+      UPDATE theatres SET 
+        name = ?, description = ?
+      WHERE id = ?
+    `);
+
+    stmt.run(
+      theatre.name,
+      theatre.description,
+      id
+    );
+
+    return this.getTheatreById(id);
+  }
+
+  deleteTheatre(id) {
+    // Check if any shows reference this theatre
+    const showCount = this.db.prepare('SELECT COUNT(*) as count FROM shows WHERE theatre_id = ?').get(id);
+    if (showCount.count > 0) {
+      return { success: false, error: 'Cannot delete theatre with active shows' };
+    }
+    
+    this.db.prepare('DELETE FROM theatres WHERE id = ?').run(id);
     return { success: true };
   }
 
@@ -612,6 +678,43 @@ class InventoryDatabase {
 
     query += ' ORDER BY created_at DESC LIMIT 1000';
 
+    return this.db.prepare(query).all(...params);
+  }
+
+  getItemsByLocation(theatreId = null) {
+    // Get items currently in use by theatre from active shows
+    let query = `
+      SELECT 
+        t.id as theatre_id,
+        t.name as theatre_name,
+        i.id as item_id,
+        i.name as item_name,
+        i.serial_number,
+        i.barcode,
+        i.status,
+        SUM(psi.quantity_pulled) as quantity,
+        s.name as show_name,
+        s.status as show_status
+      FROM theatres t
+      LEFT JOIN shows s ON t.id = s.theatre_id
+      LEFT JOIN pull_sheets ps ON s.id = ps.show_id
+      LEFT JOIN pull_sheet_items psi ON ps.id = psi.pull_sheet_id
+      LEFT JOIN items i ON psi.item_id = i.id
+      WHERE (s.status = 'active' OR s.status = 'running')
+        AND ps.status = 'pulled'
+    `;
+    
+    const params = [];
+    if (theatreId) {
+      query += ' AND t.id = ?';
+      params.push(theatreId);
+    }
+    
+    query += `
+      GROUP BY t.id, i.id
+      ORDER BY t.name, i.name
+    `;
+    
     return this.db.prepare(query).all(...params);
   }
 

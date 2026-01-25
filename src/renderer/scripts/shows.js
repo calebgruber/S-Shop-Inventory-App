@@ -4,10 +4,12 @@
  */
 
 let currentShows = [];
+let currentTheatres = [];
 
 // Render shows page
 async function renderShowsPage() {
   currentShows = await window.api.shows.getAll();
+  currentTheatres = await window.api.theatres.getAll();
   
   return `
     <div class="row mb-3">
@@ -45,8 +47,16 @@ async function renderShowsPage() {
                 <textarea class="form-control" id="showDescription" rows="2"></textarea>
               </div>
               <div class="mb-3">
-                <label class="form-label required">Theatre/Venue</label>
-                <input type="text" class="form-control" id="showVenue" required>
+                <label class="form-label">Theatre</label>
+                <select class="form-select" id="showTheatre">
+                  <option value="">Select a theatre...</option>
+                  ${currentTheatres.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                </select>
+                <small class="form-hint">Optional - link this show to a specific theatre space</small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Venue</label>
+                <input type="text" class="form-control" id="showVenue">
                 <small class="form-hint">e.g., Main Stage, Black Box, Studio Theatre</small>
               </div>
               <div class="row">
@@ -177,15 +187,21 @@ function initShowsPage() {
 }
 
 // Open show modal
-function openShowModal(show = null) {
+async function openShowModal(show = null) {
   const modal = new bootstrap.Modal(document.getElementById('showModal'));
   const title = document.getElementById('showModalTitle');
+  
+  // Load theatres if not already loaded
+  if (currentTheatres.length === 0) {
+    currentTheatres = await window.api.theatres.getAll();
+  }
   
   if (show) {
     title.textContent = 'Edit Show';
     document.getElementById('showId').value = show.id;
     document.getElementById('showName').value = show.name || '';
     document.getElementById('showDescription').value = show.description || '';
+    document.getElementById('showTheatre').value = show.theatre_id || '';
     document.getElementById('showVenue').value = show.venue || '';
     document.getElementById('showStartDate').value = show.start_date || '';
     document.getElementById('showEndDate').value = show.end_date || '';
@@ -210,9 +226,11 @@ async function editShow(showId) {
 
 // Save show
 async function saveShow() {
+  const theatreValue = document.getElementById('showTheatre').value;
   const showData = {
     name: document.getElementById('showName').value,
     description: document.getElementById('showDescription').value,
+    theatre_id: theatreValue ? parseInt(theatreValue) : null,
     venue: document.getElementById('showVenue').value,
     start_date: document.getElementById('showStartDate').value,
     end_date: document.getElementById('showEndDate').value,

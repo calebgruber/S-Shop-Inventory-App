@@ -26,6 +26,15 @@ const showsAPI = {
   delete: (id) => ipcRenderer.invoke('shows:delete', id)
 };
 
+// Theatre operations
+const theatresAPI = {
+  getAll: () => ipcRenderer.invoke('theatres:getAll'),
+  getById: (id) => ipcRenderer.invoke('theatres:getById', id),
+  create: (theatre) => ipcRenderer.invoke('theatres:create', theatre),
+  update: (id, theatre) => ipcRenderer.invoke('theatres:update', id, theatre),
+  delete: (id) => ipcRenderer.invoke('theatres:delete', id)
+};
+
 // Pull sheet operations
 const pullsheetsAPI = {
   getAll: () => ipcRenderer.invoke('pullsheets:getAll'),
@@ -57,14 +66,16 @@ const returnsAPI = {
 const reportsAPI = {
   getShortages: () => ipcRenderer.invoke('reports:getShortages'),
   getItemStatus: (itemId) => ipcRenderer.invoke('reports:getItemStatus', itemId),
-  getActivityLog: (filters) => ipcRenderer.invoke('reports:getActivityLog', filters)
+  getActivityLog: (filters) => ipcRenderer.invoke('reports:getActivityLog', filters),
+  getItemsByLocation: (theatreId) => ipcRenderer.invoke('reports:getItemsByLocation', theatreId)
 };
 
 // PDF generation
 const pdfAPI = {
   generatePullSheet: (pullSheetId) => ipcRenderer.invoke('pdf:generatePullSheet', pullSheetId),
   generateInventoryReport: (filters) => ipcRenderer.invoke('pdf:generateInventoryReport', filters),
-  generateBarcodeLabels: (itemIds, options) => ipcRenderer.invoke('pdf:generateBarcodeLabels', itemIds, options)
+  generateBarcodeLabels: (itemIds, options) => ipcRenderer.invoke('pdf:generateBarcodeLabels', itemIds, options),
+  generateLocationReport: (theatreId) => ipcRenderer.invoke('pdf:generateLocationReport', theatreId)
 };
 
 // Barcode operations
@@ -95,6 +106,7 @@ const backupAPI = {
 window.api = {
   inventory: inventoryAPI,
   shows: showsAPI,
+  theatres: theatresAPI,
   pullsheets: pullsheetsAPI,
   changeOrders: changeOrdersAPI,
   returns: returnsAPI,

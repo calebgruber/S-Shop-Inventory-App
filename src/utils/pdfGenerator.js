@@ -458,6 +458,135 @@ async function generateBarcodeLabels(items, options = {}) {
 }
 
 /**
+ * Generate Location Report PDF
+ * Shows items currently in use at each theatre location
+ */
+async function generateLocationReportPDF(data) {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  
+  // Header
+  doc.setFontSize(20);
+  doc.text('ITEMS BY LOCATION REPORT', pageWidth / 2, 20, { align: 'center' });
+  
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, 28, { align: 'center' });
+  
+  let yPos = 40;
+  
+  // Group items by theatre
+  const groupedByTheatre = {};
+  data.items.forEach(item => {
+    if (!item.theatre_id || !item.item_id) return;
+    
+    if (!groupedByTheatre[item.theatre_id]) {
+      groupedByTheatre[item.theatre_id] = {
+        theatre_name: item.theatre_name,
+        items: []
+      };
+    }
+    
+    groupedByTheatre[item.theatre_id].items.push(item);
+  });
+  
+  // Summary at top
+  const theatreCount = Object.keys(groupedByTheatre).length;
+  const totalItems = data.items.filter(i => i.item_id).length;
+  const totalQuantity = data.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  
+  doc.setFontSize(11);
+  doc.text(`Summary: ${totalItems} items in ${theatreCount} theatre(s) | Total Quantity: ${totalQuantity}`, 20, yPos);
+  yPos += 10;
+  
+  // Generate sections for each theatre
+  for (const theatreId in groupedByTheatre) {
+    const theatre = groupedByTheatre[theatreId];
+    const theatreTotal = theatre.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    
+    // Check if we need a new page
+    if (yPos > 250) {
+      doc.addPage();
+      yPos = 20;
+    }
+    
+    // Theatre header
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(theatre.theatre_name, 20, yPos);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${theatre.items.length} item(s) | Total Qty: ${theatreTotal}`, 20, yPos + 6);
+    yPos += 12;
+    
+    // Items table for this theatre
+    const tableData = theatre.items.map(item => [
+      item.item_name || 'N/A',
+      item.show_name || 'N/A',
+      item.quantity || 0,
+      item.serial_number || '-',
+      item.status || 'N/A'
+    ]);
+    
+    doc.autoTable({
+      startY: yPos,
+      head: [['Item Name', 'Show', 'Qty', 'Serial Number', 'Status']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [66, 139, 202] },
+      styles: { fontSize: 9 },
+      columnStyles: {
+        0: { cellWidth: 60 },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 20, halign: 'center' },
+        3: { cellWidth: 35 },
+        4: { cellWidth: 25 }
+      },
+      margin: { left: 20, right: 20 }
+    });
+    
+    yPos = doc.lastAutoTable.finalY + 10;
+  }
+  
+  // If no items found
+  if (theatreCount === 0) {
+    doc.setFontSize(12);
+    doc.text('No items currently in use at any location.', pageWidth / 2, yPos, { align: 'center' });
+  }
+  
+  // Footer on all pages
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.text(
+      `Page ${i} of ${pageCount}`,
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 10,
+      { align: 'center' }
+    );
+  }
+  
+  // Save to file
+  const userDataPath = app.getPath('userData');
+  const pdfsDir = path.join(userDataPath, 'pdfs');
+  if (!fs.existsSync(pdfsDir)) {
+    fs.mkdirSync(pdfsDir, { recursive: true });
+  }
+  
+  const filename = `location_report_${Date.now()}.pdf`;
+  const filePath = path.join(pdfsDir, filename);
+  
+  const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+  fs.writeFileSync(filePath, pdfBuffer);
+  
+  // Auto-open PDF
+  console.log('Location report PDF generated:', filePath);
+  await openPDF(filePath);
+  
+  return filePath;
+}
+
+/**
  * Main PDF generation function
  */
 async function generatePDF(type, data) {
@@ -470,6 +599,8 @@ async function generatePDF(type, data) {
       return await generateReturnSummaryPDF(data);
     case 'labels':
       return await generateBarcodeLabels(data.items, data.options || {});
+    case 'location':
+      return await generateLocationReportPDF(data);
     default:
       throw new Error(`Unknown PDF type: ${type}`);
   }
