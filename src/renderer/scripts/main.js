@@ -128,7 +128,11 @@ async function handlePullSheetBarcodeInput() {
       const pullSheetId = parts[1];
       // Navigate to pull sheets page with callback to open details
       await window.navigation.loadPage('pullsheets', () => {
-        window.viewPullSheet(pullSheetId);
+        if (typeof window.viewPullSheet === 'function') {
+          window.viewPullSheet(pullSheetId);
+        } else {
+          console.error('viewPullSheet function not available');
+        }
       });
       // Clear input
       input.value = '';

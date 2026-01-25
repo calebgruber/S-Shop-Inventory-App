@@ -158,19 +158,6 @@ function showBarcodeError(title, message) {
   `;
 }
 
-// Handle show barcode scan
-function handleShowBarcode(barcode) {
-  // Extract show ID from barcode (format: SHOW-{id}-{timestamp})
-  const parts = barcode.split('-');
-  if (parts.length >= 2) {
-    const showId = parts[1];
-    // Navigate to show details
-    window.navigation.loadPage('shows');
-    // In a full implementation, this would open the specific show
-    console.log('Opening show:', showId);
-  }
-}
-
 // Handle pull sheet barcode scan  
 async function handlePullSheetBarcode(barcode) {
   // Extract pull sheet ID from barcode (format: SHOW-{id} or PULL-{id})
@@ -179,7 +166,11 @@ async function handlePullSheetBarcode(barcode) {
     const pullSheetId = parts[1];
     // Navigate to pull sheets page with callback to open details
     await window.navigation.loadPage('pullsheets', () => {
-      window.viewPullSheet(pullSheetId);
+      if (typeof window.viewPullSheet === 'function') {
+        window.viewPullSheet(pullSheetId);
+      } else {
+        console.error('viewPullSheet function not available');
+      }
     });
     console.log('Opening pull sheet:', pullSheetId);
   }

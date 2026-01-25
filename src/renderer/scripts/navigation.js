@@ -51,9 +51,8 @@ async function loadPage(pageName, onLoadComplete) {
       
       // Call onLoadComplete callback if provided
       if (typeof onLoadComplete === 'function') {
-        // Wait for next tick to ensure DOM is fully ready
-        await new Promise(resolve => setTimeout(resolve, 0));
-        onLoadComplete();
+        // Use queueMicrotask to ensure DOM is fully ready
+        queueMicrotask(onLoadComplete);
       }
     } catch (error) {
       console.error(`Error loading page ${pageName}:`, error);
