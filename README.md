@@ -16,12 +16,61 @@ A complete inventory management application for theatre sound shops built with p
 
 ## Requirements
 
-- PHP 7.4 or higher
+- PHP 7.4 or higher with GD extension (for barcode generation)
 - MySQL 5.7 or higher
-- Apache with mod_rewrite (or Nginx)
-- Composer
+- Web server (Apache or Nginx)
+- No external dependencies required
 
-## Installation
+## Installation on cPanel
+
+### 1. Upload Files
+
+Upload all files to your public_html directory (or a subdirectory if desired).
+
+### 2. Database Setup
+
+1. In cPanel, go to MySQL Databases
+2. Create a new database (e.g., `youruser_sound_shop`)
+3. Create a database user with a strong password
+4. Add the user to the database with ALL PRIVILEGES
+5. Note down the database name, username, and password
+
+### 3. Import Database Schema
+
+1. In cPanel, go to phpMyAdmin
+2. Select your newly created database
+3. Click on the "Import" tab
+4. Click "Choose File" and select `database/schema.sql` from your local files
+5. Click "Go" to import
+
+### 4. Configure Database Connection
+
+Edit `includes/config.php` and update the database credentials:
+
+```php
+define('DB_HOST', 'localhost');
+define('DB_USER', 'youruser_dbuser');
+define('DB_PASS', 'your_password');
+define('DB_NAME', 'youruser_sound_shop');
+```
+
+### 5. Set Permissions
+
+The uploads directory needs to be writable:
+- In cPanel File Manager, right-click on `uploads` folder
+- Select "Change Permissions"
+- Set to 755 or 777 (if 755 doesn't work)
+
+### 6. Access the Application
+
+Navigate to your domain (e.g., `https://yourdomain.com/public/`) in your web browser.
+
+**Note**: The application files are in the `public` folder. You can either:
+- Access via `https://yourdomain.com/public/`
+- OR move all files from `public/` to your root directory
+- OR configure your domain to point to the `public` folder
+
+## Installation on VPS/Dedicated Server
 
 ### 1. Clone the repository
 
@@ -30,13 +79,7 @@ git clone <repository-url>
 cd S-Shop-Inventory-App
 ```
 
-### 2. Install PHP dependencies
-
-```bash
-composer install
-```
-
-### 3. Database Setup
+### 2. Database Setup
 
 Create a MySQL database and import the schema:
 
@@ -45,25 +88,18 @@ mysql -u root -p -e "CREATE DATABASE sound_shop_inventory CHARACTER SET utf8mb4 
 mysql -u root -p sound_shop_inventory < database/schema.sql
 ```
 
-### 4. Configure Database Connection
+### 3. Configure Database Connection
 
-Edit `includes/config.php` or set environment variables:
+Edit `includes/config.php` and update the credentials.
 
-```bash
-export DB_HOST=localhost
-export DB_USER=root
-export DB_PASS=your_password
-export DB_NAME=sound_shop_inventory
-```
-
-### 5. Set Permissions
+### 4. Set Permissions
 
 ```bash
 chmod 755 uploads
 chmod 755 includes
 ```
 
-### 6. Web Server Configuration
+### 5. Web Server Configuration
 
 #### Apache
 
@@ -98,9 +134,9 @@ server {
 }
 ```
 
-### 7. Access the Application
+### 6. Access the Application
 
-Navigate to `http://your-domain.com` in your web browser.
+Navigate to `http://your-domain.com/public/` in your web browser.
 
 ## Usage
 
@@ -140,51 +176,55 @@ S-Shop-Inventory-App/
 ├── database/
 │   └── schema.sql          # Database schema
 ├── includes/
+│   ├── barcode/
+│   │   ├── Code128.php     # Pure PHP Code128 generator
+│   │   └── PDF417.php      # Pure PHP PDF417 generator
+│   ├── pdf/
+│   │   └── SimplePDF.php   # Pure PHP PDF generator
 │   ├── config.php          # Configuration
-│   ├── db.php             # Database connection
+│   ├── db.php              # Database connection
 │   ├── functions.php       # Helper functions
-│   ├── header.php         # Layout header
-│   └── footer.php         # Layout footer
+│   ├── header.php          # Layout header
+│   └── footer.php          # Layout footer
 ├── public/                 # Web root
-│   ├── index.php          # Dashboard
-│   ├── items.php          # Items list
-│   ├── item_edit.php      # Add/edit items
-│   ├── item_barcodes.php  # Print barcodes
-│   ├── shows.php          # Shows list
-│   ├── show_create.php    # Create show
-│   ├── show_edit.php      # Edit show
-│   ├── pullsheets.php     # Pullsheets list
+│   ├── index.php           # Dashboard
+│   ├── items.php           # Items list
+│   ├── item_edit.php       # Add/edit items
+│   ├── item_barcodes.php   # Print barcodes
+│   ├── shows.php           # Shows list
+│   ├── show_create.php     # Create show
+│   ├── show_edit.php       # Edit show
+│   ├── pullsheets.php      # Pullsheets list
 │   ├── pullsheet_create.php
 │   ├── pullsheet_edit.php
 │   ├── pullsheet_view.php
-│   ├── pick_mode.php      # Pick mode interface
-│   ├── return_mode.php    # Return mode interface
+│   ├── pick_mode.php       # Pick mode interface
+│   ├── return_mode.php     # Return mode interface
 │   ├── change_orders.php
 │   ├── change_order_create.php
 │   ├── change_order_edit.php
-│   ├── reports.php        # Reports
-│   └── settings.php       # Settings
-├── uploads/               # Uploaded files (logos)
-├── .htaccess             # Apache configuration
-└── composer.json         # PHP dependencies
+│   ├── reports.php         # Reports
+│   └── settings.php        # Settings
+├── uploads/                # Uploaded files (logos)
+└── .htaccess              # Apache configuration
 ```
 
 ## Technologies Used
 
-- **Backend**: Pure PHP (no framework)
+- **Backend**: Pure PHP (no framework, no external dependencies)
 - **Database**: MySQL with PDO
-- **Frontend**: Tabler UI (Bootstrap 5)
-- **Barcodes**: Code128 for items, PDF417 for pullsheets
-- **PDF Generation**: TCPDF
-- **Icons**: Tabler Icons
+- **Frontend**: Tabler UI (Bootstrap 5) via CDN
+- **Barcodes**: Pure PHP Code128 for items, PDF417 for pullsheets/change orders
+- **PDF Generation**: Pure PHP SimplePDF implementation
+- **Icons**: Tabler Icons via CDN
 
 ## Security Notes
 
 - Always use prepared statements (PDO) for database queries
-- Store sensitive configuration in environment variables
-- Keep `composer.json` dependencies updated
+- Store sensitive configuration securely
 - Use HTTPS in production
 - Regularly backup the database
+- Keep PHP updated to the latest secure version
 
 ## License
 
