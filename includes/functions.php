@@ -227,6 +227,16 @@ function getAllCategories() {
     return $db->fetchAll("SELECT * FROM categories ORDER BY name");
 }
 
+function getAllSubcategories() {
+    $db = getDB();
+    return $db->fetchAll("SELECT s.*, c.name as category_name FROM subcategories s LEFT JOIN categories c ON s.category_id = c.id ORDER BY s.name");
+}
+
+function getSubcategoriesByCategory($categoryId) {
+    $db = getDB();
+    return $db->fetchAll("SELECT * FROM subcategories WHERE category_id = ? ORDER BY name", [$categoryId]);
+}
+
 // Theatre space functions
 function getAllTheatreSpaces() {
     $db = getDB();
@@ -257,6 +267,12 @@ function getDashboardStats() {
         "SELECT COUNT(*) as count FROM shows WHERE status = 'active'"
     );
     $stats['active_shows'] = $result['count'];
+    
+    // Pending student requests
+    $result = $db->fetchOne(
+        "SELECT COUNT(*) as count FROM student_requests WHERE status = 'pending'"
+    );
+    $stats['pending_student_requests'] = $result ? $result['count'] : 0;
     
     return $stats;
 }

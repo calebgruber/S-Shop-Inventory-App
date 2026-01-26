@@ -26,6 +26,16 @@ $pendingChangeOrders = getDB()->fetchAll(
      LIMIT 5"
 );
 
+// Get pending student requests
+$pendingStudentRequests = getDB()->fetchAll(
+    "SELECT sr.*, u.full_name as student_name
+     FROM student_requests sr
+     LEFT JOIN users u ON sr.student_id = u.id
+     WHERE sr.status = 'pending'
+     ORDER BY sr.created_at DESC
+     LIMIT 5"
+);
+
 // Get change orders with items to add (need to be picked)
 $changeOrdersToPick = getDB()->fetchAll(
     "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_add
@@ -143,6 +153,9 @@ $changeOrdersToReturn = getDB()->fetchAll(
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="subheader">Active Shows</div>
+                    <div class="ms-auto lh-1">
+                        <i class="ti ti-theater text-muted" style="font-size: 3rem; opacity: 0.1; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);"></i>
+                    </div>
                 </div>
                 <div class="h1 mb-0"><?php echo $stats['active_shows']; ?></div>
             </div>
@@ -153,6 +166,9 @@ $changeOrdersToReturn = getDB()->fetchAll(
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="subheader">Pending Picks</div>
+                    <div class="ms-auto lh-1">
+                        <i class="ti ti-scan text-muted" style="font-size: 3rem; opacity: 0.1; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);"></i>
+                    </div>
                 </div>
                 <div class="h1 mb-0"><?php echo $stats['pending_picks']; ?></div>
             </div>
@@ -163,6 +179,9 @@ $changeOrdersToReturn = getDB()->fetchAll(
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="subheader">Pending Returns</div>
+                    <div class="ms-auto lh-1">
+                        <i class="ti ti-arrow-back text-muted" style="font-size: 3rem; opacity: 0.1; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);"></i>
+                    </div>
                 </div>
                 <div class="h1 mb-0"><?php echo $stats['pending_returns']; ?></div>
             </div>
@@ -173,6 +192,9 @@ $changeOrdersToReturn = getDB()->fetchAll(
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div class="subheader">Total Items</div>
+                    <div class="ms-auto lh-1">
+                        <i class="ti ti-package text-muted" style="font-size: 3rem; opacity: 0.1; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);"></i>
+                    </div>
                 </div>
                 <div class="h1 mb-0"><?php echo getDB()->fetchOne("SELECT COUNT(*) as count FROM items")['count']; ?></div>
             </div>
@@ -307,6 +329,38 @@ $changeOrdersToReturn = getDB()->fetchAll(
         </div>
     </div>
     
+    <?php if (hasPermission('student_requests') && !empty($pendingStudentRequests)): ?>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title">Student Requests</h3>
+                <?php if ($stats['pending_student_requests'] > 0): ?>
+                    <span class="badge bg-primary"><?php echo $stats['pending_student_requests']; ?> pending</span>
+                <?php endif; ?>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <?php foreach ($pendingStudentRequests as $request): ?>
+                        <div class="list-group-item">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <strong><?php echo htmlspecialchars($request['item_name']); ?></strong>
+                                    <div class="text-muted small">By: <?php echo htmlspecialchars($request['student_name'] ?? 'Unknown'); ?> - <?php echo date('m/d/Y', strtotime($request['created_at'])); ?></div>
+                                </div>
+                                <div class="col-auto">
+                                    <a href="student_requests.php" class="btn btn-sm btn-primary">View</a>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="student_requests.php" class="btn btn-link">View All Requests</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php else: ?>
     <div class="col-lg-6 mb-4">
         <div class="card">
             <div class="card-header">
@@ -335,6 +389,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
             </div>
         </div>
     </div>
+    <?php endif; ?>
 </div>
 
 <div class="row">

@@ -3,9 +3,11 @@ $pageTitle = 'Reports';
 require_once 'includes/header.php';
 
 $reportType = $_GET['type'] ?? 'inventory';
+$categoryFilter = $_GET['category'] ?? 'all';
 $items = getAllItems();
 $shows = getAllShows();
 $spaces = getAllTheatreSpaces();
+$categories = getAllCategories();
 ?>
 
 <div class="row mb-4">
@@ -19,6 +21,29 @@ $spaces = getAllTheatreSpaces();
 </div>
 
 <?php if ($reportType === 'inventory'): ?>
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <input type="hidden" name="type" value="inventory">
+                <div class="col-md-4">
+                    <label class="form-label">Filter by Category</label>
+                    <select class="form-select" name="category" onchange="this.form.submit()">
+                        <option value="all" <?php echo $categoryFilter === 'all' ? 'selected' : ''; ?>>All Categories</option>
+                        <?php foreach ($categories as $category): ?>
+                        <option value="<?php echo $category['id']; ?>" <?php echo $categoryFilter == $category['id'] ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($category['name']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <a href="?type=inventory" class="btn btn-secondary w-100">Clear Filter</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Inventory Report</h3>
@@ -40,14 +65,34 @@ $spaces = getAllTheatreSpaces();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($items as $item): ?>
+                    <?php 
+                    // Group items by category
+                    $itemsByCategory = [];
+                    foreach ($items as $item) {
+                        if ($categoryFilter !== 'all' && $item['category_id'] != $categoryFilter) {
+                            continue;
+                        }
+                        $catName = $item['category_name'] ?? 'Uncategorized';
+                        if (!isset($itemsByCategory[$catName])) {
+                            $itemsByCategory[$catName] = [];
+                        }
+                        $itemsByCategory[$catName][] = $item;
+                    }
+                    ksort($itemsByCategory);
+                    
+                    foreach ($itemsByCategory as $catName => $catItems): ?>
+                        <tr class="table-active">
+                            <td colspan="5"><strong><?php echo htmlspecialchars($catName); ?></strong></td>
+                        </tr>
+                        <?php foreach ($catItems as $item): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($item['name']); ?></td>
+                            <td>&nbsp;&nbsp;<?php echo htmlspecialchars($item['name']); ?></td>
                             <td><?php echo htmlspecialchars($item['category_name'] ?? 'N/A'); ?></td>
                             <td><code><?php echo htmlspecialchars($item['barcode']); ?></code></td>
                             <td><?php echo $item['in_stock_quantity']; ?></td>
                             <td><?php echo $item['total_quantity']; ?></td>
                         </tr>
+                        <?php endforeach; ?>
                     <?php endforeach; ?>
                 </tbody>
             </table>

@@ -234,6 +234,9 @@ foreach ($shows as $show) {
                                     <a href="pullsheet_view.php?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-primary" target="_blank">
                                         <i class="ti ti-eye icon"></i> View
                                     </a>
+                                    <button onclick="printPullsheet(<?php echo $ps['id']; ?>)" class="btn btn-sm btn-info">
+                                        <i class="ti ti-printer icon"></i> Print
+                                    </button>
                                     <a href="pullsheet_edit.php?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-secondary">
                                         <i class="ti ti-edit icon"></i> Edit
                                     </a>
@@ -296,6 +299,9 @@ foreach ($shows as $show) {
                                     <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
                                         <i class="ti ti-eye icon"></i> View
                                     </a>
+                                    <button onclick="printChangeOrder(<?php echo $co['id']; ?>)" class="btn btn-sm btn-info">
+                                        <i class="ti ti-printer icon"></i> Print
+                                    </button>
                                     <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-secondary">
                                         <i class="ti ti-edit icon"></i> Edit
                                     </a>
@@ -336,5 +342,23 @@ foreach ($shows as $show) {
     </div>
 </div>
 <?php endif; ?>
+
+<script>
+function printPullsheet(id) {
+    // Open pullsheet in new window and trigger print
+    const win = window.open('pullsheet_view.php?id=' + id, '_blank');
+    win.onload = function() {
+        win.print();
+    };
+}
+
+function printChangeOrder(id) {
+    // Open change order in new window and trigger print
+    const win = window.open('change_order_edit.php?id=' + id + '&print=1', '_blank');
+    win.onload = function() {
+        win.print();
+    };
+}
+</script>
 
 <?php require_once 'includes/footer.php'; ?>

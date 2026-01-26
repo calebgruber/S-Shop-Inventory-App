@@ -34,6 +34,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     setAlert('Category deleted successfully');
                     break;
                     
+                case 'add_subcategory':
+                    getDB()->query(
+                        "INSERT INTO subcategories (category_id, name, description) VALUES (?, ?, ?)",
+                        [$_POST['category_id'], $_POST['name'], $_POST['description']]
+                    );
+                    setAlert('Subcategory added successfully');
+                    break;
+                    
+                case 'delete_subcategory':
+                    getDB()->query("DELETE FROM subcategories WHERE id = ?", [$_POST['id']]);
+                    setAlert('Subcategory deleted successfully');
+                    break;
+                    
                 case 'add_theatre_space':
                     getDB()->query(
                         "INSERT INTO theatre_spaces (name, description) VALUES (?, ?)",
@@ -55,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $categories = getAllCategories();
+$subcategories = getAllSubcategories();
 $theatreSpaces = getAllTheatreSpaces();
 $appName = getSetting('app_name');
 $logoPath = getSetting('logo_path');
@@ -122,6 +136,61 @@ $logoPath = getSetting('logo_path');
                                         <input type="hidden" name="action" value="delete_category">
                                         <input type="hidden" name="id" value="<?php echo $category['id']; ?>">
                                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this category?')">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Subcategories</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="mb-3">
+                    <input type="hidden" name="action" value="add_subcategory">
+                    <div class="mb-2">
+                        <select class="form-select" name="category_id" required>
+                            <option value="">-- Select Category --</option>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo $category['id']; ?>">
+                                    <?php echo htmlspecialchars($category['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="name" placeholder="Subcategory name" required>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </div>
+                    <textarea class="form-control" name="description" placeholder="Description (optional)" rows="2"></textarea>
+                </form>
+                
+                <div class="list-group">
+                    <?php foreach ($subcategories as $subcategory): ?>
+                        <div class="list-group-item">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <strong><?php echo htmlspecialchars($subcategory['name']); ?></strong>
+                                    <div class="text-muted small">
+                                        Category: <?php echo htmlspecialchars($subcategory['category_name'] ?? 'N/A'); ?>
+                                    </div>
+                                    <?php if ($subcategory['description']): ?>
+                                        <div class="text-muted small"><?php echo htmlspecialchars($subcategory['description']); ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="col-auto">
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="action" value="delete_subcategory">
+                                        <input type="hidden" name="id" value="<?php echo $subcategory['id']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this subcategory?')">
                                             <i class="ti ti-trash"></i>
                                         </button>
                                     </form>

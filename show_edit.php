@@ -31,6 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [$_POST['name'], $_POST['shop_lead'], $_POST['designer'], $_POST['theatre_space_id'] ?: null, $_POST['status'], $showId]
             );
             
+            // If show is archived, archive associated pullsheets and change orders
+            if ($_POST['status'] === 'archived') {
+                getDB()->query("UPDATE pullsheets SET status = 'archived' WHERE show_id = ?", [$showId]);
+                getDB()->query("UPDATE change_orders SET status = 'archived' WHERE show_id = ?", [$showId]);
+            }
+            
             setAlert('Show updated successfully');
             redirect('shows.php');
         }
@@ -85,6 +91,7 @@ $changeOrders = getDB()->fetchAll("SELECT * FROM change_orders WHERE show_id = ?
                             <option value="active" <?php echo $show['status'] === 'active' ? 'selected' : ''; ?>>Active</option>
                             <option value="completed" <?php echo $show['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
                             <option value="cancelled" <?php echo $show['status'] === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
+                            <option value="archived" <?php echo $show['status'] === 'archived' ? 'selected' : ''; ?>>Archived</option>
                         </select>
                     </div>
                     
