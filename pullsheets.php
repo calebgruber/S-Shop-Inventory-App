@@ -1,0 +1,160 @@
+<?php
+$pageTitle = 'Pullsheets';
+require_once 'includes/header.php';
+
+// Handle delete request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    try {
+        $deleteId = (int)$_POST['delete_id'];
+        getDB()->query("DELETE FROM pullsheets WHERE id = ?", [$deleteId]);
+        setAlert('Pullsheet deleted successfully');
+        redirect('index.php');
+    } catch (Exception $e) {
+        setAlert('Error: ' . $e->getMessage(), 'danger');
+    }
+}
+
+// Handle create pullsheet request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_pullsheet'])) {
+    try {
+        $showId = !empty($_POST['show_id']) ? (int)$_POST['show_id'] : null;
+        $createdBy = $_POST['created_by'] ?? 'Unknown';
+        $barcode = generateUniqueBarcode('PS');
+        
+        getDB()->query(
+            "INSERT INTO pullsheets (show_id, barcode, created_by, status) VALUES (?, ?, ?, 'draft')",
+            [$showId, $barcode, $createdBy]
+        );
+        
+        $pullsheetId = getDB()->lastInsertId();
+        setAlert('Pullsheet created successfully');
+        redirect('pullsheet_edit.php?id=' . $pullsheetId);
+    } catch (Exception $e) {
+        setAlert('Error: ' . $e->getMessage(), 'danger');
+    }
+}
+
+// Get all pullsheets
+$pullsheets = getDB()->fetchAll("SELECT p.*, s.name as show_name 
+    FROM pullsheets p 
+    LEFT JOIN shows s ON p.show_id = s.id 
+    ORDER BY p.created_at DESC");
+
+// Get all shows for the dropdown
+$shows = getDB()->fetchAll("SELECT id, name FROM shows ORDER BY name ASC");
+?>
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPullsheetModal">
+            <i class="ti ti-plus"></i> Create New Pullsheet
+        </button>
+    </div>
+</div>
+
+<!-- Create Pullsheet Modal -->
+<div class="modal fade" id="createPullsheetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Pullsheet</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Show (Optional)</label>
+                        <select name="show_id" class="form-select">
+                            <option value="">No Show (Standalone Pullsheet)</option>
+                            <?php foreach ($shows as $show): ?>
+                                <option value="<?php echo $show['id']; ?>"><?php echo htmlspecialchars($show['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="form-hint">You can create a pullsheet without a show if needed</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required">Your Name</label>
+                        <input type="text" class="form-control" name="created_by" placeholder="Enter your name" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="create_pullsheet" class="btn btn-primary">Create Pullsheet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <?php foreach ($pullsheets as $pullsheet): ?>
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><?php echo htmlspecialchars($pullsheet['show_name']); ?></h3>
+                    <div class="card-actions">
+                        <?php
+                        $badgeClass = [
+                            'draft' => 'bg-secondary',
+                            'finalized' => 'bg-warning',
+                            'picked' => 'bg-info',
+                            'completed' => 'bg-success'
+                        ][$pullsheet['status']] ?? 'bg-secondary';
+                        ?>
+                        <span class="badge <?php echo $badgeClass; ?>">
+                            <?php echo ucfirst($pullsheet['status']); ?>
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <small class="text-muted">Created by:</small>
+                        <div><?php echo htmlspecialchars($pullsheet['created_by'] ?? 'N/A'); ?></div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Created:</small>
+                        <div><?php echo date('m/d/Y g:i A', strtotime($pullsheet['created_at'])); ?></div>
+                    </div>
+                    <?php if ($pullsheet['picked_by']): ?>
+                        <div class="mb-2">
+                            <small class="text-muted">Picked by:</small>
+                            <div><?php echo htmlspecialchars($pullsheet['picked_by']); ?></div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex gap-2">
+                        <a href="pullsheet_view.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-primary">
+                            <i class="ti ti-eye"></i> View
+                        </a>
+                        <?php if ($pullsheet['status'] === 'draft'): ?>
+                            <a href="pullsheet_edit.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
+                                <i class="ti ti-edit"></i> Edit
+                            </a>
+                        <?php endif; ?>
+                        <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this pullsheet? This cannot be undone.');">
+                            <input type="hidden" name="delete_id" value="<?php echo $pullsheet['id']; ?>">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+    
+    <?php if (empty($pullsheets)): ?>
+        <div class="col-12">
+            <div class="empty">
+                <div class="empty-icon">
+                    <i class="ti ti-file-text icon"></i>
+                </div>
+                <p class="empty-title">No pullsheets yet</p>
+                <p class="empty-subtitle text-muted">Click "Create New Pullsheet" to get started</p>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
+
+<?php require_once 'includes/footer.php'; ?>
