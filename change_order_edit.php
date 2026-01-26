@@ -283,7 +283,7 @@ function searchItem() {
     
     console.log('Searching for barcode:', barcode);
     
-    fetch('?id=<?php echo $coId; ?>', {
+    fetch('?id=<?php echo htmlspecialchars($coId, ENT_QUOTES, 'UTF-8'); ?>', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'ajax=1&action=check_item&barcode=' + encodeURIComponent(barcode)
@@ -333,7 +333,7 @@ function showAddItemModal(item) {
 document.getElementById('confirmBtn').addEventListener('click', () => {
     if (!selectedItem) return;
     
-    fetch('?id=<?php echo $coId; ?>', {
+    fetch('?id=<?php echo htmlspecialchars($coId, ENT_QUOTES, 'UTF-8'); ?>', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: `ajax=1&action=add_item&barcode=${selectedItem.barcode}&quantity=${document.getElementById('qtyInput').value}&type=${document.getElementById('typeInput').value}`
@@ -357,7 +357,7 @@ document.getElementById('confirmBtn').addEventListener('click', () => {
 });
 
 document.getElementById('saveDraftBtn').addEventListener('click', () => {
-    fetch('?id=<?php echo $coId; ?>', {
+    fetch('?id=<?php echo htmlspecialchars($coId, ENT_QUOTES, 'UTF-8'); ?>', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'ajax=1&action=save_draft'
@@ -382,7 +382,7 @@ document.getElementById('saveDraftBtn').addEventListener('click', () => {
 document.getElementById('finalizeBtn').addEventListener('click', () => {
     if (!confirm('Finalize this change order? This action cannot be undone.')) return;
     
-    fetch('?id=<?php echo $coId; ?>', {
+    fetch('?id=<?php echo htmlspecialchars($coId, ENT_QUOTES, 'UTF-8'); ?>', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'ajax=1&action=finalize'
@@ -411,10 +411,10 @@ document.querySelectorAll('.remove-item-btn').forEach(btn => {
         const itemId = this.getAttribute('data-item-id');
         if (!confirm('Remove this item from the change order?')) return;
         
-        fetch('?id=<?php echo $coId; ?>', {
+        fetch('?id=<?php echo htmlspecialchars($coId, ENT_QUOTES, 'UTF-8'); ?>', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'ajax=1&action=remove_item&item_id=' + itemId
+            body: 'ajax=1&action=remove_item&item_id=' + encodeURIComponent(itemId)
         })
         .then(r => r.json())
         .then(data => {
