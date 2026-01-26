@@ -59,7 +59,27 @@ Using cPanel File Manager:
 4. Check "Recurse into subdirectories"
 5. Click **Change Permissions**
 
-#### 5. Access the Application
+#### 5. Upload Sound Files (Important!)
+
+The application uses sound effects for scanning feedback in Pick Mode and Return Mode.
+
+**Required Files:**
+- `assets/sounds/success.mp3` - Plays when items are scanned successfully
+- `assets/sounds/error.mp3` - Plays on errors or when extra items are scanned
+
+**How to add sound files:**
+1. Download free sound files from sites like freesound.org, zapsplat.com, or soundbible.com
+   - Get a short "ding" or "beep" for success (0.5-1 second)
+   - Get a short "buzz" or error tone for errors (0.5-1 second)
+2. Convert to MP3 format if needed
+3. Rename to exactly `success.mp3` and `error.mp3`
+4. Upload to `assets/sounds/` directory using cPanel File Manager
+
+**Note**: The app will work without sound files, but scanning won't have audio feedback.
+
+See `assets/sounds/README.md` for detailed instructions.
+
+#### 6. Access the Application
 
 **If installed in root (`public_html`):**
 - Main app: `https://yourdomain.com/public/`
@@ -71,7 +91,15 @@ Using cPanel File Manager:
 
 ### First Steps After Installation
 
-#### 1. Test Barcode Generation
+#### 1. Upload Sound Files
+
+Before testing, upload your MP3 sound files to `assets/sounds/`:
+- success.mp3 (for successful scans)
+- error.mp3 (for errors/extra items)
+
+See step 5 above for details.
+
+#### 2. Test Barcode Generation
 
 Visit the test page first to ensure barcodes are working:
 - `https://yourdomain.com/public/test_barcode.php`
@@ -81,14 +109,14 @@ You should see:
 - ✓ PDF417 barcode image
 - ✓ All system requirements met
 
-#### 2. Configure Settings
+#### 3. Configure Settings
 
 1. Go to **Settings** in the navigation menu
 2. Upload your logo (will appear on PDFs)
 3. Add **Categories** for inventory items (e.g., Microphones, Speakers, Cables)
 4. Add **Theatre Spaces** (e.g., Main Stage, Black Box, Studio)
 
-#### 3. Add Your First Items
+#### 4. Add Your First Items
 
 1. Go to **Items**
 2. Click **Add New Item**
@@ -101,7 +129,7 @@ You should see:
 4. The barcode will be auto-generated
 5. Click **Save**
 
-#### 4. Create a Show
+#### 5. Create a Show
 
 1. Go to **Shows**
 2. Click **Create New Show**

@@ -51,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet"/>
 <style>.item-card-incomplete{border-left:5px solid #d63939}.item-card-complete{border-left:5px solid #2fb344}.large-input{font-size:1.5rem;padding:1rem}</style>
 </head><body style="padding:2rem">
-<audio id="successSound"><source src="data:audio/wav;base64,UklGRhIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU4AAACAgICAgICAgH9/f39/f35+fn5+fn19fX19fHx8fHx8e3t7e3t6enp6enl5eXl5eHh4eHh3d3d3d3Z2dnZ2dXV1dXV0dHR0dHNzc3Nzcg==" type="audio/wav"></audio>
-<audio id="errorSound"><source src="data:audio/wav;base64,UklGRhIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU4AAACAgH5+fHp4dnRyb21qZ2RhXlpWU09LSERAOzYyLiojHxsXEw8LBwMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" type="audio/wav"></audio>
+<audio id="successSound"><source src="../assets/sounds/success.mp3" type="audio/mpeg"></audio>
+<audio id="errorSound"><source src="../assets/sounds/error.mp3" type="audio/mpeg"></audio>
 <div class="container-xl"><div class="d-flex justify-content-between mb-4"><h1>Pick Mode</h1><a href="index.php" class="btn btn-secondary">Exit</a></div>
 <?php if (!$pickSession): ?>
 <div class="row justify-content-center"><div class="col-md-6"><div class="card"><div class="card-body">

@@ -7,8 +7,8 @@ A complete inventory management application for theatre sound shops built with p
 - **Item Management**: Track items by quantity or serial number with barcode generation
 - **Show Management**: Create and manage theatre shows with shop leads and designers
 - **Pullsheets**: Create pullsheets for shows with PDF417 barcodes
-- **Pick Mode**: Fullscreen barcode scanning interface for picking items
-- **Return Mode**: Return items to inventory with barcode scanning
+- **Pick Mode**: Fullscreen barcode scanning interface with sound effects
+- **Return Mode**: Return items to inventory with barcode scanning and sound feedback
 - **Change Orders**: Multiple change orders per show for adding/removing items
 - **Reports**: Comprehensive inventory reports by show, space, or full inventory
 - **Dark/Light Mode**: User-selectable theme that persists
@@ -20,6 +20,7 @@ A complete inventory management application for theatre sound shops built with p
 - MySQL 5.7 or higher
 - Web server (Apache or Nginx)
 - No external dependencies required
+- MP3 sound files for scanning feedback (success.mp3, error.mp3) - see assets/sounds/README.md
 
 ## Installation on cPanel
 
