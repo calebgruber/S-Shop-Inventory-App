@@ -14,9 +14,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $trackingType = $_POST['tracking_type'];
         $totalQuantity = (int)$_POST['total_quantity'];
         $inStockQuantity = (int)$_POST['in_stock_quantity'];
+        $barcode = trim($_POST['barcode'] ?? '');
         
         if ($itemId) {
-            // Update existing item
+            // Update existing item - barcode can't be changed once set
             getDB()->query(
                 "UPDATE items SET name = ?, description = ?, category_id = ?, tracking_type = ?, 
                  total_quantity = ?, in_stock_quantity = ? WHERE id = ?",
@@ -24,8 +25,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             setAlert('Item updated successfully');
         } else {
-            // Create new item
-            $barcode = generateUniqueBarcode('ITEM');
+            // Create new item - use custom barcode or generate one
+            if (empty($barcode)) {
+                $barcode = generateUniqueBarcode('ITEM');
+            } else {
+                // Check if barcode already exists
+                $existing = getDB()->fetchOne("SELECT id FROM items WHERE barcode = ?", [$barcode]);
+                if ($existing) {
+                    throw new Exception("Barcode already exists");
+                }
+            }
+            
             getDB()->query(
                 "INSERT INTO items (name, description, barcode, category_id, tracking_type, total_quantity, in_stock_quantity) 
                  VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -59,12 +69,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <textarea class="form-control" name="description" rows="3"><?php echo htmlspecialchars($item['description'] ?? ''); ?></textarea>
                     </div>
                     
-                    <?php if ($item): ?>
-                        <div class="mb-3">
-                            <label class="form-label">Barcode</label>
+                    <div class="mb-3">
+                        <label class="form-label">Barcode</label>
+                        <?php if ($item): ?>
                             <input type="text" class="form-control" value="<?php echo htmlspecialchars($item['barcode']); ?>" readonly>
-                        </div>
-                    <?php endif; ?>
+                            <small class="form-hint">Barcode cannot be changed after creation</small>
+                        <?php else: ?>
+                            <input type="text" class="form-control" name="barcode" placeholder="Leave blank to auto-generate">
+                            <small class="form-hint">Leave blank to auto-generate a unique barcode</small>
+                        <?php endif; ?>
+                    </div>
                     
                     <div class="mb-3">
                         <label class="form-label">Category</label>
