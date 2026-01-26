@@ -69,33 +69,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     if ($_POST['action'] === 'save_draft') {
         $showId = (int)$_POST['show_id'];
         $createdBy = trim($_POST['created_by'] ?? '');
-        $items = json_decode($_POST['items'], true);
+        $itemsJson = $_POST['items'] ?? '';
+        $items = json_decode($itemsJson, true);
         
-        if ($pullSheetId > 0) {
-            $id = $pullSheetId;
-        } else {
-            $barcode = generatePDF417Barcode('pullsheet');
-            $stmt = $db->prepare("INSERT INTO pull_sheets (show_id, barcode, created_by, status) 
-                                  VALUES (?, ?, ?, 'draft')");
-            $stmt->bind_param("iss", $showId, $barcode, $createdBy);
-            $stmt->execute();
-            $id = $stmt->insert_id;
+        if (!$showId || !is_array($items) || empty($items)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid data provided']);
+            exit;
         }
         
-        // Clear existing items
-        $stmt = $db->prepare("DELETE FROM pull_sheet_items WHERE pull_sheet_id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        
-        // Add items
-        foreach ($items as $item) {
-            $stmt = $db->prepare("INSERT INTO pull_sheet_items (pull_sheet_id, item_id, quantity_needed) 
-                                  VALUES (?, ?, ?)");
-            $stmt->bind_param("iii", $id, $item['item_id'], $item['quantity']);
+        try {
+            if ($pullSheetId > 0) {
+                $id = $pullSheetId;
+            } else {
+                $barcode = generatePDF417Barcode('pullsheet');
+                $stmt = $db->prepare("INSERT INTO pull_sheets (show_id, barcode, created_by, status) 
+                                      VALUES (?, ?, ?, 'draft')");
+                $stmt->bind_param("iss", $showId, $barcode, $createdBy);
+                $stmt->execute();
+                $id = $stmt->insert_id;
+            }
+            
+            // Clear existing items
+            $stmt = $db->prepare("DELETE FROM pull_sheet_items WHERE pull_sheet_id = ?");
+            $stmt->bind_param("i", $id);
             $stmt->execute();
+            
+            // Add items
+            foreach ($items as $item) {
+                $stmt = $db->prepare("INSERT INTO pull_sheet_items (pull_sheet_id, item_id, quantity_needed) 
+                                      VALUES (?, ?, ?)");
+                $stmt->bind_param("iii", $id, $item['item_id'], $item['quantity']);
+                $stmt->execute();
+            }
+            
+            echo json_encode(['success' => true, 'id' => $id]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         }
-        
-        echo json_encode(['success' => true, 'id' => $id]);
         exit;
     }
     
@@ -192,7 +202,7 @@ function searchItem(search) {
     })
     .then(r => r.json())
     .then(data => {
-        if (data.success && data.items.length > 0) {
+        if (data.success && data.items && data.items.length > 0) {
             if (data.items.length === 1) {
                 showItemModal(data.items[0]);
             } else {
@@ -202,6 +212,11 @@ function searchItem(search) {
             alert('No items found');
         }
         document.getElementById('item-search').value = '';
+        document.getElementById('item-search').focus();
+    })
+    .catch(error => {
+        console.error('Search error:', error);
+        alert('Error searching for items. Please try again.');
         document.getElementById('item-search').focus();
     });
 }
@@ -335,7 +350,13 @@ function saveDraft() {
         if (data.success) {
             alert('Draft saved successfully');
             window.location.href = 'pull_sheet_view.php?id=' + data.id;
+        } else {
+            alert('Error saving draft: ' + (data.message || 'Unknown error'));
         }
+    })
+    .catch(error => {
+        console.error('Save error:', error);
+        alert('Error saving draft. Please try again.');
     });
 }
 

@@ -175,6 +175,11 @@ function processBarcode(barcode) {
                 currentDocument = data.document;
                 pendingItems = data.items;
                 showNotification('Document scanned: ' + data.document.barcode, 'success');
+                // Hide instruction card after first scan
+                const instructionCard = document.getElementById('instruction-card');
+                if (instructionCard) {
+                    instructionCard.style.display = 'none';
+                }
                 renderPendingItems();
             } else if (data.type === 'item') {
                 if (pendingItems.length === 0) {
@@ -310,12 +315,12 @@ JS;
 ob_start();
 ?>
 
-<div id="return-container">
+<div id="return-container" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: var(--tblr-body-bg); overflow-y: auto;">
     <div class="container-xl">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 pt-4">
             <div>
                 <h1 class="m-0">Return Mode</h1>
-                <div class="text-muted">Scan pull sheet/change order or individual items</div>
+                <div class="text-muted">Scan pull sheet/change order barcode to begin</div>
             </div>
             <div>
                 <button id="fullscreen-btn" class="btn btn-primary me-2" onclick="toggleFullscreen()">
@@ -327,11 +332,21 @@ ob_start();
             </div>
         </div>
         
+        <div id="instruction-card" class="card mb-4">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <?php echo RETURN_MODE_INSTRUCTION_SVG; ?>
+                </div>
+                <h3 class="mb-3">Scan PDF Barcode to Start</h3>
+                <p class="text-muted">Scan the barcode from the pull sheet or change order PDF document</p>
+            </div>
+        </div>
+        
         <div class="card mb-4">
             <div class="card-body">
                 <label class="form-label">Scan Barcode</label>
-                <input type="text" id="barcode-input" class="form-control barcode-input auto-focus" 
-                       placeholder="Scan document or item barcode" onkeypress="scanBarcode(event)">
+                <input type="text" id="barcode-input" class="form-control form-control-lg auto-focus" 
+                       placeholder="Scan document or item barcode" onkeypress="scanBarcode(event)" autofocus>
                 <small class="form-hint">Scan pull sheet/change order first, then scan items to return</small>
             </div>
         </div>

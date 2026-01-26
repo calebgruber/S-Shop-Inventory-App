@@ -80,60 +80,103 @@ if ($pullSheetId > 0) {
     }
 }
 
-// If no document found, show search interface
+// If no document found, show search interface (fullscreen)
 if (!$document) {
     $pageTitle = 'Pick Mode - ' . APP_NAME;
-    $pageHeader = 'Pick Mode - Scan or Search Pull Sheet';
+    $hideHeader = true; // Hide the regular header for fullscreen mode
     
     ob_start();
     ?>
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h3 class="card-title mb-4">Start Pick Mode</h3>
-                    <form method="GET" action="pick_mode.php">
-                        <div class="mb-3">
-                            <label class="form-label">Scan or Enter Pull Sheet / Change Order Barcode</label>
-                            <input type="text" name="barcode" class="form-control form-control-lg auto-focus" 
-                                   placeholder="Scan barcode here..." required>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-lg w-100">
-                            <i class="ti ti-scan me-2"></i>Start Picking
-                        </button>
-                    </form>
+    <div id="pick-start-container" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: var(--tblr-body-bg); overflow-y: auto;">
+        <div class="container-xl">
+            <div class="d-flex justify-content-between align-items-center mb-4 pt-4">
+                <div>
+                    <h1 class="m-0">Pick Mode</h1>
+                    <div class="text-muted">Scan pull sheet/change order barcode to begin</div>
+                </div>
+                <div>
+                    <a href="index.php" class="btn btn-secondary">
+                        <i class="ti ti-x"></i> Exit
+                    </a>
                 </div>
             </div>
             
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h4 class="card-title">Recent Pull Sheets</h4>
-                    <div class="list-group">
-                        <?php
-                        $recentDocs = $db->query("
-                            SELECT ps.id, ps.barcode, ps.status, s.name as show_name, 'pull_sheet' as doc_type
-                            FROM pull_sheets ps
-                            JOIN shows s ON ps.show_id = s.id
-                            WHERE ps.status IN ('finalized', 'picked')
-                            ORDER BY ps.created_at DESC
-                            LIMIT 5
-                        ")->fetch_all(MYSQLI_ASSOC);
-                        
-                        foreach ($recentDocs as $doc):
-                        ?>
-                        <a href="pick_mode.php?pull_sheet_id=<?php echo $doc['id']; ?>" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h5 class="mb-1"><?php echo sanitize($doc['show_name']); ?></h5>
-                                <small class="badge bg-info"><?php echo ucfirst($doc['status']); ?></small>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card mb-4">
+                        <div class="card-body text-center py-5">
+                            <div class="mb-4">
+                                <?php echo PICK_MODE_INSTRUCTION_SVG; ?>
                             </div>
-                            <p class="mb-1"><small><?php echo sanitize($doc['barcode']); ?></small></p>
-                        </a>
-                        <?php endforeach; ?>
+                            <h3 class="mb-3">Scan PDF Barcode to Start</h3>
+                            <p class="text-muted">Scan the barcode from the pull sheet or change order PDF document</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <form method="GET" action="pick_mode.php" id="barcode-form">
+                                <div class="mb-3">
+                                    <label class="form-label">Pull Sheet / Change Order Barcode</label>
+                                    <input type="text" name="barcode" id="barcode-input" class="form-control form-control-lg auto-focus" 
+                                           placeholder="Scan barcode here..." required autofocus>
+                                </div>
+                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                    <i class="ti ti-scan me-2"></i>Start Picking
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h4 class="card-title">Recent Pull Sheets</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                <?php
+                                $recentDocs = $db->query("
+                                    SELECT ps.id, ps.barcode, ps.status, s.name as show_name, 'pull_sheet' as doc_type
+                                    FROM pull_sheets ps
+                                    JOIN shows s ON ps.show_id = s.id
+                                    WHERE ps.status IN ('finalized', 'picked')
+                                    ORDER BY ps.created_at DESC
+                                    LIMIT 5
+                                ")->fetch_all(MYSQLI_ASSOC);
+                                
+                                if (count($recentDocs) > 0):
+                                    foreach ($recentDocs as $doc):
+                                ?>
+                                <a href="pick_mode.php?pull_sheet_id=<?php echo $doc['id']; ?>" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1"><?php echo sanitize($doc['show_name']); ?></h5>
+                                        <small class="badge bg-info"><?php echo ucfirst($doc['status']); ?></small>
+                                    </div>
+                                    <p class="mb-1"><small><?php echo sanitize($doc['barcode']); ?></small></p>
+                                </a>
+                                <?php 
+                                    endforeach;
+                                else:
+                                ?>
+                                <div class="text-muted text-center py-3">No recent pull sheets</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    <script>
+        // Auto-focus the barcode input
+        document.addEventListener('DOMContentLoaded', function() {
+            const barcodeInput = document.getElementById('barcode-input');
+            if (barcodeInput) {
+                barcodeInput.focus();
+                barcodeInput.select();
+            }
+        });
+    </script>
     <?php
     $content = ob_get_clean();
     include 'layout.php';
