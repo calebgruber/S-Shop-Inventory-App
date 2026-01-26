@@ -147,13 +147,17 @@ $pageTitle = ($changeOrderId > 0 ? "Edit" : "Create") . " Change Order - " . APP
 $pageHeader = ($changeOrderId > 0 ? "Edit" : "Create") . " Change Order";
 $pageActions = '<a href="change_orders.php" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back</a>';
 
-$additionalJS = <<<JS
+// Prepare data for JavaScript
+$itemsJSON = json_encode($items);
+$changeOrderIdJS = $changeOrderId;
+
+$additionalJS = <<<'JS'
 <script>
 let changeOrderItems = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     // Load existing items if editing
-    const existingItems = <?php echo json_encode($items); ?>;
+    const existingItems = ITEMS_DATA_PLACEHOLDER;
     if (existingItems && existingItems.length > 0) {
         existingItems.forEach(item => {
             changeOrderItems.push({
@@ -380,7 +384,7 @@ function finalizeChangeOrder() {
         return;
     }
     
-    const changeOrderId = <?php echo $changeOrderId; ?>;
+    const changeOrderId = CHANGEORDER_ID_PLACEHOLDER;
     
     fetch('change_order_create.php', {
         method: 'POST',
@@ -403,6 +407,10 @@ function escapeHtml(text) {
 }
 </script>
 JS;
+
+// Replace placeholders with actual data
+$additionalJS = str_replace('ITEMS_DATA_PLACEHOLDER', $itemsJSON, $additionalJS);
+$additionalJS = str_replace('CHANGEORDER_ID_PLACEHOLDER', $changeOrderIdJS, $additionalJS);
 
 ob_start();
 ?>

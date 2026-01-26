@@ -160,13 +160,17 @@ $pageTitle = ($pullSheetId > 0 ? "Edit" : "Create") . " Pull Sheet - " . APP_NAM
 $pageHeader = ($pullSheetId > 0 ? "Edit" : "Create") . " Pull Sheet";
 $pageActions = '<a href="pull_sheets.php" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back</a>';
 
-$additionalJS = <<<JS
+// Prepare data for JavaScript
+$itemsJSON = json_encode($items);
+$pullSheetIdJS = $pullSheetId;
+
+$additionalJS = <<<'JS'
 <script>
 let pullSheetItems = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     // Load existing items if editing
-    const existingItems = <?php echo json_encode($items); ?>;
+    const existingItems = ITEMS_DATA_PLACEHOLDER;
     if (existingItems && existingItems.length > 0) {
         existingItems.forEach(item => {
             pullSheetItems.push({
@@ -400,7 +404,7 @@ function finalizePullSheet() {
         return;
     }
     
-    const pullSheetId = <?php echo $pullSheetId; ?>;
+    const pullSheetId = PULLSHEET_ID_PLACEHOLDER;
     
     fetch('pull_sheet_create.php', {
         method: 'POST',
@@ -423,6 +427,10 @@ function escapeHtml(text) {
 }
 </script>
 JS;
+
+// Replace placeholders with actual data
+$additionalJS = str_replace('ITEMS_DATA_PLACEHOLDER', $itemsJSON, $additionalJS);
+$additionalJS = str_replace('PULLSHEET_ID_PLACEHOLDER', $pullSheetIdJS, $additionalJS);
 
 ob_start();
 ?>
