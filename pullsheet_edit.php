@@ -1,28 +1,16 @@
 <?php
-$pageTitle = 'Edit Pullsheet';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
 $pullsheetId = $_GET['id'] ?? null;
-if (!$pullsheetId) {
-    redirect('pullsheets.php');
-}
 
-$pullsheet = getPullsheetById($pullsheetId);
-if (!$pullsheet) {
-    setAlert('Pullsheet not found', 'danger');
-    redirect('pullsheets.php');
-}
-
-if ($pullsheet['status'] !== 'draft') {
-    redirect('pullsheet_view.php?id=' . $pullsheetId);
-}
-
-$items = getPullsheetItems($pullsheetId);
-$allItems = getAllItems();
-
-// Handle AJAX requests
+// Handle AJAX requests BEFORE any HTML output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
+    
+    if (!$pullsheetId) {
+        echo json_encode(['success' => false, 'message' => 'Invalid pullsheet']);
+        exit;
+    }
     
     try {
         if ($_POST['action'] === 'check_item') {
@@ -101,6 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         }
         
         if ($_POST['action'] === 'finalize') {
+            $pullsheet = getPullsheetById($pullsheetId);
+            
             // Mark items as reserved
             $items = getPullsheetItems($pullsheetId);
             foreach ($items as $item) {
@@ -127,6 +117,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         exit;
     }
 }
+
+// Regular page rendering starts here
+$pageTitle = 'Edit Pullsheet';
+require_once 'includes/header.php';
+
+if (!$pullsheetId) {
+    redirect('pullsheets.php');
+}
+
+$pullsheet = getPullsheetById($pullsheetId);
+if (!$pullsheet) {
+    setAlert('Pullsheet not found', 'danger');
+    redirect('pullsheets.php');
+}
+
+if ($pullsheet['status'] !== 'draft') {
+    redirect('pullsheet_view.php?id=' . $pullsheetId);
+}
+
+$items = getPullsheetItems($pullsheetId);
+$allItems = getAllItems();
 ?>
 
 <div class="row">

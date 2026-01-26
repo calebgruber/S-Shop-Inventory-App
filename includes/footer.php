@@ -22,10 +22,9 @@
         const themeToggle = document.getElementById('theme-toggle');
         const html = document.documentElement;
         
-        // Load saved theme
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        if (savedTheme === 'dark') {
-            html.setAttribute('data-bs-theme', 'dark');
+        // Get current theme (already set by header inline script)
+        const currentSavedTheme = localStorage.getItem('theme') || 'light';
+        if (currentSavedTheme === 'dark') {
             themeToggle.innerHTML = '<i class="ti ti-sun icon"></i>';
         }
         

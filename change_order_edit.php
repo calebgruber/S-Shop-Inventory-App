@@ -1,20 +1,17 @@
 <?php
-$pageTitle = 'Edit Change Order';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
 $coId = $_GET['id'] ?? null;
-if (!$coId) redirect('change_orders.php');
 
-$co = getChangeOrderById($coId);
-if (!$co) {
-    setAlert('Change order not found', 'danger');
-    redirect('change_orders.php');
-}
-
-$items = getChangeOrderItems($coId);
-
+// Handle AJAX requests BEFORE any HTML output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
+    
+    if (!$coId) {
+        echo json_encode(['success' => false, 'message' => 'Invalid change order']);
+        exit;
+    }
+    
     try {
         if ($_POST['action'] === 'check_item') {
             $itemBarcode = $_POST['barcode'];
@@ -68,6 +65,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         exit;
     }
 }
+
+// Regular page rendering starts here
+$pageTitle = 'Edit Change Order';
+require_once 'includes/header.php';
+
+if (!$coId) redirect('change_orders.php');
+
+$co = getChangeOrderById($coId);
+if (!$co) {
+    setAlert('Change order not found', 'danger');
+    redirect('change_orders.php');
+}
+
+$items = getChangeOrderItems($coId);
 ?>
 
 <div class="row">
