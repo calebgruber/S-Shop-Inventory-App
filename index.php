@@ -9,8 +9,8 @@ $activeShows = getActiveShows();
 $pendingPullsheets = getDB()->fetchAll(
     "SELECT p.*, s.name as show_name 
      FROM pullsheets p 
-     JOIN shows s ON p.show_id = s.id 
-     WHERE p.status = 'finalized' AND p.archived = 0
+     LEFT JOIN shows s ON p.show_id = s.id 
+     WHERE p.status = 'finalized'
      ORDER BY p.created_at 
      LIMIT 5"
 );
@@ -19,8 +19,8 @@ $pendingPullsheets = getDB()->fetchAll(
 $pendingChangeOrders = getDB()->fetchAll(
     "SELECT co.*, s.name as show_name 
      FROM change_orders co 
-     JOIN shows s ON co.show_id = s.id 
-     WHERE co.status = 'finalized' AND co.archived = 0
+     LEFT JOIN shows s ON co.show_id = s.id 
+     WHERE co.status = 'finalized'
      ORDER BY co.created_at 
      LIMIT 5"
 );
@@ -29,9 +29,9 @@ $pendingChangeOrders = getDB()->fetchAll(
 $changeOrdersToPick = getDB()->fetchAll(
     "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_add
      FROM change_orders co 
-     JOIN shows s ON co.show_id = s.id 
+     LEFT JOIN shows s ON co.show_id = s.id 
      LEFT JOIN change_order_items coi ON co.id = coi.change_order_id 
-     WHERE co.status = 'finalized' AND co.archived = 0 AND coi.action = 'add'
+     WHERE co.status = 'finalized' AND coi.action = 'add'
      GROUP BY co.id
      HAVING items_to_add > 0
      ORDER BY co.created_at 
@@ -42,9 +42,9 @@ $changeOrdersToPick = getDB()->fetchAll(
 $changeOrdersToReturn = getDB()->fetchAll(
     "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_remove
      FROM change_orders co 
-     JOIN shows s ON co.show_id = s.id 
+     LEFT JOIN shows s ON co.show_id = s.id 
      LEFT JOIN change_order_items coi ON co.id = coi.change_order_id 
-     WHERE co.status = 'finalized' AND co.archived = 0 AND coi.action = 'remove'
+     WHERE co.status = 'finalized' AND coi.action = 'remove'
      GROUP BY co.id
      HAVING items_to_remove > 0
      ORDER BY co.created_at 

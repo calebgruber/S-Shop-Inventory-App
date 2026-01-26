@@ -2,60 +2,87 @@
 $pageTitle = 'Pullsheets';
 require_once 'includes/header.php';
 
-// Handle archive/unarchive request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['archive_id'])) {
+// Handle delete request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
     try {
-        $archiveId = (int)$_POST['archive_id'];
-        $archiveValue = isset($_POST['unarchive']) ? 0 : 1;
-        getDB()->query("UPDATE pullsheets SET archived = ? WHERE id = ?", [$archiveValue, $archiveId]);
-        setAlert($archiveValue ? 'Pullsheet archived successfully' : 'Pullsheet restored successfully');
+        $deleteId = (int)$_POST['delete_id'];
+        getDB()->query("DELETE FROM pullsheets WHERE id = ?", [$deleteId]);
+        setAlert('Pullsheet deleted successfully');
         redirect('index.php');
     } catch (Exception $e) {
         setAlert('Error: ' . $e->getMessage(), 'danger');
     }
 }
 
-// Handle alert query parameters
-if (isset($_GET['saved'])) {
-    setAlert('Draft saved successfully', 'success');
-}
-if (isset($_GET['finalized'])) {
-    setAlert('Pullsheet finalized successfully', 'success');
+// Handle create pullsheet request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_pullsheet'])) {
+    try {
+        $showId = !empty($_POST['show_id']) ? (int)$_POST['show_id'] : null;
+        $createdBy = $_POST['created_by'] ?? 'Unknown';
+        $barcode = generateUniqueBarcode('PS');
+        
+        getDB()->query(
+            "INSERT INTO pullsheets (show_id, barcode, created_by, status) VALUES (?, ?, ?, 'draft')",
+            [$showId, $barcode, $createdBy]
+        );
+        
+        $pullsheetId = getDB()->lastInsertId();
+        setAlert('Pullsheet created successfully');
+        redirect('pullsheet_edit.php?id=' . $pullsheetId);
+    } catch (Exception $e) {
+        setAlert('Error: ' . $e->getMessage(), 'danger');
+    }
 }
 
-// Check if user wants to see archived pullsheets
-$showArchived = isset($_GET['show_archived']) && $_GET['show_archived'] === '1';
+// Get all pullsheets
+$pullsheets = getDB()->fetchAll("SELECT p.*, s.name as show_name 
+    FROM pullsheets p 
+    LEFT JOIN shows s ON p.show_id = s.id 
+    ORDER BY p.created_at DESC");
 
-// Get pullsheets based on archived filter
-if ($showArchived) {
-    $pullsheets = getDB()->fetchAll("SELECT p.*, s.name as show_name 
-        FROM pullsheets p 
-        LEFT JOIN shows s ON p.show_id = s.id 
-        WHERE p.archived = 1
-        ORDER BY p.created_at DESC");
-} else {
-    $pullsheets = getDB()->fetchAll("SELECT p.*, s.name as show_name 
-        FROM pullsheets p 
-        LEFT JOIN shows s ON p.show_id = s.id 
-        WHERE p.archived = 0
-        ORDER BY p.created_at DESC");
-}
+// Get all shows for the dropdown
+$shows = getDB()->fetchAll("SELECT id, name FROM shows ORDER BY name ASC");
 ?>
 
 <div class="row mb-3">
-    <div class="col">
-        <a href="show_create.php" class="btn btn-primary">
-            <i class="ti ti-plus"></i> Create New Show First
-        </a>
-        <?php if ($showArchived): ?>
-            <a href="pullsheets.php" class="btn btn-secondary">
-                <i class="ti ti-eye"></i> Show Active Pullsheets
-            </a>
-        <?php else: ?>
-            <a href="pullsheets.php?show_archived=1" class="btn btn-secondary">
-                <i class="ti ti-archive"></i> Show Archived Pullsheets
-            </a>
-        <?php endif; ?>
+    <div class="col-md-8">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPullsheetModal">
+            <i class="ti ti-plus"></i> Create New Pullsheet
+        </button>
+    </div>
+</div>
+
+<!-- Create Pullsheet Modal -->
+<div class="modal fade" id="createPullsheetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Pullsheet</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Show (Optional)</label>
+                        <select name="show_id" class="form-select">
+                            <option value="">No Show (Standalone Pullsheet)</option>
+                            <?php foreach ($shows as $show): ?>
+                                <option value="<?php echo $show['id']; ?>"><?php echo htmlspecialchars($show['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="form-hint">You can create a pullsheet without a show if needed</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required">Your Name</label>
+                        <input type="text" class="form-control" name="created_by" placeholder="Enter your name" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="create_pullsheet" class="btn btn-primary">Create Pullsheet</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -105,22 +132,12 @@ if ($showArchived) {
                                 <i class="ti ti-edit"></i> Edit
                             </a>
                         <?php endif; ?>
-                        <?php if (!$showArchived): ?>
-                            <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to archive this pullsheet?');">
-                                <input type="hidden" name="archive_id" value="<?php echo $pullsheet['id']; ?>">
-                                <button type="submit" class="btn btn-sm btn-secondary" title="Archive">
-                                    <i class="ti ti-archive"></i>
-                                </button>
-                            </form>
-                        <?php else: ?>
-                            <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to restore this pullsheet?');">
-                                <input type="hidden" name="archive_id" value="<?php echo $pullsheet['id']; ?>">
-                                <input type="hidden" name="unarchive" value="1">
-                                <button type="submit" class="btn btn-sm btn-success" title="Restore">
-                                    <i class="ti ti-archive-off"></i>
-                                </button>
-                            </form>
-                        <?php endif; ?>
+                        <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this pullsheet? This cannot be undone.');">
+                            <input type="hidden" name="delete_id" value="<?php echo $pullsheet['id']; ?>">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -134,7 +151,7 @@ if ($showArchived) {
                     <i class="ti ti-file-text icon"></i>
                 </div>
                 <p class="empty-title">No pullsheets yet</p>
-                <p class="empty-subtitle text-muted">Create a show first, then create a pullsheet for it</p>
+                <p class="empty-subtitle text-muted">Click "Create New Pullsheet" to get started</p>
             </div>
         </div>
     <?php endif; ?>
