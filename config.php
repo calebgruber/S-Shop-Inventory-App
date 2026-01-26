@@ -31,6 +31,11 @@ define('RETURN_MODE_INSTRUCTION_SVG', '<svg width="200" height="150" viewBox="0 
     <path d="M 100 120 L 100 95" stroke="currentColor" stroke-width="3"/>
 </svg>');
 
+// Audio file paths for barcode scanning feedback
+// Set these to the path of your MP3 or WAV files
+define('AUDIO_SUCCESS_PATH', BASE_URL . '/assets/sounds/success.mp3');
+define('AUDIO_ERROR_PATH', BASE_URL . '/assets/sounds/error.mp3');
+
 // Ensure directories exist
 if (!file_exists(UPLOAD_DIR)) mkdir(UPLOAD_DIR, 0755, true);
 if (!file_exists(ASSETS_DIR)) mkdir(ASSETS_DIR, 0755, true);
