@@ -4,6 +4,7 @@ A complete inventory management application for theatre sound shops built with p
 
 ## Features
 
+### Core Features
 - **Item Management**: Track items by quantity or serial number with barcode generation
 - **Show Management**: Create and manage theatre shows with shop leads and designers
 - **Pullsheets**: Create pullsheets for shows with PDF417 barcodes
@@ -13,6 +14,26 @@ A complete inventory management application for theatre sound shops built with p
 - **Reports**: Comprehensive inventory reports by show, space, or full inventory
 - **Dark/Light Mode**: User-selectable theme that persists
 - **Barcode Printing**: Print Code128 barcodes on Avery 8195 labels
+
+### Advanced Features (New!)
+- **Hotkey Manager**: Customize keyboard shortcuts for quick access to common actions
+  - Configure personal hotkeys for 7+ common operations
+  - Access via user settings page
+  - Persistent per-user preferences
+  
+- **Production Calendar**: Visual calendar system for managing show events
+  - FullCalendar integration with multiple view modes
+  - Color-coded shows for easy identification
+  - Create/edit/delete events linked to shows
+  - Admin-controlled color customization
+  
+- **Notifications System**: Real-time alerts for important events
+  - Unread notification badge in header
+  - Dropdown with recent notifications
+  - Auto-generated for: pullsheet finalization, student requests, repairs needed
+  - Mark as read/mark all read functionality
+
+See [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) for detailed documentation.
 
 ## Requirements
 
@@ -41,8 +62,9 @@ Upload all files to your public_html directory (or a subdirectory if desired).
 1. In cPanel, go to phpMyAdmin
 2. Select your newly created database
 3. Click on the "Import" tab
-4. Click "Choose File" and select `database/schema.sql` from your local files
-5. Click "Go" to import
+4. First, import `database/schema.sql`
+5. Then, import `database/advanced_features_migration.sql` (for hotkeys, calendar, notifications)
+6. Click "Go" to import
 
 ### 4. Configure Database Connection
 
@@ -84,6 +106,7 @@ Create a MySQL database and import the schema:
 ```bash
 mysql -u root -p -e "CREATE DATABASE sound_shop_inventory CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql -u root -p sound_shop_inventory < database/schema.sql
+mysql -u root -p sound_shop_inventory < database/advanced_features_migration.sql
 ```
 
 ### 3. Configure Database Connection
@@ -172,39 +195,45 @@ Navigate to `http://your-domain.com/` in your web browser.
 ```
 S-Shop-Inventory-App/
 ├── database/
-│   └── schema.sql          # Database schema
+│   ├── schema.sql                    # Database schema
+│   └── advanced_features_migration.sql # Advanced features tables
 ├── includes/
 │   ├── barcode/
-│   │   ├── Code128.php     # Pure PHP Code128 generator
-│   │   └── PDF417.php      # Pure PHP PDF417 generator
+│   │   ├── Code128.php               # Pure PHP Code128 generator
+│   │   └── PDF417.php                # Pure PHP PDF417 generator
 │   ├── pdf/
-│   │   └── SimplePDF.php   # Pure PHP PDF generator
-│   ├── config.php          # Configuration
-│   ├── db.php              # Database connection
-│   ├── functions.php       # Helper functions
-│   ├── header.php          # Layout header
-│   └── footer.php          # Layout footer
-├── index.php               # Dashboard
-├── items.php               # Items list
-├── item_edit.php           # Add/edit items
-├── item_barcodes.php       # Print barcodes
-├── shows.php               # Shows list
-├── show_create.php         # Create show
-├── show_edit.php           # Edit show
-├── pullsheets.php          # Pullsheets list
+│   │   └── SimplePDF.php             # Pure PHP PDF generator
+│   ├── config.php                    # Configuration
+│   ├── db.php                        # Database connection
+│   ├── functions.php                 # Helper functions
+│   ├── header.php                    # Layout header
+│   └── footer.php                    # Layout footer
+├── index.php                         # Dashboard
+├── items.php                         # Items list
+├── item_edit.php                     # Add/edit items
+├── item_barcodes.php                 # Print barcodes
+├── shows.php                         # Shows list
+├── show_create.php                   # Create show
+├── show_edit.php                     # Edit show
+├── pullsheets.php                    # Pullsheets list
 ├── pullsheet_create.php
 ├── pullsheet_edit.php
 ├── pullsheet_view.php
-├── pick_mode.php           # Pick mode interface
-├── return_mode.php         # Return mode interface
+├── pick_mode.php                     # Pick mode interface
+├── return_mode.php                   # Return mode interface
 ├── change_orders.php
 ├── change_order_create.php
 ├── change_order_edit.php
-├── reports.php             # Reports
-├── settings.php            # Settings
-├── test_barcode.php        # Test barcode generation
-├── uploads/                # Uploaded files (logos)
-└── .htaccess               # Apache configuration
+├── reports.php                       # Reports
+├── settings.php                      # Settings
+├── user_settings.php                 # User hotkey preferences
+├── production_calendar.php           # Production calendar
+├── api_notifications.php             # Notifications API
+├── test_barcode.php                  # Test barcode generation
+├── setup_advanced_features.php       # Setup script for advanced features
+├── uploads/                          # Uploaded files (logos)
+├── ADVANCED_FEATURES.md              # Advanced features documentation
+└── .htaccess                         # Apache configuration
 ```
 
 ## Technologies Used
