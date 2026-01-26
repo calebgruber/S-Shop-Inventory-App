@@ -131,5 +131,5 @@ function formatDate($date) {
 }
 
 function getThemeMode() {
-    return getSetting('theme_mode', 'light');
+    return 'dark';
 }

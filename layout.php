@@ -74,16 +74,10 @@
                     </a>
                 </h1>
                 <div class="navbar-nav flex-row order-md-last">
-                    <div class="nav-item dropdown">
-                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown">
+                    <div class="nav-item">
+                        <a href="settings.php" class="nav-link">
                             <i class="ti ti-settings"></i>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                            <a href="settings.php" class="dropdown-item">Settings</a>
-                            <a href="#" class="dropdown-item" onclick="toggleTheme(); return false;">
-                                Toggle Dark/Light Mode
-                            </a>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -215,20 +209,6 @@
                 autoFocusElement.select();
             }
         });
-        
-        // Theme toggle
-        function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-bs-theme', newTheme);
-            
-            // Save preference
-            fetch('ajax_toggle_theme.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({theme: newTheme})
-            });
-        }
         
         // Play success sound
         function playSuccessSound() {

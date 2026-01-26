@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS settings (
 INSERT INTO settings (setting_key, setting_value) VALUES 
 ('logo_path', 'assets/logo.png'),
 ('app_name', 'CMFT Sound Shop Inventory'),
-('theme_mode', 'light')
+('theme_mode', 'dark')
 ON DUPLICATE KEY UPDATE setting_key=setting_key;
 
 -- Categories table
