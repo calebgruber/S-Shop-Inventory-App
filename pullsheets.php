@@ -42,6 +42,25 @@ $pullsheets = getDB()->fetchAll("SELECT p.*, s.name as show_name
 
 // Get all shows for the dropdown
 $shows = getDB()->fetchAll("SELECT id, name FROM shows ORDER BY name ASC");
+
+// Group pullsheets by show
+$pullsheetsByShow = [];
+$pullsheetsNoShow = [];
+
+foreach ($pullsheets as $pullsheet) {
+    if ($pullsheet['show_id']) {
+        $showId = $pullsheet['show_id'];
+        if (!isset($pullsheetsByShow[$showId])) {
+            $pullsheetsByShow[$showId] = [
+                'show_name' => $pullsheet['show_name'],
+                'pullsheets' => []
+            ];
+        }
+        $pullsheetsByShow[$showId]['pullsheets'][] = $pullsheet;
+    } else {
+        $pullsheetsNoShow[] = $pullsheet;
+    }
+}
 ?>
 
 <div class="row mb-3">
@@ -86,75 +105,183 @@ $shows = getDB()->fetchAll("SELECT id, name FROM shows ORDER BY name ASC");
     </div>
 </div>
 
-<div class="row">
-    <?php foreach ($pullsheets as $pullsheet): ?>
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title"><?php echo htmlspecialchars($pullsheet['show_name']); ?></h3>
-                    <div class="card-actions">
-                        <?php
-                        $badgeClass = [
-                            'draft' => 'bg-secondary',
-                            'finalized' => 'bg-warning',
-                            'picked' => 'bg-info',
-                            'completed' => 'bg-success'
-                        ][$pullsheet['status']] ?? 'bg-secondary';
-                        ?>
-                        <span class="badge <?php echo $badgeClass; ?>">
-                            <?php echo ucfirst($pullsheet['status']); ?>
-                        </span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <small class="text-muted">Created by:</small>
-                        <div><?php echo htmlspecialchars($pullsheet['created_by'] ?? 'N/A'); ?></div>
-                    </div>
-                    <div class="mb-2">
-                        <small class="text-muted">Created:</small>
-                        <div><?php echo date('m/d/Y g:i A', strtotime($pullsheet['created_at'])); ?></div>
-                    </div>
-                    <?php if ($pullsheet['picked_by']): ?>
-                        <div class="mb-2">
-                            <small class="text-muted">Picked by:</small>
-                            <div><?php echo htmlspecialchars($pullsheet['picked_by']); ?></div>
-                        </div>
-                    <?php endif; ?>
-                </div>
-                <div class="card-footer">
-                    <div class="d-flex gap-2">
-                        <a href="pullsheet_view.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-primary">
-                            <i class="ti ti-eye"></i> View
-                        </a>
-                        <?php if ($pullsheet['status'] === 'draft'): ?>
-                            <a href="pullsheet_edit.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
-                                <i class="ti ti-edit"></i> Edit
-                            </a>
-                        <?php endif; ?>
-                        <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this pullsheet? This cannot be undone.');">
-                            <input type="hidden" name="delete_id" value="<?php echo $pullsheet['id']; ?>">
-                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                <i class="ti ti-trash"></i>
+<?php if (empty($pullsheets)): ?>
+    <div class="empty">
+        <div class="empty-icon">
+            <i class="ti ti-file-text icon"></i>
+        </div>
+        <p class="empty-title">No pullsheets yet</p>
+        <p class="empty-subtitle text-muted">Click "Create New Pullsheet" to get started</p>
+    </div>
+<?php else: ?>
+    <div class="card">
+        <div class="card-body">
+            <div class="accordion" id="pullsheetsAccordion">
+                <?php 
+                $accordionIndex = 0;
+                
+                // Show pullsheets grouped by show
+                foreach ($pullsheetsByShow as $showId => $showData): 
+                    $accordionIndex++;
+                ?>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-show-<?php echo $showId; ?>">
+                            <button class="accordion-button <?php echo $accordionIndex > 1 ? 'collapsed' : ''; ?>" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#collapse-show-<?php echo $showId; ?>" 
+                                    aria-expanded="<?php echo $accordionIndex === 1 ? 'true' : 'false'; ?>">
+                                <strong><?php echo htmlspecialchars($showData['show_name']); ?></strong>
+                                <span class="badge bg-primary ms-2"><?php echo count($showData['pullsheets']); ?> pullsheet<?php echo count($showData['pullsheets']) !== 1 ? 's' : ''; ?></span>
                             </button>
-                        </form>
+                        </h2>
+                        <div id="collapse-show-<?php echo $showId; ?>" 
+                             class="accordion-collapse collapse <?php echo $accordionIndex === 1 ? 'show' : ''; ?>" 
+                             data-bs-parent="#pullsheetsAccordion">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    <?php foreach ($showData['pullsheets'] as $pullsheet): ?>
+                                        <div class="col-md-6 col-lg-4 mb-3">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h3 class="card-title">Pullsheet</h3>
+                                                    <div class="card-actions">
+                                                        <?php
+                                                        $badgeClass = [
+                                                            'draft' => 'bg-secondary',
+                                                            'finalized' => 'bg-warning',
+                                                            'picked' => 'bg-info',
+                                                            'completed' => 'bg-success'
+                                                        ][$pullsheet['status']] ?? 'bg-secondary';
+                                                        ?>
+                                                        <span class="badge <?php echo $badgeClass; ?>">
+                                                            <?php echo ucfirst($pullsheet['status']); ?>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="mb-2">
+                                                        <small class="text-muted">Created by:</small>
+                                                        <div><?php echo htmlspecialchars($pullsheet['created_by'] ?? 'N/A'); ?></div>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <small class="text-muted">Created:</small>
+                                                        <div><?php echo date('m/d/Y g:i A', strtotime($pullsheet['created_at'])); ?></div>
+                                                    </div>
+                                                    <?php if ($pullsheet['picked_by']): ?>
+                                                        <div class="mb-2">
+                                                            <small class="text-muted">Picked by:</small>
+                                                            <div><?php echo htmlspecialchars($pullsheet['picked_by']); ?></div>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="card-footer">
+                                                    <div class="d-flex gap-2">
+                                                        <a href="pullsheet_view.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-primary">
+                                                            <i class="ti ti-eye"></i> View
+                                                        </a>
+                                                        <?php if ($pullsheet['status'] === 'draft'): ?>
+                                                            <a href="pullsheet_edit.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
+                                                                <i class="ti ti-edit"></i> Edit
+                                                            </a>
+                                                        <?php endif; ?>
+                                                        <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this pullsheet? This cannot be undone.');">
+                                                            <input type="hidden" name="delete_id" value="<?php echo $pullsheet['id']; ?>">
+                                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                                                <i class="ti ti-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                <?php endforeach; ?>
+                
+                <!-- Pullsheets not attached to any show -->
+                <?php if (!empty($pullsheetsNoShow)): 
+                    $accordionIndex++;
+                ?>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-no-show">
+                            <button class="accordion-button <?php echo $accordionIndex > 1 ? 'collapsed' : ''; ?>" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#collapse-no-show" 
+                                    aria-expanded="<?php echo $accordionIndex === 1 ? 'true' : 'false'; ?>">
+                                <strong>Not Attached to Show</strong>
+                                <span class="badge bg-secondary ms-2"><?php echo count($pullsheetsNoShow); ?> pullsheet<?php echo count($pullsheetsNoShow) !== 1 ? 's' : ''; ?></span>
+                            </button>
+                        </h2>
+                        <div id="collapse-no-show" 
+                             class="accordion-collapse collapse <?php echo $accordionIndex === 1 ? 'show' : ''; ?>" 
+                             data-bs-parent="#pullsheetsAccordion">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    <?php foreach ($pullsheetsNoShow as $pullsheet): ?>
+                                        <div class="col-md-6 col-lg-4 mb-3">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h3 class="card-title">Pullsheet</h3>
+                                                    <div class="card-actions">
+                                                        <?php
+                                                        $badgeClass = [
+                                                            'draft' => 'bg-secondary',
+                                                            'finalized' => 'bg-warning',
+                                                            'picked' => 'bg-info',
+                                                            'completed' => 'bg-success'
+                                                        ][$pullsheet['status']] ?? 'bg-secondary';
+                                                        ?>
+                                                        <span class="badge <?php echo $badgeClass; ?>">
+                                                            <?php echo ucfirst($pullsheet['status']); ?>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="mb-2">
+                                                        <small class="text-muted">Created by:</small>
+                                                        <div><?php echo htmlspecialchars($pullsheet['created_by'] ?? 'N/A'); ?></div>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <small class="text-muted">Created:</small>
+                                                        <div><?php echo date('m/d/Y g:i A', strtotime($pullsheet['created_at'])); ?></div>
+                                                    </div>
+                                                    <?php if ($pullsheet['picked_by']): ?>
+                                                        <div class="mb-2">
+                                                            <small class="text-muted">Picked by:</small>
+                                                            <div><?php echo htmlspecialchars($pullsheet['picked_by']); ?></div>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="card-footer">
+                                                    <div class="d-flex gap-2">
+                                                        <a href="pullsheet_view.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-primary">
+                                                            <i class="ti ti-eye"></i> View
+                                                        </a>
+                                                        <?php if ($pullsheet['status'] === 'draft'): ?>
+                                                            <a href="pullsheet_edit.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
+                                                                <i class="ti ti-edit"></i> Edit
+                                                            </a>
+                                                        <?php endif; ?>
+                                                        <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this pullsheet? This cannot be undone.');">
+                                                            <input type="hidden" name="delete_id" value="<?php echo $pullsheet['id']; ?>">
+                                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                                                <i class="ti ti-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
-    <?php endforeach; ?>
-    
-    <?php if (empty($pullsheets)): ?>
-        <div class="col-12">
-            <div class="empty">
-                <div class="empty-icon">
-                    <i class="ti ti-file-text icon"></i>
-                </div>
-                <p class="empty-title">No pullsheets yet</p>
-                <p class="empty-subtitle text-muted">Click "Create New Pullsheet" to get started</p>
-            </div>
-        </div>
-    <?php endif; ?>
-</div>
+    </div>
+<?php endif; ?>
 
 <?php require_once 'includes/footer.php'; ?>
