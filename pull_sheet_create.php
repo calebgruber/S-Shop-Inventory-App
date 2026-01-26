@@ -47,8 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     
     if ($_POST['action'] === 'search_item') {
         $search = trim($_POST['search'] ?? '');
+        // First try exact barcode match, then fallback to name search
         $stmt = $db->prepare("SELECT * FROM items 
-                              WHERE barcode = ? OR name LIKE ? 
+                              WHERE barcode = ? 
+                              UNION 
+                              SELECT * FROM items 
+                              WHERE name LIKE ? 
                               LIMIT 10");
         $searchLike = "%$search%";
         $stmt->bind_param("ss", $search, $searchLike);

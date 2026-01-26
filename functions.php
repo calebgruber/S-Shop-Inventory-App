@@ -6,8 +6,28 @@ function sanitize($data) {
 }
 
 function generateBarcode($type = 'item') {
+    $db = getDB();
     $prefix = ($type === 'item') ? 'ITM' : (($type === 'pullsheet') ? 'PS' : 'CO');
-    return $prefix . '-' . strtoupper(uniqid()) . '-' . rand(1000, 9999);
+    
+    // Generate unique barcode with collision check
+    $maxAttempts = 10;
+    for ($i = 0; $i < $maxAttempts; $i++) {
+        $barcode = $prefix . '-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
+        
+        // Check for uniqueness in appropriate table
+        $table = ($type === 'item') ? 'items' : (($type === 'pullsheet') ? 'pull_sheets' : 'change_orders');
+        $stmt = $db->prepare("SELECT COUNT(*) as count FROM $table WHERE barcode = ?");
+        $stmt->bind_param("s", $barcode);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        if ($result['count'] == 0) {
+            return $barcode;
+        }
+    }
+    
+    // Fallback with timestamp if all attempts fail
+    return $prefix . '-' . date('YmdHis') . '-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
 }
 
 function generatePDF417Barcode($type = 'pullsheet') {

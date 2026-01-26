@@ -7,6 +7,28 @@ $db = getDB();
 
 $pullSheetId = isset($_GET['pull_sheet_id']) ? (int)$_GET['pull_sheet_id'] : 0;
 $changeOrderId = isset($_GET['change_order_id']) ? (int)$_GET['change_order_id'] : 0;
+$barcode = isset($_GET['barcode']) ? trim($_GET['barcode']) : '';
+
+// If barcode is provided, look up the document
+if (!empty($barcode) && $pullSheetId === 0 && $changeOrderId === 0) {
+    // Try to find pull sheet
+    $stmt = $db->prepare("SELECT id FROM pull_sheets WHERE barcode = ?");
+    $stmt->bind_param("s", $barcode);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        $pullSheetId = $row['id'];
+    } else {
+        // Try to find change order
+        $stmt = $db->prepare("SELECT id FROM change_orders WHERE barcode = ?");
+        $stmt->bind_param("s", $barcode);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $changeOrderId = $row['id'];
+        }
+    }
+}
 
 $document = null;
 $items = [];
@@ -58,8 +80,64 @@ if ($pullSheetId > 0) {
     }
 }
 
+// If no document found, show search interface
 if (!$document) {
-    redirectTo('index.php');
+    $pageTitle = 'Pick Mode - ' . APP_NAME;
+    $pageHeader = 'Pick Mode - Scan or Search Pull Sheet';
+    
+    ob_start();
+    ?>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Start Pick Mode</h3>
+                    <form method="GET" action="pick_mode.php">
+                        <div class="mb-3">
+                            <label class="form-label">Scan or Enter Pull Sheet / Change Order Barcode</label>
+                            <input type="text" name="barcode" class="form-control form-control-lg auto-focus" 
+                                   placeholder="Scan barcode here..." required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="ti ti-scan me-2"></i>Start Picking
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h4 class="card-title">Recent Pull Sheets</h4>
+                    <div class="list-group">
+                        <?php
+                        $recentDocs = $db->query("
+                            SELECT ps.id, ps.barcode, ps.status, s.name as show_name, 'pull_sheet' as doc_type
+                            FROM pull_sheets ps
+                            JOIN shows s ON ps.show_id = s.id
+                            WHERE ps.status IN ('finalized', 'picked')
+                            ORDER BY ps.created_at DESC
+                            LIMIT 5
+                        ")->fetch_all(MYSQLI_ASSOC);
+                        
+                        foreach ($recentDocs as $doc):
+                        ?>
+                        <a href="pick_mode.php?pull_sheet_id=<?php echo $doc['id']; ?>" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1"><?php echo sanitize($doc['show_name']); ?></h5>
+                                <small class="badge bg-info"><?php echo ucfirst($doc['status']); ?></small>
+                            </div>
+                            <p class="mb-1"><small><?php echo sanitize($doc['barcode']); ?></small></p>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+    $content = ob_get_clean();
+    include 'layout.php';
+    exit;
 }
 
 // Handle AJAX requests
