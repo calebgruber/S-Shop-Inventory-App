@@ -3,6 +3,22 @@
         </div>
     </div>
     
+    <!-- Footer -->
+    <footer class="footer footer-transparent d-print-none">
+        <div class="container-xl">
+            <div class="row text-center align-items-center">
+                <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                    <ul class="list-inline list-inline-dots mb-0">
+                        <li class="list-inline-item">
+                            Made with <span style="color: #e74c3c;">❤</span> by 
+                            <a href="https://www.calebgruber.me" target="_blank" class="link-secondary" rel="noopener">Caleb Gruber</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
     <!-- Bootstrap JS (required for modals and other components) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
