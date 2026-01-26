@@ -69,26 +69,34 @@ $spaces = getAllTheatreSpaces();
                     [$show['id']]
                 );
                 if (empty($allocations)) continue;
+                $showId = 'show-' . $show['id'];
             ?>
-                <h4><?php echo htmlspecialchars($show['name']); ?></h4>
-                <table class="table table-sm mb-4">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Quantity</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($allocations as $alloc): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($alloc['name']); ?></td>
-                                <td><?php echo $alloc['quantity']; ?></td>
-                                <td><span class="badge"><?php echo ucfirst($alloc['status']); ?></span></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                <div class="mb-3">
+                    <h4 class="d-flex align-items-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#<?php echo $showId; ?>" aria-expanded="true">
+                        <i class="ti ti-chevron-down me-2 collapse-icon"></i>
+                        <?php echo htmlspecialchars($show['name']); ?>
+                    </h4>
+                    <div class="collapse show" id="<?php echo $showId; ?>">
+                        <table class="table table-sm mb-4">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($allocations as $alloc): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($alloc['name']); ?></td>
+                                        <td><?php echo $alloc['quantity']; ?></td>
+                                        <td><span class="badge"><?php echo ucfirst($alloc['status']); ?></span></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             <?php endforeach; ?>
         </div>
     </div>
@@ -109,26 +117,34 @@ $spaces = getAllTheatreSpaces();
                     [$space['id']]
                 );
                 if (empty($allocations)) continue;
+                $spaceId = 'space-' . $space['id'];
             ?>
-                <h4><?php echo htmlspecialchars($space['name']); ?></h4>
-                <table class="table table-sm mb-4">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Quantity</th>
-                            <th>Show</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($allocations as $alloc): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($alloc['name']); ?></td>
-                                <td><?php echo $alloc['quantity']; ?></td>
-                                <td><?php echo htmlspecialchars($alloc['show_name'] ?? 'N/A'); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                <div class="mb-3">
+                    <h4 class="d-flex align-items-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#<?php echo $spaceId; ?>" aria-expanded="true">
+                        <i class="ti ti-chevron-down me-2 collapse-icon"></i>
+                        <?php echo htmlspecialchars($space['name']); ?>
+                    </h4>
+                    <div class="collapse show" id="<?php echo $spaceId; ?>">
+                        <table class="table table-sm mb-4">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>Show</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($allocations as $alloc): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($alloc['name']); ?></td>
+                                        <td><?php echo $alloc['quantity']; ?></td>
+                                        <td><?php echo htmlspecialchars($alloc['show_name'] ?? 'N/A'); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             <?php endforeach; ?>
         </div>
     </div>

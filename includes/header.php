@@ -143,6 +143,19 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
             border-color: rgba(66, 153, 225, 0.3);
             color: #4299e1;
         }
+        
+        /* Collapsible section styles */
+        .collapse-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        [data-bs-toggle="collapse"]:not(.collapsed) .collapse-icon {
+            transform: rotate(180deg);
+        }
+        
+        [data-bs-toggle="collapse"].collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
     </style>
 </head>
 <body>
