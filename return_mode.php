@@ -137,19 +137,6 @@ function startReturning() {
     document.getElementById('barcode-input').focus();
 }
 
-function toggleFullscreen() {
-    const container = document.getElementById('return-container');
-    if (!isFullscreen) {
-        container.classList.add('fullscreen-mode');
-        document.getElementById('fullscreen-btn').innerHTML = '<i class="ti ti-minimize"></i> Exit Fullscreen';
-        isFullscreen = true;
-    } else {
-        container.classList.remove('fullscreen-mode');
-        document.getElementById('fullscreen-btn').innerHTML = '<i class="ti ti-maximize"></i> Fullscreen';
-        isFullscreen = false;
-    }
-}
-
 function scanBarcode(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
@@ -323,10 +310,7 @@ ob_start();
                 <div class="text-muted">Scan pull sheet/change order barcode to begin</div>
             </div>
             <div>
-                <button id="fullscreen-btn" class="btn btn-primary me-2" onclick="toggleFullscreen()">
-                    <i class="ti ti-maximize"></i> Fullscreen
-                </button>
-                <a href="index.php" class="btn btn-secondary">
+                <a href="index.php" class="btn btn-danger">
                     <i class="ti ti-x"></i> Exit
                 </a>
             </div>

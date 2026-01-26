@@ -180,13 +180,32 @@ document.addEventListener('DOMContentLoaded', function() {
         renderItems();
     }
     
-    // Search/scan handler
+    // Search/scan handler with auto-search
     const searchInput = document.getElementById('item-search');
     if (searchInput) {
+        let searchTimeout;
+        
+        // Auto-search as user types
+        searchInput.addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            const search = this.value.trim();
+            
+            if (search.length >= 2) {
+                searchTimeout = setTimeout(() => {
+                    searchItem(search);
+                }, 300); // Wait 300ms after typing stops
+            }
+        });
+        
+        // Also support Enter key
         searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                searchItem(this.value);
+                clearTimeout(searchTimeout);
+                const search = this.value.trim();
+                if (search) {
+                    searchItem(search);
+                }
             }
         });
     }
@@ -209,6 +228,8 @@ function searchItem(search) {
                 showItemList(data.items);
             }
         } else {
+            // Don't show alert for short auto-search queries
+            if (search.length < 3) return;
             alert('No items found');
         }
         document.getElementById('item-search').value = '';

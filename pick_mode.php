@@ -333,7 +333,6 @@ body { background: var(--tblr-body-bg); }
 $additionalJS = <<<'JS'
 <script>
 let pickerName = '';
-let isFullscreen = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Show name entry modal
@@ -353,19 +352,6 @@ function startPicking() {
     
     bootstrap.Modal.getInstance(document.getElementById('name-modal')).hide();
     document.getElementById('barcode-input').focus();
-}
-
-function toggleFullscreen() {
-    const container = document.getElementById('pick-container');
-    if (!isFullscreen) {
-        container.classList.add('fullscreen-mode');
-        document.getElementById('fullscreen-btn').innerHTML = '<i class="ti ti-minimize"></i> Exit Fullscreen';
-        isFullscreen = true;
-    } else {
-        container.classList.remove('fullscreen-mode');
-        document.getElementById('fullscreen-btn').innerHTML = '<i class="ti ti-maximize"></i> Fullscreen';
-        isFullscreen = false;
-    }
 }
 
 function scanBarcode(e) {
@@ -490,11 +476,8 @@ ob_start();
                 </div>
             </div>
             <div>
-                <button id="fullscreen-btn" class="btn btn-primary me-2" onclick="toggleFullscreen()">
-                    <i class="ti ti-maximize"></i> Fullscreen
-                </button>
                 <a href="<?php echo $documentType === 'pull_sheet' ? 'pull_sheet_view.php?id=' . $pullSheetId : 'change_order_view.php?id=' . $changeOrderId; ?>" 
-                   class="btn btn-secondary">
+                   class="btn btn-danger">
                     <i class="ti ti-x"></i> Exit
                 </a>
             </div>
@@ -503,8 +486,8 @@ ob_start();
         <div class="card mb-4">
             <div class="card-body">
                 <label class="form-label">Scan Item Barcode</label>
-                <input type="text" id="barcode-input" class="form-control barcode-input auto-focus" 
-                       placeholder="Scan barcode here" onkeypress="scanBarcode(event)">
+                <input type="text" id="barcode-input" class="form-control form-control-lg auto-focus" 
+                       placeholder="Scan barcode here" onkeypress="scanBarcode(event)" autofocus>
             </div>
         </div>
         
