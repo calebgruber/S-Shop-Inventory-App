@@ -57,7 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         
         if ($_POST['action'] === 'finalize') {
             getDB()->query("UPDATE change_orders SET status = 'finalized', finalized_at = NOW() WHERE id = ?", [$coId]);
-            echo json_encode(['success' => true]);
+            
+            // Generate PDF for the change order
+            try {
+                $pdfPath = generateChangeOrderPDF($coId);
+                echo json_encode(['success' => true, 'pdf_path' => $pdfPath]);
+            } catch (Exception $e) {
+                echo json_encode(['success' => true, 'warning' => 'Change order finalized but PDF generation failed: ' . $e->getMessage()]);
+            }
             exit;
         }
     } catch (Exception $e) {
@@ -317,7 +324,8 @@ document.getElementById('finalizeBtn').addEventListener('click', () => {
     .then(data => {
         if (data.success) {
             playSuccessSound();
-            window.location.href = 'change_orders.php?finalized=1';
+            // Redirect to homepage
+            window.location.href = 'index.php';
         } else {
             alert(data.message || 'Error finalizing');
             playErrorSound();
