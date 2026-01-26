@@ -553,72 +553,81 @@ async function removeItemFromPullSheet(itemId) {
 async function finalizePullSheet() {
   if (!currentPullSheet) return;
   
-  // Show modal to get pulled by name
-  const modal = document.createElement('div');
-  modal.innerHTML = `
-    <div class="modal modal-blur fade show" style="display: block;" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Finalize Pull Sheet</h5>
-          </div>
-          <div class="modal-body">
-            <label class="form-label required">Your Name</label>
-            <input type="text" class="form-control" id="pulledByInput" placeholder="Enter your name" autofocus>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
-            <button type="button" class="btn btn-primary" id="confirmFinalizeBtn">Continue</button>
+  // Use the pulled_by field that was set during creation, or prompt if not set
+  let pulledBy = currentPullSheet.pulled_by;
+  
+  if (!pulledBy) {
+    // If no name was provided during creation, ask for it now
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+      <div class="modal modal-blur fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Finalize Pull Sheet</h5>
+            </div>
+            <div class="modal-body">
+              <label class="form-label required">Your Name</label>
+              <input type="text" class="form-control" id="pulledByInput" placeholder="Enter your name" autofocus>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
+              <button type="button" class="btn btn-primary" id="confirmFinalizeBtn">Continue</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="modal-backdrop fade show"></div>
-  `;
-  document.body.appendChild(modal);
-  
-  // Focus the input
-  setTimeout(() => document.getElementById('pulledByInput').focus(), 100);
-  
-  // Handle Enter key
-  document.getElementById('pulledByInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      document.getElementById('confirmFinalizeBtn').click();
-    }
-  });
-  
-  // Handle confirm
-  document.getElementById('confirmFinalizeBtn').addEventListener('click', async () => {
-    const pulledBy = document.getElementById('pulledByInput').value.trim();
-    if (!pulledBy) {
-      alert('Please enter your name');
-      return;
-    }
+      <div class="modal-backdrop fade show"></div>
+    `;
+    document.body.appendChild(modal);
     
-    modal.remove();
+    // Focus the input
+    setTimeout(() => document.getElementById('pulledByInput').focus(), 100);
     
-    const confirmed = await window.api.dialog.showMessage({
-      type: 'question',
-      title: 'Finalize Pull Sheet',
-      message: 'Finalize this pull sheet? This will check out all items and update inventory availability.',
-      buttons: ['Cancel', 'Finalize'],
-      defaultId: 1
+    // Handle Enter key
+    document.getElementById('pulledByInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('confirmFinalizeBtn').click();
+      }
     });
     
-    if (confirmed.response === 1) {
-      try {
-        await window.api.pullsheets.finalize(currentPullSheet.id, pulledBy);
-        
-        alert('Pull sheet finalized! Equipment has been checked out.');
-        
-        // Close modal and refresh
-        bootstrap.Modal.getInstance(document.getElementById('pullSheetDetailModal')).hide();
-        await refreshPullSheets();
-      } catch (error) {
-        alert('Error finalizing pull sheet: ' + error.message);
-      }
-    }
+    // Handle confirm - make it return a promise
+    await new Promise((resolve) => {
+      document.getElementById('confirmFinalizeBtn').addEventListener('click', () => {
+        const value = document.getElementById('pulledByInput').value.trim();
+        if (!value) {
+          alert('Please enter your name');
+          return;
+        }
+        pulledBy = value;
+        modal.remove();
+        resolve();
+      });
+    });
+  }
+  
+  // Confirm finalization
+  const confirmed = await window.api.dialog.showMessage({
+    type: 'question',
+    title: 'Finalize Pull Sheet',
+    message: 'Finalize this pull sheet? This will check out all items and update inventory availability.',
+    buttons: ['Cancel', 'Finalize'],
+    defaultId: 1
   });
+  
+  if (confirmed.response === 1) {
+    try {
+      await window.api.pullsheets.finalize(currentPullSheet.id, pulledBy);
+      
+      alert('Pull sheet finalized! Equipment has been checked out.');
+      
+      // Close modal and refresh
+      bootstrap.Modal.getInstance(document.getElementById('pullSheetDetailModal')).hide();
+      await refreshPullSheets();
+    } catch (error) {
+      alert('Error finalizing pull sheet: ' + error.message);
+    }
+  }
 }
 
 // Start return process

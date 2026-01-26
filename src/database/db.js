@@ -488,7 +488,7 @@ class InventoryDatabase {
 
     if (pullSheet) {
       pullSheet.items = this.db.prepare(`
-        SELECT psi.*, i.name, i.description, i.barcode, i.location
+        SELECT psi.*, i.name, i.description, i.barcode, i.location, i.quantity_available
         FROM pull_sheet_items psi
         JOIN items i ON psi.item_id = i.id
         WHERE psi.pull_sheet_id = ?
