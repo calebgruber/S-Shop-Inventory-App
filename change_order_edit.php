@@ -154,24 +154,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 </div>
 
 <script>
+// Wrap in DOMContentLoaded to ensure elements exist
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Change order edit page loaded');
+    
 let selectedItem = null;
 const modalEl = document.getElementById('addModal');
+const barcodeInput = document.getElementById('itemBarcode');
+const searchBtn = document.getElementById('searchBtn');
+
 if (!modalEl) {
     console.error('Modal element not found');
+    return;
 }
-const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
-const barcodeInput = document.getElementById('itemBarcode');
 
-document.getElementById('searchBtn').addEventListener('click', searchItem);
+if (!barcodeInput) {
+    console.error('Barcode input not found');
+    return;
+}
+
+const modal = new bootstrap.Modal(modalEl);
+console.log('Modal initialized successfully');
+
+if (searchBtn) {
+    searchBtn.addEventListener('click', searchItem);
+    console.log('Search button handler attached');
+}
 
 // Fix Enter key handler
-document.getElementById('itemBarcode').addEventListener('keydown', function(e) {
+barcodeInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
+        console.log('Enter key pressed, searching...');
         searchItem();
     }
 });
+console.log('Barcode input Enter key handler attached');
 
 function searchItem() {
     const barcode = barcodeInput.value.trim();
@@ -299,6 +318,8 @@ document.getElementById('finalizeBtn').addEventListener('click', () => {
         playErrorSound();
     });
 });
+
+}); // End DOMContentLoaded
 </script>
 <?php endif; ?>
 
