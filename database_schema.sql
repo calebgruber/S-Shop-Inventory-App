@@ -1,8 +1,8 @@
 -- S-Shop Inventory App Database Schema
 -- MySQL Database Schema for Theatre Sound Shop Inventory Management
 
-CREATE DATABASE IF NOT EXISTS sshop_inventory CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE sshop_inventory;
+CREATE DATABASE IF NOT EXISTS voxelnodes_sshop CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE voxelnodes_sshop;
 
 -- Settings table
 CREATE TABLE IF NOT EXISTS settings (

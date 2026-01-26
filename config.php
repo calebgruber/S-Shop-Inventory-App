@@ -1,9 +1,9 @@
 <?php
 // Database configuration
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'sshop_inventory');
+define('DB_USER', 'voxelnodes_sshop');
+define('DB_PASS', ').sBi.*B=}rp');
+define('DB_NAME', 'voxelnodes_sshop');
 
 // Application settings
 define('APP_NAME', 'CMFT Sound Shop Inventory');
