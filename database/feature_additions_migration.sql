@@ -118,7 +118,7 @@ CREATE INDEX idx_student_requests_status ON student_requests(status);
 -- Insert default admin user (password: admin123 - CHANGE THIS!)
 -- Password hash for 'admin123'
 INSERT INTO users (email, password_hash, full_name, role, is_active) VALUES 
-    ('admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin', TRUE)
+    ('admin@example.com', '$2y$10$/9whGthAUmjludjbiqJexe6PKsp6qL6L.K9S7Wzfk8JZsMMQ.PC7m', 'System Administrator', 'admin', TRUE)
 ON DUPLICATE KEY UPDATE email=email;
 
 -- Permission keys that can be assigned:
