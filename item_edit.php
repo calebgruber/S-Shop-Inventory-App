@@ -15,13 +15,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $totalQuantity = (int)$_POST['total_quantity'];
         $inStockQuantity = (int)$_POST['in_stock_quantity'];
         $barcode = trim($_POST['barcode'] ?? '');
+        $location = trim($_POST['location'] ?? '');
+        
+        // Handle photo upload
+        $photoPath = $item['photo_path'] ?? null;
+        if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/uploads/items/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            
+            $fileExt = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION));
+            $allowedExts = ['jpg', 'jpeg', 'png', 'gif'];
+            
+            if (in_array($fileExt, $allowedExts)) {
+                $fileName = uniqid('item_') . '.' . $fileExt;
+                $uploadPath = $uploadDir . $fileName;
+                
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], $uploadPath)) {
+                    // Delete old photo if exists
+                    if ($photoPath && file_exists($uploadDir . $photoPath)) {
+                        unlink($uploadDir . $photoPath);
+                    }
+                    $photoPath = $fileName;
+                }
+            }
+        }
         
         if ($itemId) {
             // Update existing item - barcode can't be changed once set
             getDB()->query(
                 "UPDATE items SET name = ?, description = ?, category_id = ?, tracking_type = ?, 
-                 total_quantity = ?, in_stock_quantity = ? WHERE id = ?",
-                [$name, $description, $categoryId, $trackingType, $totalQuantity, $inStockQuantity, $itemId]
+                 total_quantity = ?, in_stock_quantity = ?, location = ?, photo_path = ? WHERE id = ?",
+                [$name, $description, $categoryId, $trackingType, $totalQuantity, $inStockQuantity, $location, $photoPath, $itemId]
             );
             setAlert('Item updated successfully');
         } else {
@@ -37,9 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             getDB()->query(
-                "INSERT INTO items (name, description, barcode, category_id, tracking_type, total_quantity, in_stock_quantity) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [$name, $description, $barcode, $categoryId, $trackingType, $totalQuantity, $inStockQuantity]
+                "INSERT INTO items (name, description, barcode, category_id, tracking_type, total_quantity, in_stock_quantity, location, photo_path) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$name, $description, $barcode, $categoryId, $trackingType, $totalQuantity, $inStockQuantity, $location, $photoPath]
             );
             setAlert('Item created successfully');
         }
@@ -58,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h3 class="card-title"><?php echo $item ? 'Edit' : 'Add New'; ?> Item</h3>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label class="form-label required">Name</label>
                         <input type="text" class="form-control" name="name" value="<?php echo htmlspecialchars($item['name'] ?? ''); ?>" required>
@@ -67,6 +93,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea class="form-control" name="description" rows="3"><?php echo htmlspecialchars($item['description'] ?? ''); ?></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Location in Shop</label>
+                        <input type="text" class="form-control" name="location" value="<?php echo htmlspecialchars($item['location'] ?? ''); ?>" placeholder="e.g., Shelf A-3, Cabinet 2">
+                        <small class="form-hint">Where this item is physically located in the shop</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Item Photo</label>
+                        <?php if ($item && $item['photo_path']): ?>
+                        <div class="mb-2">
+                            <img src="uploads/items/<?php echo htmlspecialchars($item['photo_path']); ?>" 
+                                 alt="<?php echo htmlspecialchars($item['name']); ?>" 
+                                 class="img-thumbnail" style="max-height: 200px;">
+                        </div>
+                        <?php endif; ?>
+                        <input type="file" class="form-control" name="photo" accept="image/*">
+                        <small class="form-hint">Upload a photo of the item (JPG, PNG, or GIF)</small>
                     </div>
                     
                     <div class="mb-3">

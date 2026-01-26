@@ -58,9 +58,17 @@ $spaces = getAllTheatreSpaces();
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Items by Show</h3>
+            <div class="card-actions">
+                <button onclick="window.print()" class="btn btn-primary">
+                    <i class="ti ti-printer"></i> Print
+                </button>
+            </div>
         </div>
         <div class="card-body">
-            <?php foreach ($shows as $show): 
+            <div class="accordion" id="showsAccordion">
+            <?php 
+            $showIndex = 0;
+            foreach ($shows as $show): 
                 $allocations = getDB()->fetchAll(
                     "SELECT i.name, ia.quantity, ia.status 
                      FROM item_allocations ia 
@@ -69,27 +77,47 @@ $spaces = getAllTheatreSpaces();
                     [$show['id']]
                 );
                 if (empty($allocations)) continue;
+                $showIndex++;
             ?>
-                <h4><?php echo htmlspecialchars($show['name']); ?></h4>
-                <table class="table table-sm mb-4">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Quantity</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($allocations as $alloc): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($alloc['name']); ?></td>
-                                <td><?php echo $alloc['quantity']; ?></td>
-                                <td><span class="badge"><?php echo ucfirst($alloc['status']); ?></span></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading-show-<?php echo $show['id']; ?>">
+                        <button class="accordion-button <?php echo $showIndex > 1 ? 'collapsed' : ''; ?>" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#collapse-show-<?php echo $show['id']; ?>" 
+                                aria-expanded="<?php echo $showIndex === 1 ? 'true' : 'false'; ?>">
+                            <strong><?php echo htmlspecialchars($show['name']); ?></strong>
+                            <span class="badge bg-primary ms-2"><?php echo count($allocations); ?> items</span>
+                        </button>
+                    </h2>
+                    <div id="collapse-show-<?php echo $show['id']; ?>" 
+                         class="accordion-collapse collapse <?php echo $showIndex === 1 ? 'show' : ''; ?>" 
+                         data-bs-parent="#showsAccordion">
+                        <div class="accordion-body">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Quantity</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($allocations as $alloc): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($alloc['name']); ?></td>
+                                            <td><?php echo $alloc['quantity']; ?></td>
+                                            <td><span class="badge"><?php echo ucfirst($alloc['status']); ?></span></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             <?php endforeach; ?>
+            </div>
+            <?php if ($showIndex === 0): ?>
+                <p class="text-muted text-center">No items allocated to shows</p>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -97,9 +125,17 @@ $spaces = getAllTheatreSpaces();
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Items by Theatre Space</h3>
+            <div class="card-actions">
+                <button onclick="window.print()" class="btn btn-primary">
+                    <i class="ti ti-printer"></i> Print
+                </button>
+            </div>
         </div>
         <div class="card-body">
-            <?php foreach ($spaces as $space): 
+            <div class="accordion" id="spacesAccordion">
+            <?php 
+            $spaceIndex = 0;
+            foreach ($spaces as $space): 
                 $allocations = getDB()->fetchAll(
                     "SELECT i.name, ia.quantity, s.name as show_name 
                      FROM item_allocations ia 
@@ -109,27 +145,47 @@ $spaces = getAllTheatreSpaces();
                     [$space['id']]
                 );
                 if (empty($allocations)) continue;
+                $spaceIndex++;
             ?>
-                <h4><?php echo htmlspecialchars($space['name']); ?></h4>
-                <table class="table table-sm mb-4">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Quantity</th>
-                            <th>Show</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($allocations as $alloc): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($alloc['name']); ?></td>
-                                <td><?php echo $alloc['quantity']; ?></td>
-                                <td><?php echo htmlspecialchars($alloc['show_name'] ?? 'N/A'); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading-space-<?php echo $space['id']; ?>">
+                        <button class="accordion-button <?php echo $spaceIndex > 1 ? 'collapsed' : ''; ?>" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#collapse-space-<?php echo $space['id']; ?>" 
+                                aria-expanded="<?php echo $spaceIndex === 1 ? 'true' : 'false'; ?>">
+                            <strong><?php echo htmlspecialchars($space['name']); ?></strong>
+                            <span class="badge bg-primary ms-2"><?php echo count($allocations); ?> items</span>
+                        </button>
+                    </h2>
+                    <div id="collapse-space-<?php echo $space['id']; ?>" 
+                         class="accordion-collapse collapse <?php echo $spaceIndex === 1 ? 'show' : ''; ?>" 
+                         data-bs-parent="#spacesAccordion">
+                        <div class="accordion-body">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Quantity</th>
+                                        <th>Show</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($allocations as $alloc): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($alloc['name']); ?></td>
+                                            <td><?php echo $alloc['quantity']; ?></td>
+                                            <td><?php echo htmlspecialchars($alloc['show_name'] ?? 'N/A'); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             <?php endforeach; ?>
+            </div>
+            <?php if ($spaceIndex === 0): ?>
+                <p class="text-muted text-center">No items allocated to theatre spaces</p>
+            <?php endif; ?>
         </div>
     </div>
 <?php endif; ?>
