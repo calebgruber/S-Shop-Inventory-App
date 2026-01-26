@@ -270,24 +270,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                                     <div class="text-muted mb-2">
                                         <small>Barcode: <code><?php echo htmlspecialchars($item['barcode']); ?></code></small>
                                     </div>
-                                    <div class="btn-group btn-group-sm w-100">
-                                        <button class="btn btn-outline-danger adjust-btn" data-item-id="<?php echo $itemId; ?>" data-adj="-1">
-                                            <i class="ti ti-minus"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success adjust-btn" data-item-id="<?php echo $itemId; ?>" data-adj="1">
-                                            <i class="ti ti-plus"></i>
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
                 
-                <button class="btn btn-success w-100 btn-lg" id="completeBtn">
+                <button class="btn btn-success w-100 btn-lg" id="completeBtn" disabled>
                     <i class="ti ti-check"></i> Complete Pick
                 </button>
             <?php endif; ?>
+        </div>
+    </div>
+    
+    <!-- Extra Items Modal -->
+    <div class="modal fade" id="extraItemsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">
+                        <i class="ti ti-alert-triangle"></i> Extra Items Detected
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3"><strong id="extraItemName"></strong> has <span id="extraCount"></span> extra item(s).</p>
+                    <p>Please remove the extra items and confirm.</p>
+                    <div class="alert alert-warning">
+                        <i class="ti ti-info-circle"></i> Needed: <strong id="extraNeeded"></strong> | Scanned: <strong id="extraScanned"></strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="confirmRemovalBtn">
+                        <i class="ti ti-check"></i> I've Removed the Extras
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -344,6 +361,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         <?php else: ?>
             // Active pick session
             const itemScan = document.getElementById('itemScan');
+            let extraItemModal;
+            let currentExtraItemId = null;
+            
+            // Initialize modal
+            document.addEventListener('DOMContentLoaded', () => {
+                extraItemModal = new bootstrap.Modal(document.getElementById('extraItemsModal'), {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+            });
             
             itemScan.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
@@ -357,26 +384,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                         if (data.success) {
                             playSuccess();
                             updateItemCard(data.itemId, data.item);
+                            
+                            // Check if overage
+                            if (data.item.scanned > data.item.needed) {
+                                showExtraItemModal(data.itemId, data.item);
+                            }
                         } else {
                             playError();
-                            alert(data.message || 'Item not in list');
+                            // Show alert for item not in pullsheet/change order
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                            alertDiv.style.zIndex = '9999';
+                            alertDiv.innerHTML = `
+                                <i class="ti ti-x"></i> <strong>Item Not Found:</strong> ${data.message || 'This item is not in the current pick list'}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            `;
+                            document.body.appendChild(alertDiv);
+                            setTimeout(() => alertDiv.remove(), 5000);
                         }
                     });
                 }
             });
             
-            // Adjust buttons
-            document.querySelectorAll('.adjust-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const itemId = this.dataset.itemId;
-                    const adj = this.dataset.adj;
+            function showExtraItemModal(itemId, item) {
+                currentExtraItemId = itemId;
+                const extras = item.scanned - item.needed;
+                
+                document.getElementById('extraItemName').textContent = item.name;
+                document.getElementById('extraCount').textContent = extras;
+                document.getElementById('extraNeeded').textContent = item.needed;
+                document.getElementById('extraScanned').textContent = item.scanned;
+                
+                extraItemModal.show();
+                playError();
+            }
+            
+            document.getElementById('confirmRemovalBtn').addEventListener('click', () => {
+                if (currentExtraItemId) {
+                    // Get the item to see how many extras
+                    const card = document.querySelector(`[data-item-id="${currentExtraItemId}"]`);
+                    const scannedSpan = card.querySelector('.scanned-count');
+                    const needed = parseInt(card.querySelector('.text-muted').textContent.match(/\d+/)[0]);
+                    const scanned = parseInt(scannedSpan.textContent);
+                    const toRemove = scanned - needed;
                     
-                    post(`ajax=1&action=adjust_item&item_id=${itemId}&adjustment=${adj}`, data => {
+                    // Adjust to remove extras
+                    post(`ajax=1&action=adjust_item&item_id=${currentExtraItemId}&adjustment=${-toRemove}`, data => {
                         if (data.success) {
-                            updateItemCard(itemId, data.item);
+                            updateItemCard(currentExtraItemId, data.item);
+                            extraItemModal.hide();
+                            currentExtraItemId = null;
+                            playSuccess();
                         }
                     });
-                });
+                }
             });
             
             function updateItemCard(itemId, item) {
@@ -398,9 +459,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 const cards = document.querySelectorAll('[data-item-id]');
                 const completeCards = document.querySelectorAll('.item-card-complete');
                 const overageCards = document.querySelectorAll('.item-card-overage');
+                const incompleteCards = document.querySelectorAll('.item-card-incomplete');
                 
-                document.getElementById('completeBtn').disabled = 
-                    (completeCards.length !== cards.length) || overageCards.length > 0;
+                // Enable button only if all items are complete (green) and no overages or incompletes
+                const allComplete = (completeCards.length === cards.length) && 
+                                  overageCards.length === 0 && 
+                                  incompleteCards.length === 0;
+                                  
+                document.getElementById('completeBtn').disabled = !allComplete;
             }
             
             document.getElementById('completeBtn').addEventListener('click', () => {
