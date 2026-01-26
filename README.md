@@ -45,14 +45,16 @@ Upload all files to your public_html directory (or a subdirectory if desired).
 
 ### 4. Configure Database Connection
 
-Edit `includes/config.php` and update the database credentials:
+The database credentials are already configured in `includes/config.php`:
 
 ```php
 define('DB_HOST', 'localhost');
-define('DB_USER', 'youruser_dbuser');
-define('DB_PASS', 'your_password');
-define('DB_NAME', 'youruser_sound_shop');
+define('DB_USER', 'voxelnodes_sshop');
+define('DB_PASS', ').sBi.*B=}rp');
+define('DB_NAME', 'voxelnodes_sshop');
 ```
+
+If you need to change these, edit the `includes/config.php` file.
 
 ### 5. Set Permissions
 

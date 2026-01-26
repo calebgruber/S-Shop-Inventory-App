@@ -1,9 +1,9 @@
 <?php
 // Database Configuration
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: '');
-define('DB_NAME', getenv('DB_NAME') ?: 'sound_shop_inventory');
+define('DB_HOST', 'localhost');
+define('DB_USER', 'voxelnodes_sshop');
+define('DB_PASS', ').sBi.*B=}rp');
+define('DB_NAME', 'voxelnodes_sshop');
 
 // Application Configuration
 define('BASE_URL', '/');
