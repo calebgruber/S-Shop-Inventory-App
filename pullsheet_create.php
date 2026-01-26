@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php if (!$showId): ?>
                     <div class="mb-3">
                         <label class="form-label required">Select Show</label>
-                        <select class="form-select" name="show_id" required autofocus>
+                        <select class="form-select" name="show_id" required>
                             <option value="">-- Select a Show --</option>
                             <?php foreach ($activeShows as $s): ?>
                             <option value="<?php echo $s['id']; ?>">
