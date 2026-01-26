@@ -17,8 +17,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $end_date = $_POST['end_date'] ?? '';
         $description = trim($_POST['description'] ?? '');
         
-        if (empty($title) || empty($start_date) || empty($end_date)) {
-            echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+        $errors = [];
+        if (empty($title)) $errors[] = 'title';
+        if (empty($start_date)) $errors[] = 'start_date';
+        if (empty($end_date)) $errors[] = 'end_date';
+        if (empty($show_id)) $errors[] = 'show_id';
+        
+        if (!empty($errors)) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Missing required fields: ' . implode(', ', $errors)
+            ]);
             exit;
         }
         
@@ -228,7 +237,9 @@ $shows = $db->fetchAll(
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js" 
+        integrity="sha384-3FnLW8FaJSJGeXLzCeBjkpRrP7BZLxA3YnFy5dCLSNiHlY8UgjmyDvBOCIq8kYSR" 
+        crossorigin="anonymous"></script>
 <script>
 let calendar;
 let currentEventId = null;

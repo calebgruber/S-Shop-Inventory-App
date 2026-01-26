@@ -12,21 +12,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update_hotkeys') {
         $hotkeys = $_POST['hotkeys'] ?? [];
         
-        // Delete existing hotkeys for this user
-        $db->query("DELETE FROM user_hotkeys WHERE user_id = ?", [$currentUser['id']]);
+        // Get existing hotkeys to determine what changed
+        $existingHotkeys = $db->fetchAll(
+            "SELECT action, hotkey FROM user_hotkeys WHERE user_id = ?",
+            [$currentUser['id']]
+        );
+        $existingMap = [];
+        foreach ($existingHotkeys as $row) {
+            $existingMap[$row['action']] = $row['hotkey'];
+        }
         
-        // Insert new hotkeys
+        // Update or insert hotkeys
         foreach ($hotkeys as $actionKey => $hotkey) {
             if (!empty($hotkey)) {
                 try {
-                    $db->query(
-                        "INSERT INTO user_hotkeys (user_id, action, hotkey) VALUES (?, ?, ?)",
-                        [$currentUser['id'], $actionKey, $hotkey]
-                    );
-                } catch (Exception $e) {
-                    // Handle duplicate hotkeys
-                    setAlert('Hotkey conflict: ' . $hotkey . ' is already assigned to another action', 'warning');
+                    if (isset($existingMap[$actionKey])) {
+                        // Update existing
+                        $db->query(
+                            "UPDATE user_hotkeys SET hotkey = ? WHERE user_id = ? AND action = ?",
+                            [$hotkey, $currentUser['id'], $actionKey]
+                        );
+                    } else {
+                        // Insert new
+                        $db->query(
+                            "INSERT INTO user_hotkeys (user_id, action, hotkey) VALUES (?, ?, ?)",
+                            [$currentUser['id'], $actionKey, $hotkey]
+                        );
+                    }
+                } catch (PDOException $e) {
+                    // Check if it's a duplicate key error
+                    if ($e->getCode() == 23000) {
+                        setAlert('Hotkey conflict: ' . $hotkey . ' is already assigned to another action', 'warning');
+                    } else {
+                        setAlert('Database error: ' . $e->getMessage(), 'danger');
+                    }
                 }
+            } else {
+                // Delete if hotkey is empty
+                $db->query(
+                    "DELETE FROM user_hotkeys WHERE user_id = ? AND action = ?",
+                    [$currentUser['id'], $actionKey]
+                );
             }
         }
         

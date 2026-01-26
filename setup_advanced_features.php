@@ -25,7 +25,8 @@ foreach ($tables as $table) {
         echo "   ✓ Table '$table' exists\n";
     } else {
         echo "   ✗ Table '$table' NOT FOUND - run migration first!\n";
-        exit(1);
+        echo "\nMigration required: mysql -u [user] -p [database] < database/advanced_features_migration.sql\n";
+        return;
     }
 }
 
@@ -35,7 +36,8 @@ if ($result) {
     echo "   ✓ Column 'shows.calendar_color' exists\n";
 } else {
     echo "   ✗ Column 'shows.calendar_color' NOT FOUND - run migration first!\n";
-    exit(1);
+    echo "\nMigration required: mysql -u [user] -p [database] < database/advanced_features_migration.sql\n";
+    return;
 }
 
 echo "\n2. Checking for sample data...\n";
