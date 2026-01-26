@@ -108,6 +108,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 [$pullsheetId]
             );
             
+            // Create notification for users with pick_mode permission
+            $pullsheet = getPullsheetById($pullsheetId);
+            createNotificationForDesigners(
+                'pending_pick',
+                "New pullsheet ready for picking: " . $pullsheet['show_name'],
+                "pick_mode.php?pullsheet=" . $pullsheet['barcode']
+            );
+            
             echo json_encode(['success' => true, 'message' => 'Pullsheet finalized']);
             exit;
         }

@@ -39,6 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     [$requestId, $currentUser['id'], $itemId, $quantity, $reason]
                 );
                 
+                // Notify admins and designers
+                createNotificationForDesigners(
+                    'student_request',
+                    "New student request: " . $item['name'] . " (Qty: " . $quantity . ")",
+                    "student_requests.php"
+                );
+                
                 setAlert('Request created successfully with ID: ' . $requestId, 'success');
                 redirect();
             }

@@ -165,6 +165,28 @@ $currentUser = getCurrentUser();
             border-color: rgba(66, 153, 225, 0.3);
             color: #4299e1;
         }
+        
+        /* Notification badge */
+        .nav-link {
+            position: relative;
+        }
+        
+        .badge-notification {
+            position: absolute;
+            top: 0;
+            right: 0;
+            font-size: 0.625rem;
+            padding: 0.25em 0.4em;
+            min-width: 1.25rem;
+        }
+        
+        .notification-item {
+            cursor: pointer;
+        }
+        
+        .notification-item:hover {
+            background-color: var(--tblr-hover-bg);
+        }
     </style>
 </head>
 <body>
@@ -181,7 +203,61 @@ $currentUser = getCurrentUser();
                     </a>
                 </h1>
                 <div class="navbar-nav flex-row order-md-last">
+                    <!-- Notifications Dropdown -->
+                    <?php 
+                    $unreadCount = getUnreadNotificationCount($currentUser['id']);
+                    $notifications = getUserNotifications($currentUser['id'], true);
+                    ?>
                     <div class="nav-item dropdown">
+                        <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Notifications">
+                            <i class="ti ti-bell icon"></i>
+                            <?php if ($unreadCount > 0): ?>
+                            <span class="badge bg-red badge-notification badge-pill"><?php echo $unreadCount; ?></span>
+                            <?php endif; ?>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-card" style="width: 350px;">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title">Notifications</h3>
+                                    <?php if ($unreadCount > 0): ?>
+                                    <a href="#" class="btn btn-sm" onclick="markAllAsRead(); return false;">
+                                        Mark all read
+                                    </a>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                                    <?php if (empty($notifications)): ?>
+                                    <div class="list-group-item text-center text-muted py-3">
+                                        <i class="ti ti-bell-off icon mb-2"></i>
+                                        <div>No new notifications</div>
+                                    </div>
+                                    <?php else: ?>
+                                        <?php foreach ($notifications as $notification): ?>
+                                        <a href="<?php echo htmlspecialchars($notification['link'] ?? '#'); ?>" 
+                                           class="list-group-item list-group-item-action notification-item" 
+                                           data-notification-id="<?php echo $notification['id']; ?>"
+                                           onclick="markNotificationRead(<?php echo $notification['id']; ?>)">
+                                            <div class="d-flex">
+                                                <div class="flex-fill">
+                                                    <div class="font-weight-medium"><?php echo htmlspecialchars($notification['message']); ?></div>
+                                                    <div class="text-muted small mt-1">
+                                                        <?php echo timeAgo($notification['created_at']); ?>
+                                                    </div>
+                                                </div>
+                                                <?php if (!$notification['is_read']): ?>
+                                                <span class="badge bg-blue ms-2"></span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </a>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- User Menu -->
+                    <div class="nav-item dropdown ms-2">
                         <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="User menu" aria-expanded="false">
                             <span class="avatar avatar-sm" style="background-image: url('<?php echo getUserAvatarUrl($currentUser); ?>')"></span>
                             <div class="d-none d-xl-block ps-2">
@@ -190,6 +266,10 @@ $currentUser = getCurrentUser();
                             </div>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="user_settings.php">
+                                <i class="ti ti-settings icon me-2"></i>
+                                Settings
+                            </a></li>
                             <li><a class="dropdown-item" href="#" id="theme-toggle-dropdown">
                                 <i class="ti ti-moon icon me-2"></i>
                                 Toggle Dark Mode
@@ -207,6 +287,8 @@ $currentUser = getCurrentUser();
                             </a></li>
                         </ul>
                     </div>
+                    
+                    <!-- Theme Toggle -->
                     <div class="nav-item ms-2">
                         <a href="#" class="nav-link px-0" id="theme-toggle" title="Toggle dark mode">
                             <i class="ti ti-moon icon"></i>
@@ -251,6 +333,15 @@ $currentUser = getCurrentUser();
                                         <i class="ti ti-theater"></i>
                                     </span>
                                     <span class="nav-link-title">Shows</span>
+                                </a>
+                            </li>
+                            
+                            <li class="nav-item <?php echo $currentPage === 'production_calendar' ? 'active' : ''; ?>">
+                                <a class="nav-link" href="production_calendar.php">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-calendar-event"></i>
+                                    </span>
+                                    <span class="nav-link-title">Calendar</span>
                                 </a>
                             </li>
                             <?php endif; ?>

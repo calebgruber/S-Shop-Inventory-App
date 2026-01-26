@@ -1,0 +1,394 @@
+<?php
+$pageTitle = 'Production Calendar';
+require_once 'includes/header.php';
+
+requirePermission('shows');
+
+$db = getDB();
+
+// Handle event operations
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    
+    if ($action === 'create_event') {
+        $show_id = $_POST['show_id'] ?? 0;
+        $title = trim($_POST['title'] ?? '');
+        $start_date = $_POST['start_date'] ?? '';
+        $end_date = $_POST['end_date'] ?? '';
+        $description = trim($_POST['description'] ?? '');
+        
+        if (empty($title) || empty($start_date) || empty($end_date)) {
+            echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+            exit;
+        }
+        
+        $db->query(
+            "INSERT INTO show_events (show_id, title, start_date, end_date, description, created_by) 
+             VALUES (?, ?, ?, ?, ?, ?)",
+            [$show_id, $title, $start_date, $end_date, $description, $currentUser['id']]
+        );
+        
+        echo json_encode(['success' => true, 'event_id' => $db->lastInsertId()]);
+        exit;
+    } elseif ($action === 'update_event') {
+        $event_id = $_POST['event_id'] ?? 0;
+        $title = trim($_POST['title'] ?? '');
+        $start_date = $_POST['start_date'] ?? '';
+        $end_date = $_POST['end_date'] ?? '';
+        $description = trim($_POST['description'] ?? '');
+        
+        $db->query(
+            "UPDATE show_events SET title = ?, start_date = ?, end_date = ?, description = ? WHERE id = ?",
+            [$title, $start_date, $end_date, $description, $event_id]
+        );
+        
+        echo json_encode(['success' => true]);
+        exit;
+    } elseif ($action === 'delete_event') {
+        $event_id = $_POST['event_id'] ?? 0;
+        
+        $db->query("DELETE FROM show_events WHERE id = ?", [$event_id]);
+        
+        echo json_encode(['success' => true]);
+        exit;
+    } elseif ($action === 'update_show_color') {
+        $show_id = $_POST['show_id'] ?? 0;
+        $color = $_POST['color'] ?? '#206bc4';
+        
+        $db->query("UPDATE shows SET calendar_color = ? WHERE id = ?", [$color, $show_id]);
+        
+        echo json_encode(['success' => true]);
+        exit;
+    } elseif ($action === 'get_events') {
+        // Fetch all events with show colors
+        $events = $db->fetchAll(
+            "SELECT e.*, s.name as show_name, s.calendar_color 
+             FROM show_events e 
+             JOIN shows s ON e.show_id = s.id 
+             ORDER BY e.start_date"
+        );
+        
+        $calendarEvents = [];
+        foreach ($events as $event) {
+            $calendarEvents[] = [
+                'id' => $event['id'],
+                'title' => $event['title'],
+                'start' => $event['start_date'],
+                'end' => $event['end_date'],
+                'backgroundColor' => $event['calendar_color'],
+                'borderColor' => $event['calendar_color'],
+                'extendedProps' => [
+                    'show_name' => $event['show_name'],
+                    'show_id' => $event['show_id'],
+                    'description' => $event['description']
+                ]
+            ];
+        }
+        
+        echo json_encode($calendarEvents);
+        exit;
+    }
+}
+
+// Get all shows with colors
+$shows = $db->fetchAll(
+    "SELECT id, name, calendar_color, status FROM shows ORDER BY name"
+);
+?>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title">Production Calendar</h3>
+                <?php if (isAdmin()): ?>
+                <div>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#eventModal" onclick="openEventModal()">
+                        <i class="ti ti-plus me-2"></i>
+                        Add Event
+                    </button>
+                    <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#colorModal">
+                        <i class="ti ti-palette me-2"></i>
+                        Manage Colors
+                    </button>
+                </div>
+                <?php endif; ?>
+            </div>
+            <div class="card-body">
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Event Modal -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventModalTitle">Add Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="eventForm">
+                    <input type="hidden" id="event_id" name="event_id">
+                    <input type="hidden" id="event_action" name="action" value="create_event">
+                    
+                    <div class="mb-3">
+                        <label class="form-label required">Show</label>
+                        <select class="form-select" id="event_show_id" name="show_id" required>
+                            <option value="">Select Show</option>
+                            <?php foreach ($shows as $show): ?>
+                            <option value="<?php echo $show['id']; ?>">
+                                <?php echo htmlspecialchars($show['name']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label required">Event Title</label>
+                        <input type="text" class="form-control" id="event_title" name="title" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required">Start Date & Time</label>
+                            <input type="datetime-local" class="form-control" id="event_start_date" name="start_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required">End Date & Time</label>
+                            <input type="datetime-local" class="form-control" id="event_end_date" name="end_date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="event_description" name="description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="deleteEventBtn" style="display:none;" onclick="deleteEvent()">
+                    <i class="ti ti-trash me-2"></i>Delete
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveEvent()">Save Event</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Color Management Modal -->
+<div class="modal fade" id="colorModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Show Colors</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-vcenter">
+                        <thead>
+                            <tr>
+                                <th>Show</th>
+                                <th>Color</th>
+                                <th>Preview</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($shows as $show): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($show['name']); ?></td>
+                                <td>
+                                    <input 
+                                        type="color" 
+                                        class="form-control form-control-color" 
+                                        value="<?php echo htmlspecialchars($show['calendar_color'] ?? '#206bc4'); ?>"
+                                        data-show-id="<?php echo $show['id']; ?>"
+                                        onchange="updateShowColor(this)"
+                                    >
+                                </td>
+                                <td>
+                                    <span class="badge" style="background-color: <?php echo htmlspecialchars($show['calendar_color'] ?? '#206bc4'); ?>">
+                                        Preview
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script>
+let calendar;
+let currentEventId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+        },
+        height: 'auto',
+        events: function(info, successCallback, failureCallback) {
+            fetch('production_calendar.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'action=get_events'
+            })
+            .then(response => response.json())
+            .then(data => successCallback(data))
+            .catch(error => failureCallback(error));
+        },
+        eventClick: function(info) {
+            <?php if (isAdmin()): ?>
+            openEventModal(info.event);
+            <?php else: ?>
+            alert('Event: ' + info.event.title + '\nShow: ' + info.event.extendedProps.show_name + '\n\n' + (info.event.extendedProps.description || 'No description'));
+            <?php endif; ?>
+        },
+        eventDidMount: function(info) {
+            info.el.title = info.event.extendedProps.show_name + ': ' + info.event.title;
+        }
+    });
+    
+    calendar.render();
+});
+
+function openEventModal(event = null) {
+    if (event) {
+        // Edit mode
+        currentEventId = event.id;
+        document.getElementById('eventModalTitle').textContent = 'Edit Event';
+        document.getElementById('event_id').value = event.id;
+        document.getElementById('event_action').value = 'update_event';
+        document.getElementById('event_show_id').value = event.extendedProps.show_id;
+        document.getElementById('event_title').value = event.title;
+        document.getElementById('event_start_date').value = formatDateForInput(event.start);
+        document.getElementById('event_end_date').value = formatDateForInput(event.end || event.start);
+        document.getElementById('event_description').value = event.extendedProps.description || '';
+        document.getElementById('deleteEventBtn').style.display = 'inline-block';
+    } else {
+        // Create mode
+        currentEventId = null;
+        document.getElementById('eventModalTitle').textContent = 'Add Event';
+        document.getElementById('event_action').value = 'create_event';
+        document.getElementById('eventForm').reset();
+        document.getElementById('deleteEventBtn').style.display = 'none';
+    }
+}
+
+function formatDateForInput(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function saveEvent() {
+    const form = document.getElementById('eventForm');
+    const formData = new FormData(form);
+    
+    fetch('production_calendar.php', {
+        method: 'POST',
+        body: new URLSearchParams(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            calendar.refetchEvents();
+            bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
+            showAlert('Event saved successfully', 'success');
+        } else {
+            showAlert(data.message || 'Error saving event', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error saving event', 'danger');
+    });
+}
+
+function deleteEvent() {
+    if (!confirm('Delete this event?')) return;
+    
+    const formData = new FormData();
+    formData.append('action', 'delete_event');
+    formData.append('event_id', currentEventId);
+    
+    fetch('production_calendar.php', {
+        method: 'POST',
+        body: new URLSearchParams(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            calendar.refetchEvents();
+            bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
+            showAlert('Event deleted successfully', 'success');
+        } else {
+            showAlert('Error deleting event', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error deleting event', 'danger');
+    });
+}
+
+function updateShowColor(input) {
+    const showId = input.dataset.showId;
+    const color = input.value;
+    
+    const formData = new FormData();
+    formData.append('action', 'update_show_color');
+    formData.append('show_id', showId);
+    formData.append('color', color);
+    
+    fetch('production_calendar.php', {
+        method: 'POST',
+        body: new URLSearchParams(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update preview badge
+            const badge = input.closest('tr').querySelector('.badge');
+            badge.style.backgroundColor = color;
+            calendar.refetchEvents();
+            showAlert('Color updated successfully', 'success');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible`;
+    alertDiv.innerHTML = `
+        <div>${message}</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.querySelector('.page-body .container-xl').insertBefore(alertDiv, document.querySelector('.row'));
+    setTimeout(() => alertDiv.remove(), 3000);
+}
+</script>
+
+<?php require_once 'includes/footer.php'; ?>

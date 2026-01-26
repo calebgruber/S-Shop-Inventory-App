@@ -539,3 +539,104 @@ function generateChangeOrderPDF($changeOrderId) {
     
     return $pdf->output('change_order_' . $changeOrderId . '.pdf', 'S');
 }
+
+// Notification functions
+function createNotification($userId, $type, $message, $link = null) {
+    $db = getDB();
+    $db->query(
+        "INSERT INTO notifications (user_id, type, message, link) VALUES (?, ?, ?, ?)",
+        [$userId, $type, $message, $link]
+    );
+}
+
+function createNotificationForAdmins($type, $message, $link = null) {
+    $db = getDB();
+    $admins = $db->fetchAll("SELECT id FROM users WHERE role = 'admin' AND is_active = 1");
+    foreach ($admins as $admin) {
+        createNotification($admin['id'], $type, $message, $link);
+    }
+}
+
+function createNotificationForDesigners($type, $message, $link = null) {
+    $db = getDB();
+    $designers = $db->fetchAll("SELECT id FROM users WHERE role IN ('admin', 'designer') AND is_active = 1");
+    foreach ($designers as $designer) {
+        createNotification($designer['id'], $type, $message, $link);
+    }
+}
+
+function getUserNotifications($userId, $unreadOnly = false) {
+    $db = getDB();
+    $sql = "SELECT * FROM notifications WHERE user_id = ?";
+    $params = [$userId];
+    
+    if ($unreadOnly) {
+        $sql .= " AND is_read = 0";
+    }
+    
+    $sql .= " ORDER BY created_at DESC LIMIT 50";
+    
+    return $db->fetchAll($sql, $params);
+}
+
+function getUnreadNotificationCount($userId) {
+    $db = getDB();
+    $result = $db->fetchOne(
+        "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0",
+        [$userId]
+    );
+    return $result ? (int)$result['count'] : 0;
+}
+
+function markNotificationAsRead($notificationId, $userId) {
+    $db = getDB();
+    $db->query(
+        "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?",
+        [$notificationId, $userId]
+    );
+}
+
+function markAllNotificationsAsRead($userId) {
+    $db = getDB();
+    $db->query(
+        "UPDATE notifications SET is_read = 1 WHERE user_id = ?",
+        [$userId]
+    );
+}
+
+// Hotkey functions
+function getUserHotkeys($userId) {
+    $db = getDB();
+    $hotkeys = $db->fetchAll(
+        "SELECT action, hotkey FROM user_hotkeys WHERE user_id = ?",
+        [$userId]
+    );
+    
+    $result = [];
+    foreach ($hotkeys as $row) {
+        $result[$row['action']] = $row['hotkey'];
+    }
+    
+    return $result;
+}
+
+// Time formatting helper
+function timeAgo($datetime) {
+    $timestamp = strtotime($datetime);
+    $difference = time() - $timestamp;
+    
+    if ($difference < 60) {
+        return 'Just now';
+    } elseif ($difference < 3600) {
+        $minutes = floor($difference / 60);
+        return $minutes . ' minute' . ($minutes > 1 ? 's' : '') . ' ago';
+    } elseif ($difference < 86400) {
+        $hours = floor($difference / 3600);
+        return $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
+    } elseif ($difference < 604800) {
+        $days = floor($difference / 86400);
+        return $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
+    } else {
+        return date('M j, Y', $timestamp);
+    }
+}

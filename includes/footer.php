@@ -97,6 +97,94 @@
         // Make functions globally available
         window.playSuccessSound = playSuccessSound;
         window.playErrorSound = playErrorSound;
+        
+        // Notifications
+        function markNotificationRead(notificationId) {
+            fetch('api_notifications.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'action=mark_read&notification_id=' + notificationId
+            });
+        }
+        
+        function markAllAsRead() {
+            fetch('api_notifications.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'action=mark_all_read'
+            }).then(() => {
+                location.reload();
+            });
+        }
+        
+        window.markNotificationRead = markNotificationRead;
+        window.markAllAsRead = markAllAsRead;
+        
+        // Hotkey System
+        <?php 
+        $userHotkeys = getUserHotkeys($currentUser['id']);
+        $hotkeyActions = [
+            'quick_lookup' => 'showQuickLookup',
+            'pick_mode' => 'goToPage("pick_mode.php")',
+            'return_mode' => 'goToPage("return_mode.php")',
+            'create_pullsheet' => 'goToPage("pullsheet_create.php")',
+            'inventory' => 'goToPage("items.php")',
+            'reports' => 'goToPage("reports.php")',
+            'shows' => 'goToPage("shows.php")'
+        ];
+        ?>
+        
+        const userHotkeys = <?php echo json_encode($userHotkeys); ?>;
+        
+        function normalizeHotkey(e) {
+            const parts = [];
+            if (e.ctrlKey || e.metaKey) parts.push('Ctrl');
+            if (e.altKey) parts.push('Alt');
+            if (e.shiftKey) parts.push('Shift');
+            parts.push(e.key.toUpperCase());
+            return parts.join('+');
+        }
+        
+        function goToPage(url) {
+            window.location.href = url;
+        }
+        
+        function showQuickLookup() {
+            // Try to focus search field or redirect to inventory
+            const searchField = document.querySelector('[name="search"], #quick-search');
+            if (searchField) {
+                searchField.focus();
+                searchField.select();
+            } else {
+                window.location.href = 'items.php';
+            }
+        }
+        
+        window.showQuickLookup = showQuickLookup;
+        window.goToPage = goToPage;
+        
+        document.addEventListener('keydown', function(e) {
+            // Don't trigger hotkeys when typing in input fields
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+                // Exception: allow Ctrl+K even in input fields for quick lookup
+                const hotkey = normalizeHotkey(e);
+                if (userHotkeys['quick_lookup'] && hotkey === userHotkeys['quick_lookup']) {
+                    e.preventDefault();
+                    showQuickLookup();
+                }
+                return;
+            }
+            
+            const hotkey = normalizeHotkey(e);
+            
+            // Check each action
+            <?php foreach ($hotkeyActions as $action => $jsFunction): ?>
+            if (userHotkeys['<?php echo $action; ?>'] && hotkey === userHotkeys['<?php echo $action; ?>']) {
+                e.preventDefault();
+                <?php echo $jsFunction; ?>;
+            }
+            <?php endforeach; ?>
+        });
     </script>
     
     <?php if (isset($extraJS)): ?>
