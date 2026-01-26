@@ -52,7 +52,6 @@ $changeOrdersToReturn = getDB()->fetchAll(
      LIMIT 5"
 );
 ?>
-?>
 
 <!-- Quick Lookup Modal -->
 <div class="modal fade" id="quickLookupModal" tabindex="-1" aria-labelledby="quickLookupModalLabel" aria-hidden="true">
