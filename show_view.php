@@ -40,7 +40,8 @@ $change_orders = $stmt->get_result();
 
 $pageTitle = sanitize($show['name']) . " - " . APP_NAME;
 $pageHeader = sanitize($show['name']);
-$pageActions = '<a href="shows.php" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back to Shows</a>';
+$pageActions = '<a href="shows.php" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back to Shows</a>
+                <a href="show_delete.php?id=' . $showId . '" class="btn btn-danger"><i class="ti ti-trash"></i> Delete Show</a>';
 
 ob_start();
 ?>

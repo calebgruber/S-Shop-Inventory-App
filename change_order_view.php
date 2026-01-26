@@ -35,7 +35,8 @@ $items = $stmt->get_result();
 
 $pageTitle = "Change Order: " . sanitize($changeOrder['barcode']) . " - " . APP_NAME;
 $pageHeader = "Change Order Details";
-$pageActions = '<a href="change_orders.php" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back</a>';
+$pageActions = '<a href="change_orders.php" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back</a>
+                <a href="change_order_delete.php?id=' . $changeOrderId . '" class="btn btn-danger"><i class="ti ti-trash"></i> Delete</a>';
 
 ob_start();
 ?>

@@ -54,9 +54,16 @@ ob_start();
                     </div>
                 </div>
                 <div class="card-footer">
-                    <a href="show_view.php?id=<?php echo $show['id']; ?>" class="btn btn-primary w-100">
-                        View Details
-                    </a>
+                    <div class="btn-group w-100">
+                        <a href="show_view.php?id=<?php echo $show['id']; ?>" class="btn btn-primary">
+                            View Details
+                        </a>
+                        <a href="show_delete.php?id=<?php echo $show['id']; ?>" 
+                           class="btn btn-danger" 
+                           onclick="return confirm('Are you sure you want to delete this show?');">
+                            <i class="ti ti-trash"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

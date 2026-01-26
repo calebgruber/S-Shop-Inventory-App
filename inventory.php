@@ -128,6 +128,11 @@ ob_start();
                                    class="btn btn-success" title="Download Barcode" target="_blank">
                                     <i class="ti ti-barcode"></i>
                                 </a>
+                                <a href="inventory_delete.php?id=<?php echo $item['id']; ?>" 
+                                   class="btn btn-danger" title="Delete"
+                                   onclick="return confirm('Are you sure you want to delete this item?');">
+                                    <i class="ti ti-trash"></i>
+                                </a>
                             </div>
                         </td>
                     </tr>

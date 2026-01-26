@@ -35,7 +35,8 @@ $items = $stmt->get_result();
 
 $pageTitle = "Pull Sheet: " . sanitize($pullSheet['barcode']) . " - " . APP_NAME;
 $pageHeader = "Pull Sheet Details";
-$pageActions = '<a href="pull_sheets.php" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back</a>';
+$pageActions = '<a href="pull_sheets.php" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back</a>
+                <a href="pull_sheet_delete.php?id=' . $pullSheetId . '" class="btn btn-danger"><i class="ti ti-trash"></i> Delete</a>';
 
 ob_start();
 ?>
