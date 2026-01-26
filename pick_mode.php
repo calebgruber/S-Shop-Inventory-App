@@ -409,6 +409,14 @@ function renderItems(items) {
     const container = document.getElementById('items-container');
     container.innerHTML = '';
     
+    if (items.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No items to pick</div>';
+        return;
+    }
+    
+    const row = document.createElement('div');
+    row.className = 'row';
+    
     items.forEach(item => {
         const picked = item.picked;
         const needed = item.needed;
@@ -435,8 +443,10 @@ function renderItems(items) {
                 </div>
             </div>
         `;
-        container.appendChild(div);
+        row.appendChild(div);
     });
+    
+    container.appendChild(row);
 }
 
 function showNotification(message, type) {
@@ -465,9 +475,9 @@ JS;
 ob_start();
 ?>
 
-<div id="pick-container">
+<div id="pick-container" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: var(--tblr-body-bg); overflow-y: auto;">
     <div class="container-xl">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 pt-4">
             <div>
                 <h1 class="m-0">Pick Mode</h1>
                 <div class="text-muted">
@@ -488,10 +498,11 @@ ob_start();
                 <label class="form-label">Scan Item Barcode</label>
                 <input type="text" id="barcode-input" class="form-control form-control-lg auto-focus" 
                        placeholder="Scan barcode here" onkeypress="scanBarcode(event)" autofocus>
+                <small class="form-hint">Scan barcode to pick items for this show</small>
             </div>
         </div>
         
-        <div class="row" id="items-container">
+        <div id="items-container">
             <!-- Items will be rendered here -->
         </div>
     </div>

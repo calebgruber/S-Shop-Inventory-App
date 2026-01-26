@@ -160,7 +160,7 @@ $pageTitle = ($pullSheetId > 0 ? "Edit" : "Create") . " Pull Sheet - " . APP_NAM
 $pageHeader = ($pullSheetId > 0 ? "Edit" : "Create") . " Pull Sheet";
 $pageActions = '<a href="pull_sheets.php" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back</a>';
 
-$additionalJS = <<<'JS'
+$additionalJS = <<<JS
 <script>
 let pullSheetItems = [];
 

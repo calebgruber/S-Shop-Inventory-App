@@ -147,7 +147,7 @@ $pageTitle = ($changeOrderId > 0 ? "Edit" : "Create") . " Change Order - " . APP
 $pageHeader = ($changeOrderId > 0 ? "Edit" : "Create") . " Change Order";
 $pageActions = '<a href="change_orders.php" class="btn btn-secondary"><i class="ti ti-arrow-left"></i> Back</a>';
 
-$additionalJS = <<<'JS'
+$additionalJS = <<<JS
 <script>
 let changeOrderItems = [];
 
