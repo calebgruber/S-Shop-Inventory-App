@@ -50,13 +50,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             exit;
         }
         
+        if ($_POST['action'] === 'remove_item') {
+            getDB()->query(
+                "DELETE FROM change_order_items WHERE change_order_id = ? AND item_id = ?",
+                [$coId, $_POST['item_id']]
+            );
+            echo json_encode(['success' => true]);
+            exit;
+        }
+        
         if ($_POST['action'] === 'save_draft') {
             echo json_encode(['success' => true, 'message' => 'Draft saved']);
             exit;
         }
         
         if ($_POST['action'] === 'finalize') {
+            $changeOrder = getChangeOrderById($coId);
+            $items = getChangeOrderItems($coId);
+            
+            // Process item changes
+            foreach ($items as $item) {
+                if ($item['type'] === 'add') {
+                    // Add items to show (reserve them)
+                    getDB()->query(
+                        "INSERT INTO item_allocations (item_id, show_id, change_order_id, quantity, status) 
+                         VALUES (?, ?, ?, ?, 'checked_out')",
+                        [$item['item_id'], $changeOrder['show_id'], $coId, abs($item['quantity_change'])]
+                    );
+                    updateItemStock($item['item_id'], -abs($item['quantity_change']));
+                } elseif ($item['type'] === 'remove') {
+                    // Remove items from show (return them)
+                    // Find the allocation to remove
+                    $allocation = getDB()->fetchOne(
+                        "SELECT id, quantity FROM item_allocations 
+                         WHERE item_id = ? AND show_id = ? AND status = 'checked_out'
+                         ORDER BY created_at DESC LIMIT 1",
+                        [$item['item_id'], $changeOrder['show_id']]
+                    );
+                    
+                    if ($allocation) {
+                        $qtyToRemove = abs($item['quantity_change']);
+                        if ($qtyToRemove >= $allocation['quantity']) {
+                            // Remove entire allocation
+                            getDB()->query("DELETE FROM item_allocations WHERE id = ?", [$allocation['id']]);
+                            updateItemStock($item['item_id'], $allocation['quantity']);
+                        } else {
+                            // Reduce allocation quantity
+                            getDB()->query(
+                                "UPDATE item_allocations SET quantity = quantity - ? WHERE id = ?",
+                                [$qtyToRemove, $allocation['id']]
+                            );
+                            updateItemStock($item['item_id'], $qtyToRemove);
+                        }
+                    }
+                }
+            }
+            
             getDB()->query("UPDATE change_orders SET status = 'finalized', finalized_at = NOW() WHERE id = ?", [$coId]);
+            
+            // Create notification
+            createNotificationForDesigners(
+                'change_order',
+                "Change order finalized for " . $changeOrder['show_name'],
+                "change_orders.php"
+            );
             
             // Generate PDF for the change order
             try {
@@ -124,14 +181,24 @@ $items = getChangeOrderItems($coId);
                             <th>Item</th>
                             <th>Type</th>
                             <th>Quantity</th>
+                            <?php if ($co['status'] === 'draft'): ?>
+                            <th class="w-1">Actions</th>
+                            <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody id="itemsTable">
                         <?php foreach ($items as $item): ?>
-                            <tr>
+                            <tr data-item-id="<?php echo $item['item_id']; ?>">
                                 <td><?php echo htmlspecialchars($item['item_name']); ?></td>
                                 <td><span class="badge bg-<?php echo $item['type'] === 'add' ? 'success' : 'danger'; ?>"><?php echo ucfirst($item['type']); ?></span></td>
                                 <td><?php echo abs($item['quantity_change']); ?></td>
+                                <?php if ($co['status'] === 'draft'): ?>
+                                <td>
+                                    <button class="btn btn-sm btn-danger remove-item-btn" data-item-id="<?php echo $item['item_id']; ?>">
+                                        <i class="ti ti-trash"></i>
+                                    </button>
+                                </td>
+                                <?php endif; ?>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -335,6 +402,35 @@ document.getElementById('finalizeBtn').addEventListener('click', () => {
         console.error('Finalize error:', err);
         alert('Error finalizing');
         playErrorSound();
+    });
+});
+
+// Remove item button handlers
+document.querySelectorAll('.remove-item-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const itemId = this.getAttribute('data-item-id');
+        if (!confirm('Remove this item from the change order?')) return;
+        
+        fetch('?id=<?php echo $coId; ?>', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'ajax=1&action=remove_item&item_id=' + itemId
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                playSuccessSound();
+                location.reload();
+            } else {
+                alert('Error removing item');
+                playErrorSound();
+            }
+        })
+        .catch(err => {
+            console.error('Remove error:', err);
+            alert('Error removing item');
+            playErrorSound();
+        });
     });
 });
 
