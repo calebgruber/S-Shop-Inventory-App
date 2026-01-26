@@ -237,9 +237,8 @@ $shows = $db->fetchAll(
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js" 
-        integrity="sha384-3FnLW8FaJSJGeXLzCeBjkpRrP7BZLxA3YnFy5dCLSNiHlY8UgjmyDvBOCIq8kYSR" 
-        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<!-- Note: Consider hosting FullCalendar locally for production use or verify SRI hash matches the file -->
 <script>
 let calendar;
 let currentEventId = null;

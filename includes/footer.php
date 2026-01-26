@@ -165,7 +165,12 @@
         
         document.addEventListener('keydown', function(e) {
             // Don't trigger hotkeys when typing in input fields
-            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+            const isInTextField = e.target && 
+                (e.target.tagName === 'INPUT' || 
+                 e.target.tagName === 'TEXTAREA' || 
+                 e.target.contentEditable === 'true');
+            
+            if (isInTextField) {
                 // Exception: allow Ctrl+K even in input fields for quick lookup
                 const hotkey = normalizeHotkey(e);
                 if (userHotkeys['quick_lookup'] && hotkey === userHotkeys['quick_lookup']) {

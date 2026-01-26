@@ -300,18 +300,30 @@ function validateRequired($value, $fieldName) {
 
 function redirect($url = null) {
     if ($url === null) {
-        // Reload current page safely using REQUEST_URI
-        $currentPage = filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_URL);
-        header("Location: " . $currentPage);
+        // Reload current page safely using REQUEST_URI with validation
+        $currentUri = $_SERVER['REQUEST_URI'] ?? '/';
+        $parsedUri = parse_url($currentUri);
+        
+        // Rebuild URL with validated components
+        $safePath = $parsedUri['path'] ?? '/';
+        $safeQuery = isset($parsedUri['query']) ? '?' . $parsedUri['query'] : '';
+        
+        header("Location: " . $safePath . $safeQuery);
     } else {
         // Validate URL to prevent open redirects
         $parsedUrl = parse_url($url);
-        if (isset($parsedUrl['host']) && $parsedUrl['host'] !== $_SERVER['HTTP_HOST']) {
-            // External redirect not allowed
-            header("Location: index.php");
-        } else {
-            header("Location: " . $url);
+        
+        // If host is specified, ensure it matches current host
+        if (isset($parsedUrl['host'])) {
+            if ($parsedUrl['host'] !== $_SERVER['HTTP_HOST']) {
+                // External redirect not allowed
+                header("Location: index.php");
+                exit;
+            }
         }
+        
+        // Allow only relative URLs or same-host URLs
+        header("Location: " . $url);
     }
     exit;
 }

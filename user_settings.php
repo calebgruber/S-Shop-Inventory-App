@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.shiftKey) parts.push('Shift');
             
             // Add the key itself (ignore modifier keys alone)
-            if (!['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) {
+            if (!['Control', 'Alt', 'Shift', 'Meta', 'MetaLeft', 'MetaRight'].includes(e.key)) {
                 parts.push(e.key.toUpperCase());
             }
             
@@ -205,8 +205,15 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('blur', function() {
             const value = this.value.trim();
             if (value && !value.includes('+')) {
-                alert('Hotkeys should include a modifier key (Ctrl, Alt, or Shift)');
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-warning alert-dismissible mt-2';
+                alertDiv.innerHTML = `
+                    <div>Hotkeys should include a modifier key (Ctrl, Alt, or Shift)</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                this.parentElement.appendChild(alertDiv);
                 this.value = '';
+                setTimeout(() => alertDiv.remove(), 3000);
             }
         });
     });
