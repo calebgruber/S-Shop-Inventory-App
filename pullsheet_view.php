@@ -13,6 +13,11 @@ if (!$pullsheet) {
     redirect('pullsheets.php');
 }
 
+// Handle alert query parameters
+if (isset($_GET['finalized'])) {
+    setAlert('Pullsheet finalized successfully', 'success');
+}
+
 $items = getPullsheetItems($pullsheetId);
 
 if (isset($_GET['download_pdf'])) {

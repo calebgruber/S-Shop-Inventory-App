@@ -2,6 +2,14 @@
 $pageTitle = 'Pullsheets';
 require_once 'includes/header.php';
 
+// Handle alert query parameters
+if (isset($_GET['saved'])) {
+    setAlert('Draft saved successfully', 'success');
+}
+if (isset($_GET['finalized'])) {
+    setAlert('Pullsheet finalized successfully', 'success');
+}
+
 $pullsheets = getAllPullsheets();
 ?>
 

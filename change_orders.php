@@ -2,6 +2,14 @@
 $pageTitle = 'Change Orders';
 require_once 'includes/header.php';
 
+// Handle alert query parameters
+if (isset($_GET['saved'])) {
+    setAlert('Draft saved successfully', 'success');
+}
+if (isset($_GET['finalized'])) {
+    setAlert('Change order finalized successfully', 'success');
+}
+
 $changeOrders = getAllChangeOrders();
 ?>
 

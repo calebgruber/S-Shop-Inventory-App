@@ -95,6 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             exit;
         }
         
+        if ($_POST['action'] === 'save_draft') {
+            echo json_encode(['success' => true, 'message' => 'Draft saved']);
+            exit;
+        }
+        
         if ($_POST['action'] === 'finalize') {
             // Mark items as reserved
             $items = getPullsheetItems($pullsheetId);
@@ -132,8 +137,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             </div>
             <div class="card-body">
                 <div class="row mb-4">
-                    <div class="col-md-8">
-                        <div class="input-group input-group-lg">
+                    <div class="col-md-6">
+                        <div class="input-group">
                             <input type="text" class="form-control barcode-autofocus" id="itemBarcodeInput" 
                                    placeholder="Scan or search item barcode...">
                             <button class="btn btn-primary" type="button" id="searchBtn">
@@ -141,10 +146,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                             </button>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <button class="btn btn-success btn-lg w-100" id="finalizeBtn">
-                            <i class="ti ti-check"></i> Build Show (Finalize)
-                        </button>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-outline-secondary" id="saveDraftBtn">
+                                <i class="ti ti-device-floppy"></i> Save Draft
+                            </button>
+                            <button class="btn btn-success" id="finalizeBtn">
+                                <i class="ti ti-check"></i> Build Show (Finalize)
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -221,12 +231,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
 <script>
 let selectedItem = null;
-const modal = new bootstrap.Modal(document.getElementById('addItemModal'));
+const modalEl = document.getElementById('addItemModal');
+const modal = new bootstrap.Modal(modalEl);
 
 document.getElementById('searchBtn').addEventListener('click', searchItem);
-document.getElementById('itemBarcodeInput').addEventListener('keypress', function(e) {
+
+// Fix Enter key handler
+document.getElementById('itemBarcodeInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
+        e.stopPropagation();
         searchItem();
     }
 });
@@ -235,6 +249,8 @@ function searchItem() {
     const barcode = document.getElementById('itemBarcodeInput').value.trim();
     if (!barcode) return;
     
+    console.log('Searching for barcode:', barcode);
+    
     fetch('?id=<?php echo $pullsheetId; ?>', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -242,16 +258,25 @@ function searchItem() {
     })
     .then(r => r.json())
     .then(data => {
+        console.log('Search result:', data);
         if (data.success) {
             showAddItemModal(data.item);
         } else {
             alert(data.message || 'Item not found');
             playErrorSound();
         }
+        document.getElementById('itemBarcodeInput').value = '';
+        document.getElementById('itemBarcodeInput').focus();
+    })
+    .catch(err => {
+        console.error('Search error:', err);
+        alert('Error searching for item');
+        playErrorSound();
     });
 }
 
 function showAddItemModal(item) {
+    console.log('Showing modal for item:', item);
     selectedItem = item;
     const infoHtml = `
         <div class="mb-3">
@@ -264,7 +289,9 @@ function showAddItemModal(item) {
     `;
     document.getElementById('itemInfo').innerHTML = infoHtml;
     document.getElementById('quantityInput').value = 1;
+    document.getElementById('quantityInput').focus();
     modal.show();
+    console.log('Modal should be visible now');
 }
 
 document.getElementById('confirmAddBtn').addEventListener('click', function() {
@@ -309,6 +336,29 @@ document.querySelectorAll('.remove-item-btn').forEach(btn => {
     });
 });
 
+document.getElementById('saveDraftBtn').addEventListener('click', function() {
+    fetch('?id=<?php echo $pullsheetId; ?>', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'ajax=1&action=save_draft'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            playSuccessSound();
+            window.location.href = 'pullsheets.php?saved=1';
+        } else {
+            alert(data.message || 'Error saving draft');
+            playErrorSound();
+        }
+    })
+    .catch(err => {
+        console.error('Save error:', err);
+        alert('Error saving draft');
+        playErrorSound();
+    });
+});
+
 document.getElementById('finalizeBtn').addEventListener('click', function() {
     if (!confirm('Finalize this pullsheet? This will reserve all items and generate a barcode for picking.')) return;
     
@@ -320,11 +370,17 @@ document.getElementById('finalizeBtn').addEventListener('click', function() {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert(data.message);
-            location.href = 'pullsheet_view.php?id=<?php echo $pullsheetId; ?>';
+            playSuccessSound();
+            window.location.href = 'pullsheet_view.php?id=<?php echo $pullsheetId; ?>&finalized=1';
         } else {
-            alert(data.message);
+            alert(data.message || 'Error finalizing pullsheet');
+            playErrorSound();
         }
+    })
+    .catch(err => {
+        console.error('Finalize error:', err);
+        alert('Error finalizing pullsheet');
+        playErrorSound();
     });
 });
 </script>

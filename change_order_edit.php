@@ -16,6 +16,27 @@ $items = getChangeOrderItems($coId);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
     try {
+        if ($_POST['action'] === 'check_item') {
+            $itemBarcode = $_POST['barcode'];
+            $item = getItemByBarcode($itemBarcode);
+            
+            if (!$item) {
+                echo json_encode(['success' => false, 'message' => 'Item not found']);
+                exit;
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'item' => [
+                    'id' => $item['id'],
+                    'name' => $item['name'],
+                    'barcode' => $item['barcode'],
+                    'in_stock' => $item['in_stock_quantity']
+                ]
+            ]);
+            exit;
+        }
+        
         if ($_POST['action'] === 'add_item') {
             $item = getItemByBarcode($_POST['barcode']);
             if (!$item) {
@@ -29,6 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             );
             
             echo json_encode(['success' => true]);
+            exit;
+        }
+        
+        if ($_POST['action'] === 'save_draft') {
+            echo json_encode(['success' => true, 'message' => 'Draft saved']);
             exit;
         }
         
@@ -53,11 +79,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             <div class="card-body">
                 <?php if ($co['status'] === 'draft'): ?>
                     <div class="row mb-4">
-                        <div class="col-md-8">
-                            <input type="text" class="form-control barcode-autofocus" id="itemBarcode" placeholder="Scan item...">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control barcode-autofocus" id="itemBarcode" placeholder="Scan or search item barcode...">
+                                <button class="btn btn-primary" type="button" id="searchBtn">
+                                    <i class="ti ti-search"></i> Search
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-success w-100" id="finalizeBtn">Finalize</button>
+                        <div class="col-md-6">
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-outline-secondary" id="saveDraftBtn">
+                                    <i class="ti ti-device-floppy"></i> Save Draft
+                                </button>
+                                <button class="btn btn-success" id="finalizeBtn">
+                                    <i class="ti ti-check"></i> Finalize
+                                </button>
+                            </div>
                         </div>
                     </div>
                 <?php endif; ?>
@@ -86,29 +124,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 </div>
 
 <?php if ($co['status'] === 'draft'): ?>
-<div class="modal fade" id="addModal">
+<div class="modal fade" id="addModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5>Add Item</h5>
+                <h5 class="modal-title">Add Item to Change Order</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div id="itemInfo"></div>
                 <div class="mb-3">
-                    <label>Type</label>
+                    <label class="form-label">Type</label>
                     <select class="form-select" id="typeInput">
                         <option value="add">Add</option>
                         <option value="remove">Remove</option>
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label>Quantity</label>
+                    <label class="form-label">Quantity</label>
                     <input type="number" class="form-control" id="qtyInput" value="1" min="1">
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" id="confirmBtn">Add</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmBtn">Add Item</button>
             </div>
         </div>
     </div>
@@ -116,24 +155,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
 <script>
 let selectedItem = null;
-const modal = new bootstrap.Modal(document.getElementById('addModal'));
+const modalEl = document.getElementById('addModal');
+const modal = new bootstrap.Modal(modalEl);
 
-document.getElementById('itemBarcode').addEventListener('keypress', function(e) {
+document.getElementById('searchBtn').addEventListener('click', searchItem);
+
+// Fix Enter key handler
+document.getElementById('itemBarcode').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
-        const barcode = this.value.trim();
-        if (!barcode) return;
-        
-        fetch('items.php?ajax=1&barcode=' + barcode)
-            .then(r => r.json())
-            .then(item => {
-                if (item) {
-                    selectedItem = item;
-                    document.getElementById('itemInfo').innerHTML = `<strong>${item.name}</strong>`;
-                    modal.show();
-                }
-            });
+        e.preventDefault();
+        e.stopPropagation();
+        searchItem();
     }
 });
+
+function searchItem() {
+    const barcode = document.getElementById('itemBarcode').value.trim();
+    if (!barcode) return;
+    
+    console.log('Searching for barcode:', barcode);
+    
+    fetch('?id=<?php echo $coId; ?>', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'ajax=1&action=check_item&barcode=' + encodeURIComponent(barcode)
+    })
+    .then(r => r.json())
+    .then(data => {
+        console.log('Search result:', data);
+        if (data.success) {
+            showAddItemModal(data.item);
+        } else {
+            alert(data.message || 'Item not found');
+            playErrorSound();
+        }
+        document.getElementById('itemBarcode').value = '';
+        document.getElementById('itemBarcode').focus();
+    })
+    .catch(err => {
+        console.error('Search error:', err);
+        alert('Error searching for item');
+        playErrorSound();
+    });
+}
+
+function showAddItemModal(item) {
+    console.log('Showing modal for item:', item);
+    selectedItem = item;
+    const infoHtml = `
+        <div class="mb-3">
+            <strong>${item.name}</strong><br>
+            <small class="text-muted">Barcode: ${item.barcode}</small><br>
+            <span class="badge ${item.in_stock > 0 ? 'bg-success' : 'bg-danger'}">
+                ${item.in_stock} in stock
+            </span>
+        </div>
+    `;
+    document.getElementById('itemInfo').innerHTML = infoHtml;
+    document.getElementById('qtyInput').value = 1;
+    document.getElementById('qtyInput').focus();
+    modal.show();
+    console.log('Modal should be visible now');
+}
 
 document.getElementById('confirmBtn').addEventListener('click', () => {
     if (!selectedItem) return;
@@ -142,23 +225,70 @@ document.getElementById('confirmBtn').addEventListener('click', () => {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: `ajax=1&action=add_item&barcode=${selectedItem.barcode}&quantity=${document.getElementById('qtyInput').value}&type=${document.getElementById('typeInput').value}`
-    }).then(r => r.json()).then(d => {
-        if (d.success) {
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            playSuccessSound();
             modal.hide();
             location.reload();
+        } else {
+            alert(data.message || 'Error adding item');
+            playErrorSound();
         }
+    })
+    .catch(err => {
+        console.error('Add error:', err);
+        alert('Error adding item');
+        playErrorSound();
+    });
+});
+
+document.getElementById('saveDraftBtn').addEventListener('click', () => {
+    fetch('?id=<?php echo $coId; ?>', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'ajax=1&action=save_draft'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            playSuccessSound();
+            window.location.href = 'change_orders.php?saved=1';
+        } else {
+            alert(data.message || 'Error saving draft');
+            playErrorSound();
+        }
+    })
+    .catch(err => {
+        console.error('Save error:', err);
+        alert('Error saving draft');
+        playErrorSound();
     });
 });
 
 document.getElementById('finalizeBtn').addEventListener('click', () => {
-    if (!confirm('Finalize?')) return;
+    if (!confirm('Finalize this change order? This action cannot be undone.')) return;
     
     fetch('?id=<?php echo $coId; ?>', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'ajax=1&action=finalize'
-    }).then(r => r.json()).then(d => {
-        if (d.success) location.reload();
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            playSuccessSound();
+            window.location.href = 'change_orders.php?finalized=1';
+        } else {
+            alert(data.message || 'Error finalizing');
+            playErrorSound();
+        }
+    })
+    .catch(err => {
+        console.error('Finalize error:', err);
+        alert('Error finalizing');
+        playErrorSound();
     });
 });
 </script>
