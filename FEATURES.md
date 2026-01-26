@@ -172,6 +172,7 @@
   - Status remains "finalized" (not changed to "picked")
   - Can resume later from the same state
   - Shows info alert when resuming: "Resuming partial pick from [date]"
+  - **Note:** Picked quantities are saved and restored when resuming
 
 - **Completion:**
   - Complete button (disabled until all items correct)
@@ -191,6 +192,7 @@
 - **Draft Resume Alert:** Shows when resuming a partial return with timestamp
 - Scan items to return them
 - **Save as Draft button** for partial returns
+- **Note:** Return progress is marked but not saved; items must be re-scanned when resuming (limitation: no quantity_returned field in schema)
 - Updates:
   - Returns items to "in_stock"
   - Removes allocations
