@@ -1,4 +1,22 @@
 <?php
+// Handle PDF download BEFORE any output
+if (isset($_GET['download_pdf']) && isset($_GET['id'])) {
+    require_once __DIR__ . '/includes/functions.php';
+    require_once __DIR__ . '/includes/config.php';
+    
+    $pullsheetId = $_GET['id'];
+    $pullsheet = getPullsheetById($pullsheetId);
+    
+    if ($pullsheet) {
+        $pdf = generatePullsheetPDF($pullsheetId);
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="pullsheet_' . $pullsheet['show_name'] . '.pdf"');
+        header('Content-Length: ' . strlen($pdf));
+        echo $pdf;
+        exit;
+    }
+}
+
 $pageTitle = 'View Pullsheet';
 require_once 'includes/header.php';
 
@@ -19,15 +37,6 @@ if (isset($_GET['finalized'])) {
 }
 
 $items = getPullsheetItems($pullsheetId);
-
-if (isset($_GET['download_pdf'])) {
-    require_once __DIR__ . '/includes/functions.php';
-    $pdf = generatePullsheetPDF($pullsheetId);
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="pullsheet_' . $pullsheet['show_name'] . '.pdf"');
-    echo $pdf;
-    exit;
-}
 ?>
 
 <div class="row mb-3">
