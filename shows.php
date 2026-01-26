@@ -54,6 +54,9 @@ $shows = getAllShows();
                                 <td><?php echo date('m/d/Y', strtotime($show['created_at'])); ?></td>
                                 <td>
                                     <div class="btn-group">
+                                        <a href="show_tracker.php?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-success" title="View Workflow Tracker">
+                                            <i class="ti ti-timeline"></i>
+                                        </a>
                                         <a href="show_edit.php?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-primary">
                                             <i class="ti ti-edit"></i>
                                         </a>
