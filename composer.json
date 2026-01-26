@@ -1,0 +1,14 @@
+{
+    "name": "cmft/sound-shop-inventory",
+    "description": "Theatre Sound Shop Inventory Management System",
+    "require": {
+        "php": ">=7.4",
+        "picqer/php-barcode-generator": "^2.4",
+        "tecnickcom/tcpdf": "^6.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "includes/"
+        }
+    }
+}
