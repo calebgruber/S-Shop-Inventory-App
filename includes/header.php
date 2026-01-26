@@ -150,11 +150,15 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
         }
         
         [data-bs-toggle="collapse"]:not(.collapsed) .collapse-icon {
-            transform: rotate(180deg);
+            transform: rotate(0deg);
         }
         
         [data-bs-toggle="collapse"].collapsed .collapse-icon {
             transform: rotate(-90deg);
+        }
+        
+        [data-bs-toggle="collapse"] {
+            cursor: pointer;
         }
     </style>
 </head>

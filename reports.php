@@ -72,7 +72,7 @@ $spaces = getAllTheatreSpaces();
                 $showId = 'show-' . $show['id'];
             ?>
                 <div class="mb-3">
-                    <h4 class="d-flex align-items-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#<?php echo $showId; ?>" aria-expanded="true">
+                    <h4 class="d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#<?php echo $showId; ?>" aria-expanded="true">
                         <i class="ti ti-chevron-down me-2 collapse-icon"></i>
                         <?php echo htmlspecialchars($show['name']); ?>
                     </h4>
@@ -120,7 +120,7 @@ $spaces = getAllTheatreSpaces();
                 $spaceId = 'space-' . $space['id'];
             ?>
                 <div class="mb-3">
-                    <h4 class="d-flex align-items-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#<?php echo $spaceId; ?>" aria-expanded="true">
+                    <h4 class="d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#<?php echo $spaceId; ?>" aria-expanded="true">
                         <i class="ti ti-chevron-down me-2 collapse-icon"></i>
                         <?php echo htmlspecialchars($space['name']); ?>
                     </h4>
