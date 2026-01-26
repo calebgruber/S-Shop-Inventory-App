@@ -232,7 +232,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 <script>
 let selectedItem = null;
 const modalEl = document.getElementById('addItemModal');
-const modal = new bootstrap.Modal(modalEl);
+if (!modalEl) {
+    console.error('Modal element not found');
+}
+const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
+const barcodeInput = document.getElementById('itemBarcodeInput');
 
 document.getElementById('searchBtn').addEventListener('click', searchItem);
 
@@ -246,7 +250,7 @@ document.getElementById('itemBarcodeInput').addEventListener('keydown', function
 });
 
 function searchItem() {
-    const barcode = document.getElementById('itemBarcodeInput').value.trim();
+    const barcode = barcodeInput.value.trim();
     if (!barcode) return;
     
     console.log('Searching for barcode:', barcode);
@@ -265,8 +269,8 @@ function searchItem() {
             alert(data.message || 'Item not found');
             playErrorSound();
         }
-        document.getElementById('itemBarcodeInput').value = '';
-        document.getElementById('itemBarcodeInput').focus();
+        barcodeInput.value = '';
+        barcodeInput.focus();
     })
     .catch(err => {
         console.error('Search error:', err);
@@ -276,6 +280,10 @@ function searchItem() {
 }
 
 function showAddItemModal(item) {
+    if (!modal) {
+        console.error('Modal not initialized');
+        return;
+    }
     console.log('Showing modal for item:', item);
     selectedItem = item;
     const infoHtml = `
