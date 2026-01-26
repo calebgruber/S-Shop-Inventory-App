@@ -454,9 +454,13 @@ function setupFullScreenSearch() {
   
   if (!input || !searchBtn) return;
   
-  // Auto-focus and select
-  input.focus();
-  input.select();
+  // Use requestAnimationFrame to ensure focus happens after DOM is fully rendered
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      input.focus();
+      input.select();
+    });
+  });
   
   // Select all on focus
   input.addEventListener('focus', () => {
@@ -583,12 +587,16 @@ window.showQuantityModal = function(item) {
   `;
   document.body.appendChild(modal);
   
-  // Focus and select the input
-  setTimeout(() => {
-    const input = document.getElementById('quantityInput');
-    input.focus();
-    input.select();
-  }, 100);
+  // Focus and select the input using requestAnimationFrame for reliability
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const input = document.getElementById('quantityInput');
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    });
+  });
   
   // Handle Enter key
   document.getElementById('quantityInput').addEventListener('keypress', (e) => {
@@ -610,18 +618,28 @@ window.showQuantityModal = function(item) {
     await addItemToPullSheet(item.id, quantity);
     
     // Clear search and refocus
-    document.getElementById('fullScreenSearchInput').value = '';
-    document.getElementById('fullScreenSearchResults').innerHTML = `
-      <div class="alert alert-success alert-dismissible fade show">
-        <strong>${item.name}</strong> added to pull sheet (Quantity: ${quantity})
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    `;
+    const searchInput = document.getElementById('fullScreenSearchInput');
+    const resultsDiv = document.getElementById('fullScreenSearchResults');
     
-    setTimeout(() => {
-      document.getElementById('fullScreenSearchInput').focus();
-      document.getElementById('fullScreenSearchInput').select();
-    }, 100);
+    if (searchInput) searchInput.value = '';
+    if (resultsDiv) {
+      resultsDiv.innerHTML = `
+        <div class="alert alert-success alert-dismissible fade show">
+          <strong>${item.name}</strong> added to pull sheet (Quantity: ${quantity})
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+    }
+    
+    // Use requestAnimationFrame for reliable focus
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      });
+    });
   });
 };
 

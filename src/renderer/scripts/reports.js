@@ -1387,6 +1387,8 @@ window.openLowStockReport = openLowStockReport;
 window.openItemsOutReport = openItemsOutReport;
 window.openShowEquipmentReport = openShowEquipmentReport;
 window.openActivityLogReport = openActivityLogReport;
+window.loadLocationReport = loadLocationReport;
+window.loadShowEquipmentReport = loadShowEquipmentReport;
 
 // Register page with navigation system
 if (window.navigation) {
