@@ -147,9 +147,11 @@
   - Enter picker name
   - Scan pullsheet/change order barcode
   - Auto-focus on barcode field
+  - Automatically detects and resumes partial picks
 
 - **Picking Interface:**
   - Large barcode input with auto-focus
+  - **Draft Resume Alert:** Shows when resuming a partial pick with timestamp
   - Item cards showing:
     - Item name and barcode
     - Scanned count / Needed count
@@ -162,6 +164,15 @@
     - Success ding on correct scan
     - Error buzz on invalid scan
 
+- **Draft/Partial Completion:**
+  - **Save as Draft button** (yellow/warning style)
+  - Saves current scanning progress to database
+  - Sets `is_partial = 1` and `partial_saved_at = NOW()`
+  - Preserves `quantity_picked` values for each item
+  - Status remains "finalized" (not changed to "picked")
+  - Can resume later from the same state
+  - Shows info alert when resuming: "Resuming partial pick from [date]"
+
 - **Completion:**
   - Complete button (disabled until all items correct)
   - Updates database:
@@ -169,17 +180,22 @@
     - Changes allocations to "checked_out"
     - Updates pullsheet status to "picked"
     - Records picker name and timestamp
+    - Clears partial flags (`is_partial = 0`, `partial_saved_at = NULL`)
 
 ### 7. Return Mode (return_mode.php)
 
 **EXACT SAME UI as Pick Mode but for returns**
 
 - Scan pullsheet barcode to start
+- Automatically detects and resumes partial returns
+- **Draft Resume Alert:** Shows when resuming a partial return with timestamp
 - Scan items to return them
+- **Save as Draft button** for partial returns
 - Updates:
   - Returns items to "in_stock"
   - Removes allocations
   - Marks pullsheet as "completed"
+  - Clears partial flags on completion
 - Sound effects for feedback
 
 ### 8. Change Orders
