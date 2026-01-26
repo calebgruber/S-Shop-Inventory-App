@@ -19,7 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     'id' => $pullsheet['id'],
                     'picker_name' => $pickerName,
                     'show_name' => $pullsheet['show_name'],
-                    'items' => []
+                    'items' => [],
+                    'is_resuming_draft' => $pullsheet['is_partial'] ? true : false,
+                    'draft_saved_at' => $pullsheet['partial_saved_at']
                 ];
                 
                 foreach (getPullsheetItems($pullsheet['id']) as $item) {
@@ -27,11 +29,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                         'name' => $item['item_name'],
                         'barcode' => $item['item_barcode'],
                         'needed' => $item['quantity_needed'],
-                        'scanned' => 0
+                        'scanned' => $pullsheet['is_partial'] ? (int)$item['quantity_picked'] : 0
                     ];
                 }
                 
-                echo json_encode(['success' => true]);
+                echo json_encode([
+                    'success' => true,
+                    'is_resuming_draft' => $pullsheet['is_partial'] ? true : false,
+                    'draft_saved_at' => $pullsheet['partial_saved_at']
+                ]);
                 exit;
             }
             
@@ -43,7 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     'id' => $changeOrder['id'],
                     'picker_name' => $pickerName,
                     'show_name' => $changeOrder['show_name'],
-                    'items' => []
+                    'items' => [],
+                    'is_resuming_draft' => $changeOrder['is_partial'] ? true : false,
+                    'draft_saved_at' => $changeOrder['partial_saved_at']
                 ];
                 
                 foreach (getChangeOrderItems($changeOrder['id']) as $item) {
@@ -52,12 +60,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                             'name' => $item['item_name'],
                             'barcode' => $item['item_barcode'],
                             'needed' => $item['quantity_change'],
-                            'scanned' => 0
+                            'scanned' => $changeOrder['is_partial'] ? (int)$item['quantity_processed'] : 0
                         ];
                     }
                 }
                 
-                echo json_encode(['success' => true]);
+                echo json_encode([
+                    'success' => true,
+                    'is_resuming_draft' => $changeOrder['is_partial'] ? true : false,
+                    'draft_saved_at' => $changeOrder['partial_saved_at']
+                ]);
                 exit;
             }
             
@@ -103,6 +115,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             exit;
         }
         
+        if ($_POST['action'] === 'save_draft') {
+            $sessionType = $_SESSION['pick_session']['type'];
+            $sessionId = $_SESSION['pick_session']['id'];
+            
+            if ($sessionType === 'pullsheet') {
+                foreach ($_SESSION['pick_session']['items'] as $itemId => $data) {
+                    getDB()->query(
+                        "UPDATE pullsheet_items SET quantity_picked = ? WHERE pullsheet_id = ? AND item_id = ?",
+                        [$data['scanned'], $sessionId, $itemId]
+                    );
+                }
+                getDB()->query(
+                    "UPDATE pullsheets SET is_partial = 1, partial_saved_at = NOW() WHERE id = ?",
+                    [$sessionId]
+                );
+            } elseif ($sessionType === 'change_order') {
+                foreach ($_SESSION['pick_session']['items'] as $itemId => $data) {
+                    getDB()->query(
+                        "UPDATE change_order_items SET quantity_processed = ? WHERE change_order_id = ? AND item_id = ? AND type = 'add'",
+                        [$data['scanned'], $sessionId, $itemId]
+                    );
+                }
+                getDB()->query(
+                    "UPDATE change_orders SET is_partial = 1, partial_saved_at = NOW() WHERE id = ?",
+                    [$sessionId]
+                );
+            }
+            
+            unset($_SESSION['pick_session']);
+            echo json_encode(['success' => true]);
+            exit;
+        }
+        
         if ($_POST['action'] === 'complete_pick') {
             $sessionType = $_SESSION['pick_session']['type'];
             $sessionId = $_SESSION['pick_session']['id'];
@@ -119,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     );
                 }
                 getDB()->query(
-                    "UPDATE pullsheets SET status = 'picked', picked_at = NOW(), picked_by = ? WHERE id = ?",
+                    "UPDATE pullsheets SET status = 'picked', picked_at = NOW(), picked_by = ?, is_partial = 0, partial_saved_at = NULL WHERE id = ?",
                     [$_SESSION['pick_session']['picker_name'], $sessionId]
                 );
             } elseif ($sessionType === 'change_order') {
@@ -130,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     );
                 }
                 getDB()->query(
-                    "UPDATE change_orders SET status = 'processed', processed_at = NOW(), processed_by = ? WHERE id = ?",
+                    "UPDATE change_orders SET status = 'processed', processed_at = NOW(), processed_by = ?, is_partial = 0, partial_saved_at = NULL WHERE id = ?",
                     [$_SESSION['pick_session']['picker_name'], $sessionId]
                 );
             }
@@ -249,6 +294,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 </div>
             <?php else: ?>
                 <!-- Active Pick Session -->
+                <?php if ($pickSession['is_resuming_draft']): ?>
+                    <div class="alert alert-info alert-dismissible fade show mb-4">
+                        <i class="ti ti-clock"></i> 
+                        <strong>Resuming Draft:</strong> Partial pick from <?php echo date('M j, Y g:i A', strtotime($pickSession['draft_saved_at'])); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+                
                 <div class="mb-4">
                     <input type="text" class="form-control scan-input" id="itemScan" 
                            placeholder="Scan item barcode..." autofocus>
@@ -276,9 +329,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     <?php endforeach; ?>
                 </div>
                 
-                <button class="btn btn-success w-100 btn-lg" id="completeBtn" disabled>
-                    <i class="ti ti-check"></i> Complete Pick
-                </button>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <button class="btn btn-warning w-100 btn-lg" id="saveDraftBtn">
+                            <i class="ti ti-device-floppy"></i> Save as Draft
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-success w-100 btn-lg" id="completeBtn" disabled>
+                            <i class="ti ti-check"></i> Complete Pick
+                        </button>
+                    </div>
+                </div>
             <?php endif; ?>
         </div>
     </div>
@@ -343,6 +405,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 post(`ajax=1&action=start_pick&picker_name=${encodeURIComponent(name)}&barcode=${encodeURIComponent(barcode)}`, data => {
                     if (data.success) {
                         playSuccess();
+                        if (data.is_resuming_draft) {
+                            // Store draft info in sessionStorage for display after reload
+                            sessionStorage.setItem('showDraftNotice', 'true');
+                        }
                         location.reload();
                     } else {
                         playError();
@@ -480,6 +546,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     } else {
                         playError();
                         alert(data.message || 'Failed to complete');
+                    }
+                });
+            });
+            
+            document.getElementById('saveDraftBtn').addEventListener('click', () => {
+                if (!confirm('Save current progress as draft? You can resume later.')) return;
+                
+                post('ajax=1&action=save_draft', data => {
+                    if (data.success) {
+                        playSuccess();
+                        alert('Draft saved successfully!');
+                        location.href = 'index.php';
+                    } else {
+                        playError();
+                        alert(data.message || 'Failed to save draft');
                     }
                 });
             });

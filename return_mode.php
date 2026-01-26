@@ -19,7 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     'id' => $pullsheet['id'],
                     'returner_name' => $returnerName,
                     'show_name' => $pullsheet['show_name'],
-                    'items' => []
+                    'items' => [],
+                    'is_resuming_draft' => $pullsheet['is_partial'] ? true : false,
+                    'draft_saved_at' => $pullsheet['partial_saved_at']
                 ];
                 
                 foreach (getPullsheetItems($pullsheet['id']) as $item) {
@@ -31,7 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     ];
                 }
                 
-                echo json_encode(['success' => true]);
+                echo json_encode([
+                    'success' => true,
+                    'is_resuming_draft' => $pullsheet['is_partial'] ? true : false,
+                    'draft_saved_at' => $pullsheet['partial_saved_at']
+                ]);
                 exit;
             }
             
@@ -43,7 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     'id' => $changeOrder['id'],
                     'returner_name' => $returnerName,
                     'show_name' => $changeOrder['show_name'],
-                    'items' => []
+                    'items' => [],
+                    'is_resuming_draft' => $changeOrder['is_partial'] ? true : false,
+                    'draft_saved_at' => $changeOrder['partial_saved_at']
                 ];
                 
                 foreach (getChangeOrderItems($changeOrder['id']) as $item) {
@@ -57,7 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     }
                 }
                 
-                echo json_encode(['success' => true]);
+                echo json_encode([
+                    'success' => true,
+                    'is_resuming_draft' => $changeOrder['is_partial'] ? true : false,
+                    'draft_saved_at' => $changeOrder['partial_saved_at']
+                ]);
                 exit;
             }
             
@@ -103,6 +115,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             exit;
         }
         
+        if ($_POST['action'] === 'save_draft') {
+            $sessionType = $_SESSION['return_session']['type'];
+            $sessionId = $_SESSION['return_session']['id'];
+            
+            if ($sessionType === 'pullsheet') {
+                // Note: For returns, we save the "to be returned" count
+                // The logic here depends on the return workflow
+                // Assuming we're tracking partial returns similarly to picks
+                getDB()->query(
+                    "UPDATE pullsheets SET is_partial = 1, partial_saved_at = NOW() WHERE id = ?",
+                    [$sessionId]
+                );
+            } elseif ($sessionType === 'change_order') {
+                getDB()->query(
+                    "UPDATE change_orders SET is_partial = 1, partial_saved_at = NOW() WHERE id = ?",
+                    [$sessionId]
+                );
+            }
+            
+            unset($_SESSION['return_session']);
+            echo json_encode(['success' => true]);
+            exit;
+        }
+        
         if ($_POST['action'] === 'complete_return') {
             $sessionType = $_SESSION['return_session']['type'];
             $sessionId = $_SESSION['return_session']['id'];
@@ -120,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 }
                 
                 getDB()->query(
-                    "UPDATE pullsheets SET status = 'completed' WHERE id = ?",
+                    "UPDATE pullsheets SET status = 'completed', is_partial = 0, partial_saved_at = NULL WHERE id = ?",
                     [$sessionId]
                 );
             } elseif ($sessionType === 'change_order') {
@@ -130,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 }
                 
                 getDB()->query(
-                    "UPDATE change_orders SET status = 'completed' WHERE id = ?",
+                    "UPDATE change_orders SET status = 'completed', is_partial = 0, partial_saved_at = NULL WHERE id = ?",
                     [$sessionId]
                 );
             }
@@ -249,6 +285,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 </div>
             <?php else: ?>
                 <!-- Active Return Session -->
+                <?php if ($returnSession['is_resuming_draft']): ?>
+                    <div class="alert alert-info alert-dismissible fade show mb-4">
+                        <i class="ti ti-clock"></i> 
+                        <strong>Resuming Draft:</strong> Partial return from <?php echo date('M j, Y g:i A', strtotime($returnSession['draft_saved_at'])); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+                
                 <div class="mb-4">
                     <input type="text" class="form-control scan-input" id="itemScan" 
                            placeholder="Scan item barcode to return..." autofocus>
@@ -276,9 +320,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     <?php endforeach; ?>
                 </div>
                 
-                <button class="btn btn-success w-100 btn-lg" id="completeBtn" disabled>
-                    <i class="ti ti-check"></i> Complete Return
-                </button>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <button class="btn btn-warning w-100 btn-lg" id="saveDraftBtn">
+                            <i class="ti ti-device-floppy"></i> Save as Draft
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-success w-100 btn-lg" id="completeBtn" disabled>
+                            <i class="ti ti-check"></i> Complete Return
+                        </button>
+                    </div>
+                </div>
             <?php endif; ?>
         </div>
     </div>
@@ -343,6 +396,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 post(`ajax=1&action=start_return&returner_name=${encodeURIComponent(name)}&barcode=${encodeURIComponent(barcode)}`, data => {
                     if (data.success) {
                         playSuccess();
+                        if (data.is_resuming_draft) {
+                            // Store draft info in sessionStorage for display after reload
+                            sessionStorage.setItem('showDraftNotice', 'true');
+                        }
                         location.reload();
                     } else {
                         playError();
@@ -480,6 +537,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     } else {
                         playError();
                         alert(data.message || 'Failed to complete');
+                    }
+                });
+            });
+            
+            document.getElementById('saveDraftBtn').addEventListener('click', () => {
+                if (!confirm('Save current progress as draft? You can resume later.')) return;
+                
+                post('ajax=1&action=save_draft', data => {
+                    if (data.success) {
+                        playSuccess();
+                        alert('Draft saved successfully!');
+                        location.href = 'index.php';
+                    } else {
+                        playError();
+                        alert(data.message || 'Failed to save draft');
                     }
                 });
             });
