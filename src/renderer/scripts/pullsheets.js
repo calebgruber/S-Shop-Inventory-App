@@ -285,12 +285,356 @@ async function viewPullSheet(pullSheetId) {
     return;
   }
   
-  const modal = new bootstrap.Modal(document.getElementById('pullSheetDetailModal'));
-  document.getElementById('pullSheetDetailTitle').textContent = currentPullSheet.name || `Pull Sheet #${currentPullSheet.id}`;
+  // If it's a draft, open in full-screen mode for easier item addition
+  if (currentPullSheet.status === 'draft') {
+    openFullScreenPullSheet();
+  } else {
+    // For finalized/returned pull sheets, use the regular modal
+    const modal = new bootstrap.Modal(document.getElementById('pullSheetDetailModal'));
+    document.getElementById('pullSheetDetailTitle').textContent = currentPullSheet.name || `Pull Sheet #${currentPullSheet.id}`;
+    
+    renderPullSheetDetail();
+    modal.show();
+  }
+}
+
+// Open pull sheet in full-screen mode for item addition
+function openFullScreenPullSheet() {
+  // Create or get full-screen modal
+  let fullScreenModal = document.getElementById('pullSheetFullScreenModal');
   
-  renderPullSheetDetail();
+  if (!fullScreenModal) {
+    fullScreenModal = document.createElement('div');
+    fullScreenModal.id = 'pullSheetFullScreenModal';
+    fullScreenModal.className = 'modal modal-blur fade';
+    fullScreenModal.setAttribute('data-bs-backdrop', 'static');
+    fullScreenModal.setAttribute('data-bs-keyboard', 'false');
+    fullScreenModal.innerHTML = `
+      <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h3 class="modal-title" id="fullScreenPullSheetTitle"></h3>
+            <button type="button" class="btn-close btn-close-white" onclick="closeFullScreenPullSheet()"></button>
+          </div>
+          <div class="modal-body" id="fullScreenPullSheetBody">
+          </div>
+          <div class="modal-footer">
+            <div id="fullScreenPullSheetActions"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(fullScreenModal);
+  }
+  
+  document.getElementById('fullScreenPullSheetTitle').textContent = currentPullSheet.name || `Pull Sheet #${currentPullSheet.id}`;
+  renderFullScreenPullSheet();
+  
+  const modal = new bootstrap.Modal(fullScreenModal);
   modal.show();
 }
+
+// Render full-screen pull sheet interface
+function renderFullScreenPullSheet() {
+  const items = currentPullSheet.items || [];
+  
+  const body = document.getElementById('fullScreenPullSheetBody');
+  body.innerHTML = `
+    <div class="container-fluid">
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <h4>Show: ${currentPullSheet.show_name}</h4>
+          <p class="text-muted">Status: ${getPullSheetStatusBadge(currentPullSheet.status)}</p>
+          ${currentPullSheet.pulled_by ? `<p class="text-muted">Created by: ${currentPullSheet.pulled_by}</p>` : ''}
+        </div>
+        <div class="col-md-6 text-end">
+          <div class="h2 mb-0">${items.length} Items</div>
+          <div class="text-muted">in pull sheet</div>
+        </div>
+      </div>
+      
+      <!-- Search/Scan Section -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card bg-light">
+            <div class="card-body">
+              <h4 class="mb-3"><i class="ti ti-scan icon"></i> Add Items to Pull Sheet</h4>
+              <div class="input-group input-group-lg">
+                <span class="input-group-text bg-primary text-white">
+                  <i class="ti ti-barcode icon"></i>
+                </span>
+                <input type="text" class="form-control form-control-lg" id="fullScreenSearchInput" 
+                       placeholder="Scan barcode or type to search for items..." autofocus>
+                <button class="btn btn-primary btn-lg" id="fullScreenSearchBtn">
+                  <i class="ti ti-search icon"></i> Search
+                </button>
+              </div>
+              <div id="fullScreenSearchResults" class="mt-3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Items List -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Pull Sheet Items</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-lg table-hover">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Barcode</th>
+                    <th>Location</th>
+                    <th class="text-center">Requested</th>
+                    <th class="text-center">Available</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${items.length === 0 ? `
+                    <tr>
+                      <td colspan="6" class="text-center text-muted py-5">
+                        <i class="ti ti-list-search icon icon-lg mb-2"></i>
+                        <p>No items added yet. Use the search above to add items.</p>
+                      </td>
+                    </tr>
+                  ` : items.map(item => {
+                    const availabilityClass = item.quantity_available >= item.quantity_requested ? 'text-success' : 'text-danger';
+                    return `
+                    <tr>
+                      <td>
+                        <div><strong class="h4">${item.name}</strong></div>
+                        ${item.description ? `<div class="text-muted">${item.description}</div>` : ''}
+                      </td>
+                      <td><span class="text-mono h5">${item.barcode || '-'}</span></td>
+                      <td><span class="h5">${item.location || '-'}</span></td>
+                      <td class="text-center"><span class="badge bg-primary badge-lg">${item.quantity_requested}</span></td>
+                      <td class="text-center ${availabilityClass}"><strong class="h4">${item.quantity_available || 0}</strong></td>
+                      <td>
+                        <button class="btn btn-ghost-danger" onclick="removeItemFromPullSheet(${item.item_id})">
+                          <i class="ti ti-trash icon"></i> Remove
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Setup search functionality
+  setTimeout(() => setupFullScreenSearch(), 100);
+  
+  // Update actions
+  const actions = document.getElementById('fullScreenPullSheetActions');
+  actions.innerHTML = items.length > 0 ? `
+    <button class="btn btn-outline-secondary me-auto" onclick="closeFullScreenPullSheet()">Close</button>
+    <button class="btn btn-success btn-lg" onclick="finalizePullSheet()">
+      <i class="ti ti-check icon"></i> Finalize & Generate PDF
+    </button>
+  ` : `
+    <button class="btn btn-outline-secondary" onclick="closeFullScreenPullSheet()">Close</button>
+    <span class="text-muted">Add items to enable finalization</span>
+  `;
+}
+
+// Setup full-screen search functionality
+function setupFullScreenSearch() {
+  const input = document.getElementById('fullScreenSearchInput');
+  const searchBtn = document.getElementById('fullScreenSearchBtn');
+  
+  if (!input || !searchBtn) return;
+  
+  // Auto-focus and select
+  input.focus();
+  input.select();
+  
+  // Select all on focus
+  input.addEventListener('focus', () => {
+    input.select();
+  });
+  
+  // Handle Enter key
+  input.addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      await fullScreenSearch();
+    }
+  });
+  
+  // Handle search button
+  searchBtn.addEventListener('click', async () => {
+    await fullScreenSearch();
+  });
+}
+
+// Perform full-screen search
+async function fullScreenSearch() {
+  const query = document.getElementById('fullScreenSearchInput').value.trim();
+  const resultsDiv = document.getElementById('fullScreenSearchResults');
+  
+  if (!query) {
+    resultsDiv.innerHTML = '';
+    return;
+  }
+  
+  try {
+    // Try barcode lookup first
+    const item = await window.api.inventory.getByBarcode(query);
+    
+    if (item) {
+      showQuantityModal(item);
+      return;
+    }
+    
+    // Search by name if not found by barcode
+    const items = await window.api.inventory.search(query);
+    
+    if (items.length === 0) {
+      resultsDiv.innerHTML = `<div class="alert alert-warning">No items found for "${query}"</div>`;
+      return;
+    }
+    
+    // Show search results
+    resultsDiv.innerHTML = `
+      <div class="card">
+        <div class="list-group list-group-flush">
+          ${items.map(item => `
+            <div class="list-group-item">
+              <div class="row align-items-center">
+                <div class="col">
+                  <h4 class="mb-1">${item.name}</h4>
+                  <p class="text-muted mb-0">
+                    <span class="me-3">${item.barcode || 'No barcode'}</span>
+                    <span class="me-3">${item.category || 'Uncategorized'}</span>
+                    <span class="me-3">${item.location || 'No location'}</span>
+                  </p>
+                </div>
+                <div class="col-auto">
+                  <span class="badge bg-${item.quantity_available > 0 ? 'success' : 'danger'} badge-lg me-3">
+                    ${item.quantity_available} available
+                  </span>
+                  <button class="btn btn-primary btn-lg" onclick='showQuantityModal(${JSON.stringify(item)})'>
+                    <i class="ti ti-plus icon"></i> Add to Pull Sheet
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    resultsDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+  }
+}
+
+// Show quantity selection modal
+window.showQuantityModal = function(item) {
+  const modal = document.createElement('div');
+  modal.innerHTML = `
+    <div class="modal modal-blur fade show" style="display: block;" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h3 class="modal-title">Select Quantity</h3>
+          </div>
+          <div class="modal-body">
+            <h4>${item.name}</h4>
+            <p class="text-muted">${item.description || ''}</p>
+            <div class="row mb-4">
+              <div class="col-6">
+                <div class="text-muted">Available in Stock</div>
+                <div class="h1 ${item.quantity_available > 0 ? 'text-success' : 'text-danger'}">
+                  ${item.quantity_available}
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="text-muted">Location</div>
+                <div class="h3">${item.location || 'N/A'}</div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label h4">Quantity to Add</label>
+              <input type="number" class="form-control form-control-lg" id="quantityInput" 
+                     value="1" min="1" max="${item.quantity_available}" autofocus>
+              <small class="form-hint">Maximum: ${item.quantity_available}</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn" onclick="this.closest('.modal').remove()">Cancel</button>
+            <button type="button" class="btn btn-primary btn-lg" id="confirmQuantityBtn">
+              <i class="ti ti-check icon"></i> Add to Pull Sheet
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+  `;
+  document.body.appendChild(modal);
+  
+  // Focus and select the input
+  setTimeout(() => {
+    const input = document.getElementById('quantityInput');
+    input.focus();
+    input.select();
+  }, 100);
+  
+  // Handle Enter key
+  document.getElementById('quantityInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('confirmQuantityBtn').click();
+    }
+  });
+  
+  // Handle confirm
+  document.getElementById('confirmQuantityBtn').addEventListener('click', async () => {
+    const quantity = parseInt(document.getElementById('quantityInput').value) || 1;
+    
+    if (quantity > item.quantity_available) {
+      alert(`Only ${item.quantity_available} available in stock`);
+      return;
+    }
+    
+    modal.remove();
+    await addItemToPullSheet(item.id, quantity);
+    
+    // Clear search and refocus
+    document.getElementById('fullScreenSearchInput').value = '';
+    document.getElementById('fullScreenSearchResults').innerHTML = `
+      <div class="alert alert-success alert-dismissible fade show">
+        <strong>${item.name}</strong> added to pull sheet (Quantity: ${quantity})
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    `;
+    
+    setTimeout(() => {
+      document.getElementById('fullScreenSearchInput').focus();
+      document.getElementById('fullScreenSearchInput').select();
+    }, 100);
+  });
+};
+
+// Close full-screen pull sheet
+window.closeFullScreenPullSheet = function() {
+  const modal = document.getElementById('pullSheetFullScreenModal');
+  if (modal) {
+    const bsModal = bootstrap.Modal.getInstance(modal);
+    if (bsModal) {
+      bsModal.hide();
+    }
+  }
+};
 
 // Render pull sheet detail
 function renderPullSheetDetail() {
@@ -512,15 +856,24 @@ async function addItemToPullSheet(itemId, quantity) {
     
     // Refresh detail
     currentPullSheet = await window.api.pullsheets.getById(currentPullSheet.id);
-    renderPullSheetDetail();
     
-    // Clear search
-    document.getElementById('itemSearchInput').value = '';
-    document.getElementById('searchResults').innerHTML = '<div class="alert alert-success">Item added!</div>';
-    
-    setTimeout(() => {
-      document.getElementById('searchResults').innerHTML = '';
-    }, 2000);
+    // Check if we're in full-screen mode or regular modal
+    if (document.getElementById('pullSheetFullScreenModal')?.classList.contains('show')) {
+      renderFullScreenPullSheet();
+    } else {
+      renderPullSheetDetail();
+      
+      // Clear search (for old modal)
+      const searchInput = document.getElementById('itemSearchInput');
+      const searchResults = document.getElementById('searchResults');
+      if (searchInput) searchInput.value = '';
+      if (searchResults) {
+        searchResults.innerHTML = '<div class="alert alert-success">Item added!</div>';
+        setTimeout(() => {
+          searchResults.innerHTML = '';
+        }, 2000);
+      }
+    }
   } catch (error) {
     alert('Error adding item: ' + error.message);
   }
@@ -542,7 +895,13 @@ async function removeItemFromPullSheet(itemId) {
     try {
       await window.api.pullsheets.removeItem(currentPullSheet.id, itemId);
       currentPullSheet = await window.api.pullsheets.getById(currentPullSheet.id);
-      renderPullSheetDetail();
+      
+      // Check if we're in full-screen mode or regular modal
+      if (document.getElementById('pullSheetFullScreenModal')?.classList.contains('show')) {
+        renderFullScreenPullSheet();
+      } else {
+        renderPullSheetDetail();
+      }
     } catch (error) {
       alert('Error removing item: ' + error.message);
     }
