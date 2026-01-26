@@ -5,12 +5,14 @@ require_once 'includes/header.php';
 $itemId = $_GET['id'] ?? null;
 $item = $itemId ? getItemById($itemId) : null;
 $categories = getAllCategories();
+$subcategories = getAllSubcategories();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $name = $_POST['name'];
         $description = $_POST['description'];
         $categoryId = $_POST['category_id'] ?: null;
+        $subcategoryId = $_POST['subcategory_id'] ?: null;
         $trackingType = $_POST['tracking_type'];
         $totalQuantity = (int)$_POST['total_quantity'];
         $inStockQuantity = (int)$_POST['in_stock_quantity'];
@@ -45,9 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($itemId) {
             // Update existing item - barcode can't be changed once set
             getDB()->query(
-                "UPDATE items SET name = ?, description = ?, category_id = ?, tracking_type = ?, 
+                "UPDATE items SET name = ?, description = ?, category_id = ?, subcategory_id = ?, tracking_type = ?, 
                  total_quantity = ?, in_stock_quantity = ?, location = ?, photo_path = ? WHERE id = ?",
-                [$name, $description, $categoryId, $trackingType, $totalQuantity, $inStockQuantity, $location, $photoPath, $itemId]
+                [$name, $description, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location, $photoPath, $itemId]
             );
             setAlert('Item updated successfully');
         } else {
@@ -63,9 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             getDB()->query(
-                "INSERT INTO items (name, description, barcode, category_id, tracking_type, total_quantity, in_stock_quantity, location, photo_path) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$name, $description, $barcode, $categoryId, $trackingType, $totalQuantity, $inStockQuantity, $location, $photoPath]
+                "INSERT INTO items (name, description, barcode, category_id, subcategory_id, tracking_type, total_quantity, in_stock_quantity, location, photo_path) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$name, $description, $barcode, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location, $photoPath]
             );
             setAlert('Item created successfully');
         }
@@ -127,12 +129,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     <div class="mb-3">
                         <label class="form-label">Category</label>
-                        <select class="form-select" name="category_id">
+                        <select class="form-select" name="category_id" id="category-select">
                             <option value="">-- No Category --</option>
                             <?php foreach ($categories as $category): ?>
                                 <option value="<?php echo $category['id']; ?>" 
                                     <?php echo ($item && $item['category_id'] == $category['id']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($category['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Subcategory</label>
+                        <select class="form-select" name="subcategory_id" id="subcategory-select">
+                            <option value="">-- No Subcategory --</option>
+                            <?php foreach ($subcategories as $sub): ?>
+                                <option value="<?php echo $sub['id']; ?>" 
+                                    data-category-id="<?php echo $sub['category_id']; ?>"
+                                    <?php echo ($item && $item['subcategory_id'] == $sub['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($sub['name']); ?>
+                                    <?php if ($sub['category_name']): ?>
+                                        (<?php echo htmlspecialchars($sub['category_name']); ?>)
+                                    <?php endif; ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -177,5 +196,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </div>
+
+<script>
+// Filter subcategories based on selected category
+document.getElementById('category-select').addEventListener('change', function() {
+    const categoryId = this.value;
+    const subcategorySelect = document.getElementById('subcategory-select');
+    const options = subcategorySelect.querySelectorAll('option');
+    
+    options.forEach(option => {
+        if (option.value === '') {
+            option.style.display = '';
+            return;
+        }
+        
+        const optionCategoryId = option.getAttribute('data-category-id');
+        if (!categoryId || optionCategoryId === categoryId) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    });
+    
+    // Reset subcategory selection if hidden
+    const selectedOption = subcategorySelect.options[subcategorySelect.selectedIndex];
+    if (selectedOption && selectedOption.style.display === 'none') {
+        subcategorySelect.value = '';
+    }
+});
+
+// Trigger on page load to filter based on pre-selected category
+document.getElementById('category-select').dispatchEvent(new Event('change'));
+</script>
 
 <?php require_once 'includes/footer.php'; ?>

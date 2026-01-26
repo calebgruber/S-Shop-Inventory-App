@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_role'] = $user['role'];
             
             // Update last login
-            getDB()->execute(
+            getDB()->query(
                 "UPDATE users SET last_login = NOW() WHERE id = ?",
                 [$user['id']]
             );

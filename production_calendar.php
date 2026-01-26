@@ -2,7 +2,7 @@
 $pageTitle = 'Production Calendar';
 require_once 'includes/header.php';
 
-requirePermission('shows');
+requireRole(['admin', 'designer']);
 
 $db = getDB();
 

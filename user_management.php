@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setAlert('Email already exists', 'danger');
             } else {
                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-                $db->execute(
+                $db->query(
                     "INSERT INTO users (email, password_hash, full_name, role, is_active) VALUES (?, ?, ?, ?, 1)",
                     [$email, $passwordHash, $full_name, $role]
                 );
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $role = $_POST['role'] ?? 'student';
         $is_active = isset($_POST['is_active']) ? 1 : 0;
         
-        $db->execute(
+        $db->query(
             "UPDATE users SET full_name = ?, role = ?, is_active = ? WHERE id = ?",
             [$full_name, $role, $is_active, $userId]
         );
@@ -52,14 +52,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (!empty($newPassword)) {
             $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
-            $db->execute("UPDATE users SET password_hash = ? WHERE id = ?", [$passwordHash, $userId]);
+            $db->query("UPDATE users SET password_hash = ? WHERE id = ?", [$passwordHash, $userId]);
             setAlert('Password reset successfully', 'success');
         }
         redirect();
     } elseif ($action === 'delete') {
         $userId = $_POST['user_id'] ?? 0;
         // Soft delete
-        $db->execute("UPDATE users SET is_deleted = 1, is_active = 0 WHERE id = ?", [$userId]);
+        $db->query("UPDATE users SET is_deleted = 1, is_active = 0 WHERE id = ?", [$userId]);
         setAlert('User deleted successfully', 'success');
         redirect();
     } elseif ($action === 'update_permissions') {
@@ -67,11 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $permissions = $_POST['permissions'] ?? [];
         
         // Remove all existing permissions for this user
-        $db->execute("DELETE FROM user_permissions WHERE user_id = ?", [$userId]);
+        $db->query("DELETE FROM user_permissions WHERE user_id = ?", [$userId]);
         
         // Add new permissions
         foreach ($permissions as $permission) {
-            $db->execute(
+            $db->query(
                 "INSERT INTO user_permissions (user_id, permission_key, can_access) VALUES (?, ?, 1)",
                 [$userId, $permission]
             );

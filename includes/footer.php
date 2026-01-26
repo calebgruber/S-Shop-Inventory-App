@@ -68,14 +68,7 @@
             themeToggleDropdown.addEventListener('click', toggleTheme);
         }
         
-        // Auto-focus barcode/search fields
-        document.addEventListener('DOMContentLoaded', function() {
-            const autoFocusField = document.querySelector('.barcode-autofocus, [data-autofocus]');
-            if (autoFocusField) {
-                autoFocusField.focus();
-                autoFocusField.select();
-            }
-        });
+
         
         // Sound effects
         function playSuccessSound() {
