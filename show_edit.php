@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             
             setAlert('Show updated successfully');
-            redirect('show_edit.php?id=' . $showId);
+            redirect('shows.php');
         }
     } catch (Exception $e) {
         setAlert($e->getMessage(), 'danger');

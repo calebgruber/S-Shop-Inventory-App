@@ -118,6 +118,31 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
         .item-scan-card:hover {
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
+        
+        /* Alert dark mode support */
+        [data-bs-theme="dark"] .alert-success {
+            background-color: rgba(47, 179, 68, 0.15);
+            border-color: rgba(47, 179, 68, 0.3);
+            color: #2fb344;
+        }
+        
+        [data-bs-theme="dark"] .alert-danger {
+            background-color: rgba(214, 57, 57, 0.15);
+            border-color: rgba(214, 57, 57, 0.3);
+            color: #d63939;
+        }
+        
+        [data-bs-theme="dark"] .alert-warning {
+            background-color: rgba(245, 159, 0, 0.15);
+            border-color: rgba(245, 159, 0, 0.3);
+            color: #f59f00;
+        }
+        
+        [data-bs-theme="dark"] .alert-info {
+            background-color: rgba(66, 153, 225, 0.15);
+            border-color: rgba(66, 153, 225, 0.3);
+            color: #4299e1;
+        }
     </style>
 </head>
 <body>

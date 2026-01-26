@@ -109,8 +109,24 @@ class SimplePDF {
         $offsets[$fontObj] = strlen($pdf);
         $pdf .= "$fontObj 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
 
+        // Image XObjects (if any)
+        $imageObjs = [];
+        $nextObj = $fontObj + 1;
+        foreach ($this->images as $imgNum => $imgData) {
+            $imageObjs[$imgNum] = $nextObj;
+            $offsets[$nextObj] = strlen($pdf);
+            
+            // Simple placeholder for PNG images - just reference as XObject
+            // In production, this would decode PNG and embed properly
+            $pdf .= "$nextObj 0 obj\n";
+            $pdf .= "<< /Type /XObject /Subtype /Image ";
+            $pdf .= "/Width 100 /Height 50 /ColorSpace /DeviceRGB /BitsPerComponent 8 ";
+            $pdf .= "/Length " . strlen($imgData) . " >>\n";
+            $pdf .= "stream\n" . $imgData . "\nendstream\nendobj\n";
+            $nextObj++;
+        }
+
         // Pages and content
-        $contentObj = $fontObj + 1;
         foreach ($this->pages as $num => $page) {
             $pageObj = 3 + (($num - 1) * 2);
             $contentObjNum = $pageObj + 1;
@@ -121,7 +137,17 @@ class SimplePDF {
             $pdf .= "<< /Type /Page /Parent 2 0 R ";
             $pdf .= "/MediaBox [0 0 {$page['width']} {$page['height']}] ";
             $pdf .= "/Contents $contentObjNum 0 R ";
-            $pdf .= "/Resources << /Font << /F1 $fontObj 0 R >> >> ";
+            
+            // Build resources with fonts and images
+            $pdf .= "/Resources << /Font << /F1 $fontObj 0 R >> ";
+            if (!empty($imageObjs)) {
+                $pdf .= "/XObject << ";
+                foreach ($imageObjs as $imgNum => $objNum) {
+                    $pdf .= "/Im$imgNum $objNum 0 R ";
+                }
+                $pdf .= ">> ";
+            }
+            $pdf .= ">> ";
             $pdf .= ">>\nendobj\n";
 
             // Content stream
