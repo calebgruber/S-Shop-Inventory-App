@@ -406,7 +406,7 @@ function refreshItems() {
 }
 
 function renderItems(items) {
-    const container = document.getElementById('items-container');
+    const container = document.getElementById('pending-items');
     container.innerHTML = '';
     
     if (items.length === 0) {
@@ -480,30 +480,36 @@ ob_start();
         <div class="d-flex justify-content-between align-items-center mb-4 pt-4">
             <div>
                 <h1 class="m-0">Pick Mode</h1>
-                <div class="text-muted">
-                    <?php echo sanitize($document['show_name']); ?> - 
-                    <?php echo sanitize($document['barcode']); ?>
-                </div>
+                <div class="text-muted">Scan pull sheet/change order barcode to begin</div>
             </div>
             <div>
-                <a href="<?php echo $documentType === 'pull_sheet' ? 'pull_sheet_view.php?id=' . $pullSheetId : 'change_order_view.php?id=' . $changeOrderId; ?>" 
-                   class="btn btn-danger">
+                <a href="index.php" class="btn btn-danger">
                     <i class="ti ti-x"></i> Exit
                 </a>
             </div>
         </div>
         
-        <div class="card mb-4">
-            <div class="card-body">
-                <label class="form-label">Scan Item Barcode</label>
-                <input type="text" id="barcode-input" class="form-control form-control-lg auto-focus" 
-                       placeholder="Scan barcode here" onkeypress="scanBarcode(event)" autofocus>
-                <small class="form-hint">Scan barcode to pick items for this show</small>
+        <div id="instruction-card" class="card mb-4">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <?php echo PICK_MODE_INSTRUCTION_SVG; ?>
+                </div>
+                <h3 class="mb-3">Scan PDF Barcode to Start</h3>
+                <p class="text-muted">Scan the barcode from the pull sheet or change order PDF document</p>
             </div>
         </div>
         
-        <div id="items-container">
-            <!-- Items will be rendered here -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <label class="form-label">Scan Barcode</label>
+                <input type="text" id="barcode-input" class="form-control form-control-lg auto-focus" 
+                       placeholder="Scan document or item barcode" onkeypress="scanBarcode(event)" autofocus>
+                <small class="form-hint">Scan pull sheet/change order first, then scan items to pick</small>
+            </div>
+        </div>
+        
+        <div id="pending-items">
+            <!-- Pending items will be rendered here -->
         </div>
     </div>
 </div>
