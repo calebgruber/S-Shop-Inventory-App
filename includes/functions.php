@@ -20,19 +20,33 @@ function setSetting($key, $value) {
     );
 }
 
-// Barcode generation functions
+// Barcode generation functions using barcodeapi.org
 function generateCode128Barcode($text, $format = 'png') {
-    $generator = new Code128();
-    if ($format === 'svg') {
-        return $generator->generateSVG($text, 2, 50);
-    } else {
+    // Use barcodeapi.org for Code128 barcodes
+    $url = 'https://barcodeapi.org/api/128/' . urlencode($text);
+    $imageData = @file_get_contents($url);
+    
+    if ($imageData === false) {
+        // Fallback to old method if API fails
+        $generator = new Code128();
         return $generator->generatePNG($text, 2, 50);
     }
+    
+    return $imageData;
 }
 
 function generatePDF417Barcode($text) {
-    $generator = new PDF417();
-    return $generator->generatePNG($text, 2, 50);
+    // Use barcodeapi.org for PDF417 barcodes
+    $url = 'https://barcodeapi.org/api/pdf417/' . urlencode($text);
+    $imageData = @file_get_contents($url);
+    
+    if ($imageData === false) {
+        // Fallback to old method if API fails
+        $generator = new PDF417();
+        return $generator->generatePNG($text, 2, 50);
+    }
+    
+    return $imageData;
 }
 
 function generateUniqueBarcode($prefix = 'ITEM') {
@@ -268,8 +282,9 @@ function validateRequired($value, $fieldName) {
     }
 }
 
-function redirect($url) {
-    header("Location: $url");
+function redirect($url = 'index.php') {
+    // Always redirect to homepage unless explicitly specified
+    header("Location: index.php");
     exit;
 }
 

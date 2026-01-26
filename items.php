@@ -2,6 +2,18 @@
 $pageTitle = 'Items';
 require_once 'includes/header.php';
 
+// Handle delete request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    try {
+        $deleteId = (int)$_POST['delete_id'];
+        getDB()->query("DELETE FROM items WHERE id = ?", [$deleteId]);
+        setAlert('Item deleted successfully');
+        redirect('index.php');
+    } catch (Exception $e) {
+        setAlert('Error deleting item: ' . $e->getMessage(), 'danger');
+    }
+}
+
 $items = getAllItems();
 ?>
 
@@ -52,6 +64,12 @@ $items = getAllItems();
                                         <a href="item_barcodes.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-info">
                                             <i class="ti ti-barcode"></i>
                                         </a>
+                                        <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this item?');">
+                                            <input type="hidden" name="delete_id" value="<?php echo $item['id']; ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="ti ti-trash"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
