@@ -154,7 +154,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
                 <div class="d-flex align-items-center">
                     <div class="subheader">Active Shows</div>
                     <div class="ms-auto lh-1">
-                        <i class="ti ti-theater text-muted" style="font-size: 3rem; opacity: 0.1; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);"></i>
+                        <i class="ti ti-theater text-muted dashboard-icon-bg"></i>
                     </div>
                 </div>
                 <div class="h1 mb-0"><?php echo $stats['active_shows']; ?></div>
@@ -167,7 +167,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
                 <div class="d-flex align-items-center">
                     <div class="subheader">Pending Picks</div>
                     <div class="ms-auto lh-1">
-                        <i class="ti ti-scan text-muted" style="font-size: 3rem; opacity: 0.1; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);"></i>
+                        <i class="ti ti-scan text-muted dashboard-icon-bg"></i>
                     </div>
                 </div>
                 <div class="h1 mb-0"><?php echo $stats['pending_picks']; ?></div>
@@ -180,7 +180,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
                 <div class="d-flex align-items-center">
                     <div class="subheader">Pending Returns</div>
                     <div class="ms-auto lh-1">
-                        <i class="ti ti-arrow-back text-muted" style="font-size: 3rem; opacity: 0.1; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);"></i>
+                        <i class="ti ti-arrow-back text-muted dashboard-icon-bg"></i>
                     </div>
                 </div>
                 <div class="h1 mb-0"><?php echo $stats['pending_returns']; ?></div>
@@ -193,7 +193,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
                 <div class="d-flex align-items-center">
                     <div class="subheader">Total Items</div>
                     <div class="ms-auto lh-1">
-                        <i class="ti ti-package text-muted" style="font-size: 3rem; opacity: 0.1; position: absolute; right: 10px; top: 50%; transform: translateY(-50%);"></i>
+                        <i class="ti ti-package text-muted dashboard-icon-bg"></i>
                     </div>
                 </div>
                 <div class="h1 mb-0"><?php echo getDB()->fetchOne("SELECT COUNT(*) as count FROM items")['count']; ?></div>

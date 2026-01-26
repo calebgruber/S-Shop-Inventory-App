@@ -110,10 +110,21 @@ $currentUser = getCurrentUser();
         /* Modern card hover effects */
         .stat-card {
             transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
         }
         .stat-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-icon-bg {
+            font-size: 3rem;
+            opacity: 0.1;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
         }
         
         .quick-action-btn {

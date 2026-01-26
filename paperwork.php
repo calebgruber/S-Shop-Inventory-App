@@ -347,17 +347,21 @@ foreach ($shows as $show) {
 function printPullsheet(id) {
     // Open pullsheet in new window and trigger print
     const win = window.open('pullsheet_view.php?id=' + id, '_blank');
-    win.onload = function() {
-        win.print();
-    };
+    setTimeout(() => {
+        if (win) {
+            win.print();
+        }
+    }, 500);
 }
 
 function printChangeOrder(id) {
     // Open change order in new window and trigger print
     const win = window.open('change_order_edit.php?id=' + id + '&print=1', '_blank');
-    win.onload = function() {
-        win.print();
-    };
+    setTimeout(() => {
+        if (win) {
+            win.print();
+        }
+    }, 500);
 }
 </script>
 

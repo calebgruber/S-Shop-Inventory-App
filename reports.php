@@ -82,11 +82,11 @@ $categories = getAllCategories();
                     
                     foreach ($itemsByCategory as $catName => $catItems): ?>
                         <tr class="table-active">
-                            <td colspan="5"><strong><?php echo htmlspecialchars($catName); ?></strong></td>
+                            <td colspan="5" style="padding-left: 0;"><strong><?php echo htmlspecialchars($catName); ?></strong></td>
                         </tr>
                         <?php foreach ($catItems as $item): ?>
                         <tr>
-                            <td>&nbsp;&nbsp;<?php echo htmlspecialchars($item['name']); ?></td>
+                            <td style="padding-left: 2rem;"><?php echo htmlspecialchars($item['name']); ?></td>
                             <td><?php echo htmlspecialchars($item['category_name'] ?? 'N/A'); ?></td>
                             <td><code><?php echo htmlspecialchars($item['barcode']); ?></code></td>
                             <td><?php echo $item['in_stock_quantity']; ?></td>
