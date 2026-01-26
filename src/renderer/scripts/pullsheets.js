@@ -604,20 +604,21 @@ async function finalizePullSheet() {
       buttons: ['Cancel', 'Finalize'],
       defaultId: 1
     });
-  
-  if (confirmed.response === 1) {
-    try {
-      await window.api.pullsheets.finalize(currentPullSheet.id, pulledBy);
-      
-      alert('Pull sheet finalized! Equipment has been checked out.');
-      
-      // Close modal and refresh
-      bootstrap.Modal.getInstance(document.getElementById('pullSheetDetailModal')).hide();
-      await refreshPullSheets();
-    } catch (error) {
-      alert('Error finalizing pull sheet: ' + error.message);
+    
+    if (confirmed.response === 1) {
+      try {
+        await window.api.pullsheets.finalize(currentPullSheet.id, pulledBy);
+        
+        alert('Pull sheet finalized! Equipment has been checked out.');
+        
+        // Close modal and refresh
+        bootstrap.Modal.getInstance(document.getElementById('pullSheetDetailModal')).hide();
+        await refreshPullSheets();
+      } catch (error) {
+        alert('Error finalizing pull sheet: ' + error.message);
+      }
     }
-  }
+  });
 }
 
 // Start return process

@@ -1387,7 +1387,6 @@ window.openLowStockReport = openLowStockReport;
 window.openItemsOutReport = openItemsOutReport;
 window.openShowEquipmentReport = openShowEquipmentReport;
 window.openActivityLogReport = openActivityLogReport;
-window.exportReportToPDF = exportReportToPDF;
 
 // Register page with navigation system
 if (window.navigation) {
