@@ -118,22 +118,24 @@ S-Shop-Inventory-App/
 │   ├── schema.sql          # Database schema
 │   └── sample_data.sql     # Sample data
 ├── includes/
-│   ├── config.php          # Configuration
-│   ├── db.php              # Database
-│   ├── functions.php       # Helper functions
-│   ├── header.php          # Layout header
-│   └── footer.php          # Layout footer
-├── public/                 # Web root
-│   ├── *.php              # 18 application pages
-│   └── .htaccess          # Apache config
-├── uploads/                # File uploads directory
-├── .htaccess              # Root Apache config
-├── composer.json          # PHP dependencies
-├── install.sh             # Installation script
-├── README.md              # Main documentation
-├── DEPLOYMENT.md          # Deployment guide
-├── FEATURES.md            # Feature documentation
-└── SUMMARY.md             # This file
+│   ├── barcode/
+│   │   ├── Code128.php      # Pure PHP Code128 generator
+│   │   └── PDF417.php       # Pure PHP PDF417 generator
+│   ├── pdf/
+│   │   └── SimplePDF.php    # Pure PHP PDF generator
+│   ├── config.php           # Configuration
+│   ├── db.php               # Database
+│   ├── functions.php        # Helper functions
+│   ├── header.php           # Layout header
+│   └── footer.php           # Layout footer
+├── *.php                    # 19 application pages (Dashboard, Items, Shows, etc.)
+├── uploads/                 # File uploads directory
+├── .htaccess                # Apache configuration
+├── README.md                # Main documentation
+├── CPANEL_INSTALL.md        # cPanel installation guide
+├── DEPLOYMENT.md            # Deployment guide
+├── FEATURES.md              # Feature documentation
+└── SUMMARY.md               # This file
 ```
 
 ### Database Schema

@@ -82,12 +82,12 @@ See `assets/sounds/README.md` for detailed instructions.
 #### 6. Access the Application
 
 **If installed in root (`public_html`):**
-- Main app: `https://yourdomain.com/public/`
-- Test page: `https://yourdomain.com/public/test_barcode.php`
+- Main app: `https://yourdomain.com/`
+- Test page: `https://yourdomain.com/test_barcode.php`
 
 **If installed in subdirectory (`public_html/sound-shop`):**
-- Main app: `https://yourdomain.com/sound-shop/public/`
-- Test page: `https://yourdomain.com/sound-shop/public/test_barcode.php`
+- Main app: `https://yourdomain.com/sound-shop/`
+- Test page: `https://yourdomain.com/sound-shop/test_barcode.php`
 
 ### First Steps After Installation
 
@@ -102,7 +102,7 @@ See step 5 above for details.
 #### 2. Test Barcode Generation
 
 Visit the test page first to ensure barcodes are working:
-- `https://yourdomain.com/public/test_barcode.php`
+- `https://yourdomain.com/test_barcode.php`
 
 You should see:
 - ✓ Code128 barcode image
@@ -168,7 +168,7 @@ If you get "permission denied" errors:
 If pages show 404 errors:
 1. Check that `.htaccess` file was uploaded
 2. Verify mod_rewrite is enabled in cPanel
-3. Try accessing via: `yourdomain.com/public/index.php` directly
+3. Try accessing via: `yourdomain.com/index.php` directly
 
 ### Important Notes
 

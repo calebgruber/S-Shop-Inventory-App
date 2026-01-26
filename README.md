@@ -66,12 +66,7 @@ The uploads directory needs to be writable:
 
 ### 6. Access the Application
 
-Navigate to your domain (e.g., `https://yourdomain.com/public/`) in your web browser.
-
-**Note**: The application files are in the `public` folder. You can either:
-- Access via `https://yourdomain.com/public/`
-- OR move all files from `public/` to your root directory
-- OR configure your domain to point to the `public` folder
+Navigate to your domain (e.g., `https://yourdomain.com/`) in your web browser.
 
 ## Installation on VPS/Dedicated Server
 
@@ -139,7 +134,7 @@ server {
 
 ### 6. Access the Application
 
-Navigate to `http://your-domain.com/public/` in your web browser.
+Navigate to `http://your-domain.com/` in your web browser.
 
 ## Usage
 
@@ -189,27 +184,27 @@ S-Shop-Inventory-App/
 │   ├── functions.php       # Helper functions
 │   ├── header.php          # Layout header
 │   └── footer.php          # Layout footer
-├── public/                 # Web root
-│   ├── index.php           # Dashboard
-│   ├── items.php           # Items list
-│   ├── item_edit.php       # Add/edit items
-│   ├── item_barcodes.php   # Print barcodes
-│   ├── shows.php           # Shows list
-│   ├── show_create.php     # Create show
-│   ├── show_edit.php       # Edit show
-│   ├── pullsheets.php      # Pullsheets list
-│   ├── pullsheet_create.php
-│   ├── pullsheet_edit.php
-│   ├── pullsheet_view.php
-│   ├── pick_mode.php       # Pick mode interface
-│   ├── return_mode.php     # Return mode interface
-│   ├── change_orders.php
-│   ├── change_order_create.php
-│   ├── change_order_edit.php
-│   ├── reports.php         # Reports
-│   └── settings.php        # Settings
+├── index.php               # Dashboard
+├── items.php               # Items list
+├── item_edit.php           # Add/edit items
+├── item_barcodes.php       # Print barcodes
+├── shows.php               # Shows list
+├── show_create.php         # Create show
+├── show_edit.php           # Edit show
+├── pullsheets.php          # Pullsheets list
+├── pullsheet_create.php
+├── pullsheet_edit.php
+├── pullsheet_view.php
+├── pick_mode.php           # Pick mode interface
+├── return_mode.php         # Return mode interface
+├── change_orders.php
+├── change_order_create.php
+├── change_order_edit.php
+├── reports.php             # Reports
+├── settings.php            # Settings
+├── test_barcode.php        # Test barcode generation
 ├── uploads/                # Uploaded files (logos)
-└── .htaccess              # Apache configuration
+└── .htaccess               # Apache configuration
 ```
 
 ## Technologies Used

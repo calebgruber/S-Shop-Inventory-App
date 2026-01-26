@@ -2,11 +2,11 @@
 /**
  * Test Barcode Generation
  * Access this file to test that barcodes are generating correctly
- * URL: your-domain.com/public/test_barcode.php
+ * URL: your-domain.com/test_barcode.php
  */
 
-require_once __DIR__ . '/../includes/barcode/Code128.php';
-require_once __DIR__ . '/../includes/barcode/PDF417.php';
+require_once __DIR__ . '/includes/barcode/Code128.php';
+require_once __DIR__ . '/includes/barcode/PDF417.php';
 
 header('Content-Type: text/html; charset=utf-8');
 ?>

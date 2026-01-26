@@ -16,7 +16,7 @@ if (!$pullsheet) {
 $items = getPullsheetItems($pullsheetId);
 
 if (isset($_GET['download_pdf'])) {
-    require_once __DIR__ . '/../includes/functions.php';
+    require_once __DIR__ . '/includes/functions.php';
     $pdf = generatePullsheetPDF($pullsheetId);
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="pullsheet_' . $pullsheet['show_name'] . '.pdf"');

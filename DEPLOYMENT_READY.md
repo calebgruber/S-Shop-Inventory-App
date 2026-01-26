@@ -13,7 +13,7 @@ This is a **fully functional, production-ready** inventory management system for
 1. **Upload files** to your hosting account
 2. **Import database** using phpMyAdmin (`database/schema.sql`)
 3. **Set permissions** on `uploads` folder (755 or 777)
-4. **Access application** at `https://yourdomain.com/public/`
+4. **Access application** at `https://yourdomain.com/`
 
 **Database is pre-configured** for `voxelnodes_sshop` - no changes needed!
 
@@ -135,22 +135,21 @@ S-Shop-Inventory-App/
 │   ├── functions.php           # Helper functions
 │   ├── header.php              # Layout header (Tabler UI)
 │   └── footer.php              # Layout footer
-├── public/                     # Web root
-│   ├── index.php               # Dashboard
-│   ├── items.php               # Items management
-│   ├── shows.php               # Shows management
-│   ├── pullsheets.php          # Pullsheets
-│   ├── pick_mode.php           # Pick Mode (fullscreen)
-│   ├── return_mode.php         # Return Mode (fullscreen)
-│   ├── change_orders.php       # Change Orders
-│   ├── reports.php             # Reports
-│   ├── settings.php            # Settings
-│   └── test_barcode.php        # Test page
+├── index.php                   # Dashboard
+├── items.php                   # Items management
+├── shows.php                   # Shows management
+├── pullsheets.php              # Pullsheets
+├── pick_mode.php               # Pick Mode (fullscreen)
+├── return_mode.php             # Return Mode (fullscreen)
+├── change_orders.php           # Change Orders
+├── reports.php                 # Reports
+├── settings.php                # Settings
+├── test_barcode.php            # Test page
 ├── uploads/                    # Upload directory
 │   └── logos/                  # Logo files
 ├── README.md                   # Full documentation
-├── CPANEL_INSTALL.md          # Installation guide
-└── .gitignore                 # Git ignore rules
+├── CPANEL_INSTALL.md           # Installation guide
+└── .gitignore                  # Git ignore rules
 ```
 
 ---
@@ -158,7 +157,7 @@ S-Shop-Inventory-App/
 ## 🧪 Testing
 
 ### Test Barcode Generation
-Visit: `https://yourdomain.com/public/test_barcode.php`
+Visit: `https://yourdomain.com/test_barcode.php`
 
 This page will show:
 - ✅ Code128 barcode sample

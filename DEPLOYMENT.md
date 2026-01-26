@@ -30,7 +30,7 @@
    - Or set environment variables in Apache config
 
 6. **Access**
-   - Navigate to http://localhost/sound-shop/public/
+   - Navigate to http://localhost/sound-shop/
 
 ### Production Deployment
 
