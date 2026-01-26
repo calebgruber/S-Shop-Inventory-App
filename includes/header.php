@@ -17,13 +17,51 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
     
     <style>
+        /* Modern UI with consistent border radius */
+        :root {
+            --modern-radius: 2px;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
+        
+        /* Apply consistent border radius */
+        .card,
+        .btn,
+        .form-control,
+        .form-select,
+        .input-group,
+        .modal-content,
+        .alert,
+        .badge,
+        .dropdown-menu {
+            border-radius: var(--modern-radius) !important;
+        }
+        
+        .input-group .btn,
+        .input-group .form-control {
+            border-radius: 0 !important;
+        }
+        
+        .input-group .btn:first-child,
+        .input-group .form-control:first-child {
+            border-top-left-radius: var(--modern-radius) !important;
+            border-bottom-left-radius: var(--modern-radius) !important;
+        }
+        
+        .input-group .btn:last-child,
+        .input-group .form-control:last-child {
+            border-top-right-radius: var(--modern-radius) !important;
+            border-bottom-right-radius: var(--modern-radius) !important;
+        }
+        
         .barcode-autofocus {
             font-size: 1.2rem;
             padding: 0.75rem;
         }
+        
+        /* Pick/Return mode card states */
         .item-card-incomplete {
             border-left: 4px solid #d63939;
         }
@@ -33,6 +71,8 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
         .item-card-overage {
             border-left: 4px solid #f59f00;
         }
+        
+        /* Fullscreen mode */
         .fullscreen-mode {
             position: fixed;
             top: 0;
@@ -42,16 +82,35 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
             background: var(--tblr-body-bg);
             z-index: 9999;
             overflow-y: auto;
+            padding: 2rem;
         }
+        
+        .fullscreen-mode .container-fluid {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Modern card hover effects */
         .stat-card {
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         .stat-card:hover {
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        
         .quick-action-btn {
-            min-height: 120px;
-            font-size: 1.1rem;
+            min-height: 100px;
+            font-size: 1.05rem;
+        }
+        
+        /* Item cards in pick/return mode */
+        .item-scan-card {
+            transition: all 0.3s ease;
+        }
+        
+        .item-scan-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
     </style>
 </head>

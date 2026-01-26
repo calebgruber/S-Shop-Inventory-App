@@ -8,34 +8,133 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
     try {
         if ($_POST['action'] === 'start_pick') {
-            $pullsheet = getPullsheetByBarcode($_POST['barcode']);
+            $barcode = trim($_POST['barcode']);
+            $pickerName = trim($_POST['picker_name']);
+            
+            // Try pullsheet first
+            $pullsheet = getPullsheetByBarcode($barcode);
             if ($pullsheet && $pullsheet['status'] === 'finalized') {
-                $_SESSION['pick_session'] = ['type' => 'pullsheet', 'id' => $pullsheet['id'], 'picker_name' => $_POST['picker_name'], 'items' => []];
+                $_SESSION['pick_session'] = [
+                    'type' => 'pullsheet',
+                    'id' => $pullsheet['id'],
+                    'picker_name' => $pickerName,
+                    'show_name' => $pullsheet['show_name'],
+                    'items' => []
+                ];
+                
                 foreach (getPullsheetItems($pullsheet['id']) as $item) {
-                    $_SESSION['pick_session']['items'][$item['item_id']] = ['name' => $item['item_name'], 'barcode' => $item['item_barcode'], 'needed' => $item['quantity_needed'], 'scanned' => 0];
+                    $_SESSION['pick_session']['items'][$item['item_id']] = [
+                        'name' => $item['item_name'],
+                        'barcode' => $item['item_barcode'],
+                        'needed' => $item['quantity_needed'],
+                        'scanned' => 0
+                    ];
                 }
+                
                 echo json_encode(['success' => true]);
                 exit;
             }
-            echo json_encode(['success' => false, 'message' => 'Not found']);
-            exit;
-        }
-        if ($_POST['action'] === 'scan_item') {
-            $item = getItemByBarcode($_POST['barcode']);
-            if ($item && isset($_SESSION['pick_session']['items'][$item['id']])) {
-                $_SESSION['pick_session']['items'][$item['id']]['scanned']++;
-                echo json_encode(['success' => true, 'item' => $_SESSION['pick_session']['items'][$item['id']], 'itemId' => $item['id']]);
+            
+            // Try change order
+            $changeOrder = getChangeOrderByBarcode($barcode);
+            if ($changeOrder && $changeOrder['status'] === 'finalized') {
+                $_SESSION['pick_session'] = [
+                    'type' => 'change_order',
+                    'id' => $changeOrder['id'],
+                    'picker_name' => $pickerName,
+                    'show_name' => $changeOrder['show_name'],
+                    'items' => []
+                ];
+                
+                foreach (getChangeOrderItems($changeOrder['id']) as $item) {
+                    if ($item['type'] === 'add') {
+                        $_SESSION['pick_session']['items'][$item['item_id']] = [
+                            'name' => $item['item_name'],
+                            'barcode' => $item['item_barcode'],
+                            'needed' => $item['quantity_change'],
+                            'scanned' => 0
+                        ];
+                    }
+                }
+                
+                echo json_encode(['success' => true]);
                 exit;
             }
-            echo json_encode(['success' => false, 'message' => 'Not in list']);
+            
+            echo json_encode(['success' => false, 'message' => 'Pullsheet or change order not found or not finalized']);
             exit;
         }
-        if ($_POST['action'] === 'complete_pick') {
-            foreach ($_SESSION['pick_session']['items'] as $itemId => $data) {
-                getDB()->query("UPDATE pullsheet_items SET quantity_picked = ? WHERE pullsheet_id = ? AND item_id = ?", [$data['scanned'], $_SESSION['pick_session']['id'], $itemId]);
-                getDB()->query("UPDATE item_allocations SET status = 'checked_out' WHERE pullsheet_id = ? AND item_id = ?", [$_SESSION['pick_session']['id'], $itemId]);
+        
+        if ($_POST['action'] === 'scan_item') {
+            $barcode = trim($_POST['barcode']);
+            $item = getItemByBarcode($barcode);
+            
+            if ($item && isset($_SESSION['pick_session']['items'][$item['id']])) {
+                $_SESSION['pick_session']['items'][$item['id']]['scanned']++;
+                echo json_encode([
+                    'success' => true,
+                    'item' => $_SESSION['pick_session']['items'][$item['id']],
+                    'itemId' => $item['id']
+                ]);
+                exit;
             }
-            getDB()->query("UPDATE pullsheets SET status = 'picked', picked_at = NOW(), picked_by = ? WHERE id = ?", [$_SESSION['pick_session']['picker_name'], $_SESSION['pick_session']['id']]);
+            
+            echo json_encode(['success' => false, 'message' => 'Item not in this pick list']);
+            exit;
+        }
+        
+        if ($_POST['action'] === 'adjust_item') {
+            $itemId = (int)$_POST['item_id'];
+            $adjustment = (int)$_POST['adjustment'];
+            
+            if (isset($_SESSION['pick_session']['items'][$itemId])) {
+                $newCount = $_SESSION['pick_session']['items'][$itemId]['scanned'] + $adjustment;
+                if ($newCount >= 0) {
+                    $_SESSION['pick_session']['items'][$itemId]['scanned'] = $newCount;
+                    echo json_encode([
+                        'success' => true,
+                        'item' => $_SESSION['pick_session']['items'][$itemId]
+                    ]);
+                    exit;
+                }
+            }
+            
+            echo json_encode(['success' => false]);
+            exit;
+        }
+        
+        if ($_POST['action'] === 'complete_pick') {
+            $sessionType = $_SESSION['pick_session']['type'];
+            $sessionId = $_SESSION['pick_session']['id'];
+            
+            if ($sessionType === 'pullsheet') {
+                foreach ($_SESSION['pick_session']['items'] as $itemId => $data) {
+                    getDB()->query(
+                        "UPDATE pullsheet_items SET quantity_picked = ? WHERE pullsheet_id = ? AND item_id = ?",
+                        [$data['scanned'], $sessionId, $itemId]
+                    );
+                    getDB()->query(
+                        "UPDATE item_allocations SET status = 'checked_out' WHERE pullsheet_id = ? AND item_id = ?",
+                        [$sessionId, $itemId]
+                    );
+                }
+                getDB()->query(
+                    "UPDATE pullsheets SET status = 'picked', picked_at = NOW(), picked_by = ? WHERE id = ?",
+                    [$_SESSION['pick_session']['picker_name'], $sessionId]
+                );
+            } elseif ($sessionType === 'change_order') {
+                foreach ($_SESSION['pick_session']['items'] as $itemId => $data) {
+                    getDB()->query(
+                        "UPDATE change_order_items SET quantity_processed = ? WHERE change_order_id = ? AND item_id = ? AND type = 'add'",
+                        [$data['scanned'], $sessionId, $itemId]
+                    );
+                }
+                getDB()->query(
+                    "UPDATE change_orders SET status = 'processed', processed_at = NOW(), processed_by = ? WHERE id = ?",
+                    [$_SESSION['pick_session']['picker_name'], $sessionId]
+                );
+            }
+            
             unset($_SESSION['pick_session']);
             echo json_encode(['success' => true]);
             exit;
@@ -47,64 +146,275 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 }
 ?>
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Pick Mode</title>
-<link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet"/>
-<style>.item-card-incomplete{border-left:5px solid #d63939}.item-card-complete{border-left:5px solid #2fb344}.large-input{font-size:1.5rem;padding:1rem}</style>
-</head><body style="padding:2rem">
-<audio id="successSound"><source src="assets/sounds/success.mp3" type="audio/mpeg"></audio>
-<audio id="errorSound"><source src="assets/sounds/error.mp3" type="audio/mpeg"></audio>
-<div class="container-xl"><div class="d-flex justify-content-between mb-4"><h1>Pick Mode</h1><a href="index.php" class="btn btn-secondary">Exit</a></div>
-<?php if (!$pickSession): ?>
-<div class="row justify-content-center"><div class="col-md-6"><div class="card"><div class="card-body">
-<div class="mb-3"><label>Your Name</label><input type="text" class="form-control large-input" id="pickerName" autofocus></div>
-<div class="mb-3"><label>Scan Pullsheet</label><input type="text" class="form-control large-input" id="pullsheetBarcode"></div>
-<button class="btn btn-primary btn-lg w-100" id="startBtn">Start Pick</button>
-</div></div></div></div>
-<?php else: ?>
-<div class="mb-4"><input type="text" class="form-control large-input" id="itemScan" placeholder="Scan item..." autofocus></div>
-<div class="row">
-<?php foreach ($pickSession['items'] as $itemId => $item): $s = $item['scanned'] == $item['needed'] ? 'complete' : 'incomplete'; ?>
-<div class="col-md-4 mb-3"><div class="card item-card-<?php echo $s; ?>" data-item-id="<?php echo $itemId; ?>">
-<div class="card-body"><h4><?php echo htmlspecialchars($item['name']); ?></h4>
-<div class="h1"><span class="scanned"><?php echo $item['scanned']; ?></span> / <?php echo $item['needed']; ?></div>
-</div></div></div>
-<?php endforeach; ?>
-</div>
-<button class="btn btn-success btn-lg w-100" id="completeBtn">Complete Pick</button>
-<?php endif; ?>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/js/tabler.min.js"></script>
-<script>
-const ps=()=>document.getElementById('successSound').play().catch(()=>{});
-const pe=()=>document.getElementById('errorSound').play().catch(()=>{});
-const post=(a,cb)=>fetch('pick_mode.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:a}).then(r=>r.json()).then(cb);
-<?php if (!$pickSession): ?>
-document.getElementById('startBtn').addEventListener('click',()=>{
-const n=document.getElementById('pickerName').value,b=document.getElementById('pullsheetBarcode').value;
-if(!n||!b)return;
-post(`ajax=1&action=start_pick&picker_name=${encodeURIComponent(n)}&barcode=${encodeURIComponent(b)}`,d=>{
-if(d.success){ps();location.reload()}else{pe();alert(d.message)}
-});
-});
-<?php else: ?>
-document.getElementById('itemScan').addEventListener('keypress',function(e){
-if(e.key==='Enter'){
-const b=this.value.trim();this.value='';
-post(`ajax=1&action=scan_item&barcode=${encodeURIComponent(b)}`,d=>{
-if(d.success){
-ps();
-const c=document.querySelector(`[data-item-id="${d.itemId}"]`);
-if(c){c.querySelector('.scanned').textContent=d.item.scanned;
-c.className='card item-card-'+(d.item.scanned==d.item.needed?'complete':'incomplete');}
-document.getElementById('completeBtn').disabled=![...document.querySelectorAll('.item-card-complete')].length==document.querySelectorAll('[data-item-id]').length;
-}else{pe();alert(d.message)}
-});
-}
-});
-document.getElementById('completeBtn').addEventListener('click',()=>{
-if(!confirm('Complete?'))return;
-post('ajax=1&action=complete_pick',d=>{if(d.success){alert('Done!');location.href='index.php'}});
-});
-<?php endif; ?>
-</script>
-</body></html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pick Mode - Sound Shop Inventory</title>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
+    <style>
+        :root {
+            --modern-radius: 2px;
+        }
+        
+        .fullscreen-container {
+            min-height: 100vh;
+            background: var(--tblr-body-bg);
+            padding: 2rem;
+        }
+        
+        .item-card {
+            transition: all 0.3s ease;
+            border-radius: var(--modern-radius);
+        }
+        
+        .item-card-incomplete {
+            border-left: 4px solid #d63939;
+        }
+        
+        .item-card-complete {
+            border-left: 4px solid #2fb344;
+        }
+        
+        .item-card-overage {
+            border-left: 4px solid #f59f00;
+        }
+        
+        .scan-input {
+            font-size: 1.3rem;
+            padding: 1rem;
+            border-radius: var(--modern-radius);
+        }
+        
+        .item-count {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        
+        .card, .btn, .form-control, .alert {
+            border-radius: var(--modern-radius);
+        }
+    </style>
+</head>
+<body>
+    <audio id="successSound"><source src="assets/sounds/success.mp3" type="audio/mpeg"></audio>
+    <audio id="errorSound"><source src="assets/sounds/error.mp3" type="audio/mpeg"></audio>
+    
+    <div class="fullscreen-container">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="mb-0">
+                    <i class="ti ti-scan"></i> Pick Mode
+                    <?php if ($pickSession): ?>
+                        <small class="text-muted">- <?php echo htmlspecialchars($pickSession['show_name']); ?></small>
+                    <?php endif; ?>
+                </h1>
+                <a href="index.php" class="btn btn-secondary">
+                    <i class="ti ti-x"></i> Exit
+                </a>
+            </div>
+            
+            <?php if (!$pickSession): ?>
+                <!-- Start Pick Session -->
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Start Picking Session</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Your Name</label>
+                                    <input type="text" class="form-control" id="pickerName" placeholder="Enter your name" autofocus>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Scan Pullsheet or Change Order Barcode</label>
+                                    <input type="text" class="form-control scan-input" id="pullsheetBarcode" 
+                                           placeholder="Scan barcode...">
+                                </div>
+                                
+                                <button class="btn btn-primary w-100" id="startBtn">
+                                    <i class="ti ti-play"></i> Start Pick
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php else: ?>
+                <!-- Active Pick Session -->
+                <div class="mb-4">
+                    <input type="text" class="form-control scan-input" id="itemScan" 
+                           placeholder="Scan item barcode..." autofocus>
+                </div>
+                
+                <div class="row g-3 mb-4">
+                    <?php foreach ($pickSession['items'] as $itemId => $item): 
+                        $status = $item['scanned'] < $item['needed'] ? 'incomplete' : 
+                                 ($item['scanned'] == $item['needed'] ? 'complete' : 'overage');
+                    ?>
+                        <div class="col-md-4">
+                            <div class="card item-card item-card-<?php echo $status; ?>" data-item-id="<?php echo $itemId; ?>">
+                                <div class="card-body">
+                                    <h4 class="card-title"><?php echo htmlspecialchars($item['name']); ?></h4>
+                                    <div class="item-count mb-2">
+                                        <span class="scanned-count"><?php echo $item['scanned']; ?></span>
+                                        <span class="text-muted">/ <?php echo $item['needed']; ?></span>
+                                    </div>
+                                    <div class="text-muted mb-2">
+                                        <small>Barcode: <code><?php echo htmlspecialchars($item['barcode']); ?></code></small>
+                                    </div>
+                                    <div class="btn-group btn-group-sm w-100">
+                                        <button class="btn btn-outline-danger adjust-btn" data-item-id="<?php echo $itemId; ?>" data-adj="-1">
+                                            <i class="ti ti-minus"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success adjust-btn" data-item-id="<?php echo $itemId; ?>" data-adj="1">
+                                            <i class="ti ti-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                
+                <button class="btn btn-success w-100 btn-lg" id="completeBtn">
+                    <i class="ti ti-check"></i> Complete Pick
+                </button>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/js/tabler.min.js"></script>
+    <script>
+        const playSuccess = () => document.getElementById('successSound')?.play()?.catch(() => {});
+        const playError = () => document.getElementById('errorSound')?.play()?.catch(() => {});
+        
+        const post = (data, callback) => {
+            fetch('pick_mode.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: data
+            })
+            .then(r => r.json())
+            .then(callback)
+            .catch(err => {
+                console.error('Request failed:', err);
+                playError();
+                alert('Request failed');
+            });
+        };
+        
+        <?php if (!$pickSession): ?>
+            // Start pick session
+            const startPick = () => {
+                const name = document.getElementById('pickerName').value.trim();
+                const barcode = document.getElementById('pullsheetBarcode').value.trim();
+                
+                if (!name || !barcode) {
+                    alert('Please enter both name and barcode');
+                    return;
+                }
+                
+                post(`ajax=1&action=start_pick&picker_name=${encodeURIComponent(name)}&barcode=${encodeURIComponent(barcode)}`, data => {
+                    if (data.success) {
+                        playSuccess();
+                        location.reload();
+                    } else {
+                        playError();
+                        alert(data.message || 'Not found');
+                    }
+                });
+            };
+            
+            document.getElementById('startBtn').addEventListener('click', startPick);
+            document.getElementById('pullsheetBarcode').addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    startPick();
+                }
+            });
+        <?php else: ?>
+            // Active pick session
+            const itemScan = document.getElementById('itemScan');
+            
+            itemScan.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const barcode = this.value.trim();
+                    this.value = '';
+                    
+                    if (!barcode) return;
+                    
+                    post(`ajax=1&action=scan_item&barcode=${encodeURIComponent(barcode)}`, data => {
+                        if (data.success) {
+                            playSuccess();
+                            updateItemCard(data.itemId, data.item);
+                        } else {
+                            playError();
+                            alert(data.message || 'Item not in list');
+                        }
+                    });
+                }
+            });
+            
+            // Adjust buttons
+            document.querySelectorAll('.adjust-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const itemId = this.dataset.itemId;
+                    const adj = this.dataset.adj;
+                    
+                    post(`ajax=1&action=adjust_item&item_id=${itemId}&adjustment=${adj}`, data => {
+                        if (data.success) {
+                            updateItemCard(itemId, data.item);
+                        }
+                    });
+                });
+            });
+            
+            function updateItemCard(itemId, item) {
+                const card = document.querySelector(`[data-item-id="${itemId}"]`);
+                if (!card) return;
+                
+                card.querySelector('.scanned-count').textContent = item.scanned;
+                
+                let status = 'incomplete';
+                if (item.scanned === item.needed) status = 'complete';
+                else if (item.scanned > item.needed) status = 'overage';
+                
+                card.className = `card item-card item-card-${status}`;
+                
+                checkAllComplete();
+            }
+            
+            function checkAllComplete() {
+                const cards = document.querySelectorAll('[data-item-id]');
+                const completeCards = document.querySelectorAll('.item-card-complete');
+                const overageCards = document.querySelectorAll('.item-card-overage');
+                
+                document.getElementById('completeBtn').disabled = 
+                    (completeCards.length !== cards.length) || overageCards.length > 0;
+            }
+            
+            document.getElementById('completeBtn').addEventListener('click', () => {
+                if (!confirm('Complete this pick? All items will be marked as checked out.')) return;
+                
+                post('ajax=1&action=complete_pick', data => {
+                    if (data.success) {
+                        playSuccess();
+                        alert('Pick completed successfully!');
+                        location.href = 'index.php';
+                    } else {
+                        playError();
+                        alert(data.message || 'Failed to complete');
+                    }
+                });
+            });
+            
+            checkAllComplete();
+        <?php endif; ?>
+    </script>
+</body>
+</html>
