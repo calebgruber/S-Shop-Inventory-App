@@ -20,15 +20,16 @@
     <script>
         // Dark mode toggle
         const themeToggle = document.getElementById('theme-toggle');
+        const themeToggleDropdown = document.getElementById('theme-toggle-dropdown');
         const html = document.documentElement;
         
         // Get current theme (already set by header inline script)
         const currentSavedTheme = localStorage.getItem('theme') || 'light';
         if (currentSavedTheme === 'dark') {
-            themeToggle.innerHTML = '<i class="ti ti-sun icon"></i>';
+            if (themeToggle) themeToggle.innerHTML = '<i class="ti ti-sun icon"></i>';
         }
         
-        themeToggle.addEventListener('click', function(e) {
+        function toggleTheme(e) {
             e.preventDefault();
             const currentTheme = html.getAttribute('data-bs-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -37,11 +38,19 @@
             localStorage.setItem('theme', newTheme);
             
             if (newTheme === 'dark') {
-                themeToggle.innerHTML = '<i class="ti ti-sun icon"></i>';
+                if (themeToggle) themeToggle.innerHTML = '<i class="ti ti-sun icon"></i>';
             } else {
-                themeToggle.innerHTML = '<i class="ti ti-moon icon"></i>';
+                if (themeToggle) themeToggle.innerHTML = '<i class="ti ti-moon icon"></i>';
             }
-        });
+        }
+        
+        if (themeToggle) {
+            themeToggle.addEventListener('click', toggleTheme);
+        }
+        
+        if (themeToggleDropdown) {
+            themeToggleDropdown.addEventListener('click', toggleTheme);
+        }
         
         // Auto-focus barcode/search fields
         document.addEventListener('DOMContentLoaded', function() {

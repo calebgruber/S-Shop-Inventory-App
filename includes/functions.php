@@ -288,6 +288,108 @@ function redirect($url = 'index.php') {
     exit;
 }
 
+// Authentication functions
+function requireLogin() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: login.php');
+        exit;
+    }
+}
+
+function getCurrentUser() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    if (!isset($_SESSION['user_id'])) {
+        return null;
+    }
+    
+    return [
+        'id' => $_SESSION['user_id'],
+        'email' => $_SESSION['user_email'],
+        'name' => $_SESSION['user_name'],
+        'role' => $_SESSION['user_role']
+    ];
+}
+
+function isAdmin() {
+    $user = getCurrentUser();
+    return $user && $user['role'] === 'admin';
+}
+
+function isDesigner() {
+    $user = getCurrentUser();
+    return $user && in_array($user['role'], ['admin', 'designer']);
+}
+
+function isStudent() {
+    $user = getCurrentUser();
+    return $user && $user['role'] === 'student';
+}
+
+function requireRole($role) {
+    $user = getCurrentUser();
+    if (!$user) {
+        header('Location: login.php');
+        exit;
+    }
+    
+    $allowedRoles = is_array($role) ? $role : [$role];
+    if (!in_array($user['role'], $allowedRoles)) {
+        setAlert('You do not have permission to access this page.', 'danger');
+        header('Location: index.php');
+        exit;
+    }
+}
+
+function hasPermission($permissionKey) {
+    $user = getCurrentUser();
+    if (!$user) {
+        return false;
+    }
+    
+    // Admins have all permissions
+    if ($user['role'] === 'admin') {
+        return true;
+    }
+    
+    // Check user-specific permissions
+    $db = getDB();
+    $perm = $db->fetchOne(
+        "SELECT can_access FROM user_permissions WHERE user_id = ? AND permission_key = ?",
+        [$user['id'], $permissionKey]
+    );
+    
+    // Default permissions based on role
+    if (!$perm) {
+        if ($user['role'] === 'designer') {
+            // Designers can access most things except user management
+            $designerPermissions = ['dashboard', 'inventory', 'shows', 'pullsheets', 
+                                   'change_orders', 'pick_mode', 'return_mode', 
+                                   'reports', 'repairs', 'paperwork'];
+            return in_array($permissionKey, $designerPermissions);
+        } else if ($user['role'] === 'student') {
+            // Students can only view inventory and make requests
+            $studentPermissions = ['dashboard', 'inventory', 'student_requests'];
+            return in_array($permissionKey, $studentPermissions);
+        }
+        return false;
+    }
+    
+    return (bool)$perm['can_access'];
+}
+
+function getUserAvatarUrl($user) {
+    // Use dicebear.com for avatars
+    $seed = $user['email'] ?? $user['id'] ?? 'default';
+    return "https://api.dicebear.com/7.x/initials/svg?seed=" . urlencode($seed);
+}
+
 // PDF Generation using SimplePDF
 function generatePullsheetPDF($pullsheetId) {
     $pullsheet = getPullsheetById($pullsheetId);

@@ -1,9 +1,20 @@
 <?php
 require_once __DIR__ . '/functions.php';
 
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Require login for all pages except login.php
+if (basename($_SERVER['PHP_SELF']) !== 'login.php') {
+    requireLogin();
+}
+
 $pageTitle = $pageTitle ?? 'Dashboard';
 $appName = getSetting('app_name', 'Sound Shop Inventory');
 $currentPage = basename($_SERVER['PHP_SELF'], '.php');
+$currentUser = getCurrentUser();
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -159,7 +170,33 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                     </a>
                 </h1>
                 <div class="navbar-nav flex-row order-md-last">
-                    <div class="nav-item">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="User menu">
+                            <span class="avatar avatar-sm" style="background-image: url('<?php echo getUserAvatarUrl($currentUser); ?>')"></span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div><?php echo htmlspecialchars($currentUser['name']); ?></div>
+                                <div class="mt-1 small text-muted"><?php echo ucfirst($currentUser['role']); ?></div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="#" id="theme-toggle-dropdown">
+                                <i class="ti ti-moon icon me-2"></i>
+                                Toggle Dark Mode
+                            </a>
+                            <?php if (isAdmin()): ?>
+                            <a class="dropdown-item" href="user_management.php">
+                                <i class="ti ti-users icon me-2"></i>
+                                User Management
+                            </a>
+                            <?php endif; ?>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="logout.php">
+                                <i class="ti ti-logout icon me-2"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                    <div class="nav-item ms-2">
                         <a href="#" class="nav-link px-0" id="theme-toggle" title="Toggle dark mode">
                             <i class="ti ti-moon icon"></i>
                         </a>
@@ -174,6 +211,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                 <div class="navbar navbar-light">
                     <div class="container-xl">
                         <ul class="navbar-nav">
+                            <?php if (hasPermission('dashboard')): ?>
                             <li class="nav-item <?php echo $currentPage === 'index' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="index.php">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -182,14 +220,20 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                                     <span class="nav-link-title">Dashboard</span>
                                 </a>
                             </li>
-                            <li class="nav-item <?php echo $currentPage === 'items' ? 'active' : ''; ?>">
+                            <?php endif; ?>
+                            
+                            <?php if (hasPermission('inventory')): ?>
+                            <li class="nav-item <?php echo $currentPage === 'items' || $currentPage === 'item_edit' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="items.php">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-package"></i>
                                     </span>
-                                    <span class="nav-link-title">Items</span>
+                                    <span class="nav-link-title">Inventory</span>
                                 </a>
                             </li>
+                            <?php endif; ?>
+                            
+                            <?php if (hasPermission('shows')): ?>
                             <li class="nav-item <?php echo $currentPage === 'shows' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="shows.php">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -198,6 +242,9 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                                     <span class="nav-link-title">Shows</span>
                                 </a>
                             </li>
+                            <?php endif; ?>
+                            
+                            <?php if (hasPermission('pullsheets')): ?>
                             <li class="nav-item <?php echo $currentPage === 'pullsheets' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="pullsheets.php">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -206,6 +253,9 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                                     <span class="nav-link-title">Pullsheets</span>
                                 </a>
                             </li>
+                            <?php endif; ?>
+                            
+                            <?php if (hasPermission('change_orders')): ?>
                             <li class="nav-item <?php echo $currentPage === 'change_orders' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="change_orders.php">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -214,6 +264,9 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                                     <span class="nav-link-title">Change Orders</span>
                                 </a>
                             </li>
+                            <?php endif; ?>
+                            
+                            <?php if (hasPermission('pick_mode') || hasPermission('return_mode')): ?>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle <?php echo in_array($currentPage, ['pick_mode', 'return_mode']) ? 'active' : ''; ?>" 
                                    href="#" data-bs-toggle="dropdown">
@@ -223,10 +276,17 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                                     <span class="nav-link-title">Operations</span>
                                 </a>
                                 <div class="dropdown-menu">
+                                    <?php if (hasPermission('pick_mode')): ?>
                                     <a class="dropdown-item" href="pick_mode.php">Pick Mode</a>
+                                    <?php endif; ?>
+                                    <?php if (hasPermission('return_mode')): ?>
                                     <a class="dropdown-item" href="return_mode.php">Return Mode</a>
+                                    <?php endif; ?>
                                 </div>
                             </li>
+                            <?php endif; ?>
+                            
+                            <?php if (hasPermission('reports')): ?>
                             <li class="nav-item <?php echo $currentPage === 'reports' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="reports.php">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -235,6 +295,42 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                                     <span class="nav-link-title">Reports</span>
                                 </a>
                             </li>
+                            <?php endif; ?>
+                            
+                            <?php if (hasPermission('paperwork')): ?>
+                            <li class="nav-item <?php echo $currentPage === 'paperwork' ? 'active' : ''; ?>">
+                                <a class="nav-link" href="paperwork.php">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-files"></i>
+                                    </span>
+                                    <span class="nav-link-title">Paperwork</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            
+                            <?php if (hasPermission('repairs')): ?>
+                            <li class="nav-item <?php echo $currentPage === 'repairs' ? 'active' : ''; ?>">
+                                <a class="nav-link" href="repairs.php">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-tool"></i>
+                                    </span>
+                                    <span class="nav-link-title">Repairs</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            
+                            <?php if (hasPermission('student_requests')): ?>
+                            <li class="nav-item <?php echo $currentPage === 'student_requests' ? 'active' : ''; ?>">
+                                <a class="nav-link" href="student_requests.php">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-clipboard-list"></i>
+                                    </span>
+                                    <span class="nav-link-title">Requests</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
+                            
+                            <?php if (isAdmin()): ?>
                             <li class="nav-item <?php echo $currentPage === 'settings' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="settings.php">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -243,6 +339,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                                     <span class="nav-link-title">Settings</span>
                                 </a>
                             </li>
+                            <?php endif; ?>
                         </ul>
                     </div>
                 </div>
