@@ -2,6 +2,19 @@
 $pageTitle = 'Pullsheets';
 require_once 'includes/header.php';
 
+// Handle archive/unarchive request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['archive_id'])) {
+    try {
+        $archiveId = (int)$_POST['archive_id'];
+        $archiveValue = isset($_POST['unarchive']) ? 0 : 1;
+        getDB()->query("UPDATE pullsheets SET archived = ? WHERE id = ?", [$archiveValue, $archiveId]);
+        setAlert($archiveValue ? 'Pullsheet archived successfully' : 'Pullsheet restored successfully');
+        redirect('index.php');
+    } catch (Exception $e) {
+        setAlert('Error: ' . $e->getMessage(), 'danger');
+    }
+}
+
 // Handle alert query parameters
 if (isset($_GET['saved'])) {
     setAlert('Draft saved successfully', 'success');
@@ -10,7 +23,23 @@ if (isset($_GET['finalized'])) {
     setAlert('Pullsheet finalized successfully', 'success');
 }
 
-$pullsheets = getAllPullsheets();
+// Check if user wants to see archived pullsheets
+$showArchived = isset($_GET['show_archived']) && $_GET['show_archived'] === '1';
+
+// Get pullsheets based on archived filter
+if ($showArchived) {
+    $pullsheets = getDB()->fetchAll("SELECT p.*, s.name as show_name 
+        FROM pullsheets p 
+        LEFT JOIN shows s ON p.show_id = s.id 
+        WHERE p.archived = 1
+        ORDER BY p.created_at DESC");
+} else {
+    $pullsheets = getDB()->fetchAll("SELECT p.*, s.name as show_name 
+        FROM pullsheets p 
+        LEFT JOIN shows s ON p.show_id = s.id 
+        WHERE p.archived = 0
+        ORDER BY p.created_at DESC");
+}
 ?>
 
 <div class="row mb-3">
@@ -18,6 +47,15 @@ $pullsheets = getAllPullsheets();
         <a href="show_create.php" class="btn btn-primary">
             <i class="ti ti-plus"></i> Create New Show First
         </a>
+        <?php if ($showArchived): ?>
+            <a href="pullsheets.php" class="btn btn-secondary">
+                <i class="ti ti-eye"></i> Show Active Pullsheets
+            </a>
+        <?php else: ?>
+            <a href="pullsheets.php?show_archived=1" class="btn btn-secondary">
+                <i class="ti ti-archive"></i> Show Archived Pullsheets
+            </a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -66,6 +104,22 @@ $pullsheets = getAllPullsheets();
                             <a href="pullsheet_edit.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
                                 <i class="ti ti-edit"></i> Edit
                             </a>
+                        <?php endif; ?>
+                        <?php if (!$showArchived): ?>
+                            <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to archive this pullsheet?');">
+                                <input type="hidden" name="archive_id" value="<?php echo $pullsheet['id']; ?>">
+                                <button type="submit" class="btn btn-sm btn-secondary" title="Archive">
+                                    <i class="ti ti-archive"></i>
+                                </button>
+                            </form>
+                        <?php else: ?>
+                            <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to restore this pullsheet?');">
+                                <input type="hidden" name="archive_id" value="<?php echo $pullsheet['id']; ?>">
+                                <input type="hidden" name="unarchive" value="1">
+                                <button type="submit" class="btn btn-sm btn-success" title="Restore">
+                                    <i class="ti ti-archive-off"></i>
+                                </button>
+                            </form>
                         <?php endif; ?>
                     </div>
                 </div>

@@ -4,12 +4,50 @@ require_once 'includes/header.php';
 
 $stats = getDashboardStats();
 $activeShows = getActiveShows();
+
+// Get pending pullsheets (finalized but not picked)
 $pendingPullsheets = getDB()->fetchAll(
     "SELECT p.*, s.name as show_name 
      FROM pullsheets p 
      JOIN shows s ON p.show_id = s.id 
-     WHERE p.status = 'finalized' 
+     WHERE p.status = 'finalized' AND p.archived = 0
      ORDER BY p.created_at 
+     LIMIT 5"
+);
+
+// Get pending change orders (finalized but not processed)
+$pendingChangeOrders = getDB()->fetchAll(
+    "SELECT co.*, s.name as show_name 
+     FROM change_orders co 
+     JOIN shows s ON co.show_id = s.id 
+     WHERE co.status = 'finalized' AND co.archived = 0
+     ORDER BY co.created_at 
+     LIMIT 5"
+);
+
+// Get change orders with items to add (need to be picked)
+$changeOrdersToPick = getDB()->fetchAll(
+    "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_add
+     FROM change_orders co 
+     JOIN shows s ON co.show_id = s.id 
+     LEFT JOIN change_order_items coi ON co.id = coi.change_order_id 
+     WHERE co.status = 'finalized' AND co.archived = 0 AND coi.action = 'add'
+     GROUP BY co.id
+     HAVING items_to_add > 0
+     ORDER BY co.created_at 
+     LIMIT 5"
+);
+
+// Get change orders with items to remove (need to be returned)
+$changeOrdersToReturn = getDB()->fetchAll(
+    "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_remove
+     FROM change_orders co 
+     JOIN shows s ON co.show_id = s.id 
+     LEFT JOIN change_order_items coi ON co.id = coi.change_order_id 
+     WHERE co.status = 'finalized' AND co.archived = 0 AND coi.action = 'remove'
+     GROUP BY co.id
+     HAVING items_to_remove > 0
+     ORDER BY co.created_at 
      LIMIT 5"
 );
 ?>
@@ -106,8 +144,8 @@ $pendingPullsheets = getDB()->fetchAll(
                 <h3 class="card-title">Pending Picks</h3>
             </div>
             <div class="card-body">
-                <?php if (empty($pendingPullsheets)): ?>
-                    <p class="text-muted">No pending pullsheets</p>
+                <?php if (empty($pendingPullsheets) && empty($changeOrdersToPick)): ?>
+                    <p class="text-muted">No pending picks</p>
                 <?php else: ?>
                     <div class="list-group list-group-flush">
                         <?php foreach ($pendingPullsheets as $pullsheet): ?>
@@ -115,10 +153,23 @@ $pendingPullsheets = getDB()->fetchAll(
                                 <div class="row align-items-center">
                                     <div class="col">
                                         <strong><?php echo htmlspecialchars($pullsheet['show_name']); ?></strong>
-                                        <div class="text-muted small">Created <?php echo date('m/d/Y', strtotime($pullsheet['created_at'])); ?></div>
+                                        <div class="text-muted small">Pullsheet - Created <?php echo date('m/d/Y', strtotime($pullsheet['created_at'])); ?></div>
                                     </div>
                                     <div class="col-auto">
-                                        <span class="badge bg-warning">Finalized</span>
+                                        <span class="badge bg-warning">To Pick</span>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                        <?php foreach ($changeOrdersToPick as $co): ?>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <strong><?php echo htmlspecialchars($co['show_name']); ?></strong>
+                                        <div class="text-muted small">Change Order - <?php echo $co['items_to_add']; ?> items to add</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <span class="badge bg-info">CO Pick</span>
                                     </div>
                                 </div>
                             </div>
@@ -130,6 +181,37 @@ $pendingPullsheets = getDB()->fetchAll(
     </div>
     
     <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Pending Returns</h3>
+            </div>
+            <div class="card-body">
+                <?php if (empty($changeOrdersToReturn)): ?>
+                    <p class="text-muted">No pending returns</p>
+                <?php else: ?>
+                    <div class="list-group list-group-flush">
+                        <?php foreach ($changeOrdersToReturn as $co): ?>
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <strong><?php echo htmlspecialchars($co['show_name']); ?></strong>
+                                        <div class="text-muted small">Change Order - <?php echo $co['items_to_remove']; ?> items to return</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <span class="badge bg-danger">CO Return</span>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12 mb-4">
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">Active Shows</h3>
