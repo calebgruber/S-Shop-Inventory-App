@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $stmt = $db->prepare("INSERT INTO items (name, barcode, category_id, tracking_type, total_quantity, available_quantity, description) 
                               VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssiisis", $name, $barcode, $categoryId, $trackingType, $totalQuantity, $availableQuantity, $description);
+        $stmt->bind_param("ssisiis", $name, $barcode, $categoryId, $trackingType, $totalQuantity, $availableQuantity, $description);
         
         if ($stmt->execute()) {
             redirectTo("inventory.php");

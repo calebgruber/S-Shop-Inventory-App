@@ -14,6 +14,68 @@
             color-scheme: dark;
         }
         
+        /* Remove rounded corners for fullscreen app */
+        .card,
+        .btn,
+        .form-control,
+        .form-select,
+        .input-group,
+        .modal-content,
+        .dropdown-menu,
+        .list-group-item,
+        .alert,
+        .badge,
+        .navbar,
+        .page-header,
+        img {
+            border-radius: 0 !important;
+        }
+        
+        /* Maximize screen real estate */
+        .container-xl {
+            max-width: 100%;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        
+        .page-wrapper {
+            padding: 0;
+        }
+        
+        .page-header {
+            margin-bottom: 0.5rem;
+            padding: 0.75rem 0;
+        }
+        
+        .page-body {
+            padding: 0.5rem 0;
+        }
+        
+        /* Tighter spacing for fullscreen */
+        .card {
+            margin-bottom: 0.75rem;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+        
+        /* Make navbar more compact */
+        .navbar {
+            padding: 0.5rem 1rem;
+        }
+        
+        /* Better button spacing */
+        .btn {
+            padding: 0.5rem 1rem;
+        }
+        
+        /* Form controls */
+        .form-control,
+        .form-select {
+            padding: 0.5rem 0.75rem;
+        }
+        
         .auto-focus {
             /* Field will be auto-focused on page load */
         }
