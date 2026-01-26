@@ -292,7 +292,7 @@ function generatePullsheetPDF($pullsheetId) {
     // Barcode (PDF417 for pullsheets)
     $barcodeData = generatePDF417Barcode($pullsheet['barcode']);
     // Save barcode temporarily and add to PDF
-    $barcodeFile = sys_get_temp_dir() . '/barcode_' . uniqid() . '.png';
+    $barcodeFile = sys_get_temp_dir() . '/barcode_' . bin2hex(random_bytes(16)) . '.png';
     file_put_contents($barcodeFile, $barcodeData);
     if (file_exists($barcodeFile)) {
         $pdf->addImage($page, file_get_contents($barcodeFile), 450, 720, 100, 50);
@@ -355,7 +355,7 @@ function generateChangeOrderPDF($changeOrderId) {
     
     // Barcode (PDF417 for change orders)
     $barcodeData = generatePDF417Barcode($changeOrder['barcode']);
-    $barcodeFile = sys_get_temp_dir() . '/barcode_' . uniqid() . '.png';
+    $barcodeFile = sys_get_temp_dir() . '/barcode_' . bin2hex(random_bytes(16)) . '.png';
     file_put_contents($barcodeFile, $barcodeData);
     if (file_exists($barcodeFile)) {
         $pdf->addImage($page, file_get_contents($barcodeFile), 450, 720, 100, 50);

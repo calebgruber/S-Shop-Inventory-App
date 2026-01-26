@@ -23,6 +23,14 @@ if (session_status() === PHP_SESSION_NONE) {
 // Timezone
 date_default_timezone_set('America/New_York');
 
-// Error Reporting (disable in production)
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Error Reporting
+// Set to 0 for production, 1 for development
+$isDevelopment = ($_SERVER['SERVER_NAME'] === 'localhost' || strpos($_SERVER['SERVER_NAME'], '127.0.0.1') !== false);
+if ($isDevelopment) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+} else {
+    error_reporting(0);
+    ini_set('display_errors', 0);
+    ini_set('log_errors', 1);
+}
