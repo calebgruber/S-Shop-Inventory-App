@@ -363,8 +363,62 @@ window.startReturnProcess = async function(pullSheetId) {
     return;
   }
   
-  // Prompt for returned by
-  const returnedBy = prompt('Enter your name:');
+  // Prompt for returned by using custom modal
+  const returnedBy = await new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+      <div class="modal modal-blur fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Start Return Process</h5>
+            </div>
+            <div class="modal-body">
+              <label class="form-label">Your Name</label>
+              <input type="text" class="form-control" id="returnedByInput" placeholder="Enter your name">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" id="cancelReturnBtn">Cancel</button>
+              <button type="button" class="btn btn-primary" id="confirmReturnBtn">Start Return</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-backdrop fade show"></div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Focus and select the input
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const input = document.getElementById('returnedByInput');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      });
+    });
+    
+    // Handle Enter key
+    document.getElementById('returnedByInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('confirmReturnBtn').click();
+      }
+    });
+    
+    // Handle buttons
+    document.getElementById('cancelReturnBtn').addEventListener('click', () => {
+      modal.remove();
+      resolve(null);
+    });
+    
+    document.getElementById('confirmReturnBtn').addEventListener('click', () => {
+      const name = document.getElementById('returnedByInput').value.trim();
+      modal.remove();
+      resolve(name || null);
+    });
+  });
+  
   if (!returnedBy) return;
   
   // Create return record
