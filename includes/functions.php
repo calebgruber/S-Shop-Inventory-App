@@ -1,9 +1,8 @@
 <?php
 require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/vendor/autoload.php';
-
-use Picqer\Barcode\BarcodeGeneratorPNG;
-use Picqer\Barcode\BarcodeGeneratorSVG;
+require_once __DIR__ . '/barcode/Code128.php';
+require_once __DIR__ . '/barcode/PDF417.php';
+require_once __DIR__ . '/pdf/SimplePDF.php';
 
 // Settings functions
 function getSetting($key, $default = '') {
@@ -23,18 +22,17 @@ function setSetting($key, $value) {
 
 // Barcode generation functions
 function generateCode128Barcode($text, $format = 'png') {
+    $generator = new Code128();
     if ($format === 'svg') {
-        $generator = new BarcodeGeneratorSVG();
-        return $generator->getBarcode($text, $generator::TYPE_CODE_128);
+        return $generator->generateSVG($text, 2, 50);
     } else {
-        $generator = new BarcodeGeneratorPNG();
-        return $generator->getBarcode($text, $generator::TYPE_CODE_128, 2, 50);
+        return $generator->generatePNG($text, 2, 50);
     }
 }
 
 function generatePDF417Barcode($text) {
-    $generator = new BarcodeGeneratorPNG();
-    return $generator->getBarcode($text, $generator::TYPE_PDF_417, 2, 50);
+    $generator = new PDF417();
+    return $generator->generatePNG($text, 2, 50);
 }
 
 function generateUniqueBarcode($prefix = 'ITEM') {
@@ -275,123 +273,132 @@ function redirect($url) {
     exit;
 }
 
-// PDF Generation using TCPDF
+// PDF Generation using SimplePDF
 function generatePullsheetPDF($pullsheetId) {
-    require_once __DIR__ . '/vendor/autoload.php';
-    
     $pullsheet = getPullsheetById($pullsheetId);
     $items = getPullsheetItems($pullsheetId);
     
-    $pdf = new TCPDF('P', 'mm', 'LETTER', true, 'UTF-8');
-    $pdf->SetCreator('Sound Shop Inventory');
-    $pdf->SetAuthor('Sound Shop');
-    $pdf->SetTitle('Pullsheet - ' . $pullsheet['show_name']);
-    
-    $pdf->SetMargins(15, 15, 15);
-    $pdf->SetAutoPageBreak(true, 15);
-    $pdf->AddPage();
+    $pdf = new SimplePDF();
+    $page = $pdf->addPage(612, 792); // Letter size
     
     // Logo
     $logoPath = getSetting('logo_path');
-    if ($logoPath && file_exists(UPLOAD_DIR . $logoPath)) {
-        $pdf->Image(UPLOAD_DIR . $logoPath, 15, 10, 40);
+    if ($logoPath && file_exists(__DIR__ . '/../uploads/logos/' . $logoPath)) {
+        // Logo would be added here if image support was complete
+        // For now, add text placeholder
+        $pdf->addText($page, 50, 750, 'CMFT Sound Shop', 14, 'Helvetica');
     }
     
-    // Barcode
+    // Barcode (PDF417 for pullsheets)
     $barcodeData = generatePDF417Barcode($pullsheet['barcode']);
-    $barcodeFile = tempnam(sys_get_temp_dir(), 'barcode') . '.png';
+    // Save barcode temporarily and add to PDF
+    $barcodeFile = sys_get_temp_dir() . '/barcode_' . uniqid() . '.png';
     file_put_contents($barcodeFile, $barcodeData);
-    $pdf->Image($barcodeFile, 155, 10, 40);
-    unlink($barcodeFile);
-    
-    $pdf->SetY(35);
-    $pdf->SetFont('helvetica', 'B', 16);
-    $pdf->Cell(0, 10, 'PULLSHEET', 0, 1, 'C');
-    
-    $pdf->SetFont('helvetica', '', 10);
-    $pdf->Cell(0, 6, 'Show: ' . $pullsheet['show_name'], 0, 1);
-    $pdf->Cell(0, 6, 'Shop Lead: ' . $pullsheet['shop_lead'], 0, 1);
-    $pdf->Cell(0, 6, 'Designer: ' . $pullsheet['designer'], 0, 1);
-    $pdf->Cell(0, 6, 'Created: ' . date('m/d/Y', strtotime($pullsheet['created_at'])), 0, 1);
-    
-    $pdf->Ln(5);
-    
-    // Items table
-    $pdf->SetFont('helvetica', 'B', 10);
-    $pdf->Cell(80, 7, 'Item', 1);
-    $pdf->Cell(30, 7, 'Barcode', 1);
-    $pdf->Cell(30, 7, 'Qty Needed', 1);
-    $pdf->Cell(30, 7, 'Qty Picked', 1);
-    $pdf->Ln();
-    
-    $pdf->SetFont('helvetica', '', 9);
-    foreach ($items as $item) {
-        $pdf->Cell(80, 6, $item['item_name'], 1);
-        $pdf->Cell(30, 6, $item['item_barcode'], 1);
-        $pdf->Cell(30, 6, $item['quantity_needed'], 1, 0, 'C');
-        $pdf->Cell(30, 6, $item['quantity_picked'], 1, 0, 'C');
-        $pdf->Ln();
+    if (file_exists($barcodeFile)) {
+        $pdf->addImage($page, file_get_contents($barcodeFile), 450, 720, 100, 50);
+        unlink($barcodeFile);
     }
     
-    return $pdf->Output('', 'S');
+    // Title
+    $pdf->addText($page, 250, 700, 'PULLSHEET', 18, 'Helvetica');
+    
+    // Show details
+    $y = 670;
+    $pdf->addText($page, 50, $y, 'Show: ' . $pullsheet['show_name'], 12);
+    $y -= 20;
+    $pdf->addText($page, 50, $y, 'Shop Lead: ' . $pullsheet['shop_lead'], 12);
+    $y -= 20;
+    $pdf->addText($page, 50, $y, 'Designer: ' . $pullsheet['designer'], 12);
+    $y -= 20;
+    $pdf->addText($page, 50, $y, 'Created: ' . date('m/d/Y', strtotime($pullsheet['created_at'])), 12);
+    $y -= 20;
+    $pdf->addText($page, 50, $y, 'Barcode: ' . $pullsheet['barcode'], 10);
+    
+    // Table headers
+    $y -= 40;
+    $pdf->addText($page, 50, $y, 'Item', 12);
+    $pdf->addText($page, 300, $y, 'Barcode', 12);
+    $pdf->addText($page, 400, $y, 'Qty Needed', 12);
+    $pdf->addText($page, 500, $y, 'Qty Picked', 12);
+    $pdf->addLine($page, 50, $y - 5, 550, $y - 5);
+    
+    // Items
+    $y -= 25;
+    foreach ($items as $item) {
+        $pdf->addText($page, 50, $y, substr($item['item_name'], 0, 35), 10);
+        $pdf->addText($page, 300, $y, $item['item_barcode'], 10);
+        $pdf->addText($page, 420, $y, (string)$item['quantity_needed'], 10);
+        $pdf->addText($page, 520, $y, (string)$item['quantity_picked'], 10);
+        $y -= 20;
+        
+        if ($y < 50) {
+            $page = $pdf->addPage(612, 792);
+            $y = 750;
+        }
+    }
+    
+    return $pdf->output('pullsheet_' . $pullsheetId . '.pdf', 'S');
 }
 
 function generateChangeOrderPDF($changeOrderId) {
-    require_once __DIR__ . '/vendor/autoload.php';
-    
     $changeOrder = getChangeOrderById($changeOrderId);
     $items = getChangeOrderItems($changeOrderId);
     
-    $pdf = new TCPDF('P', 'mm', 'LETTER', true, 'UTF-8');
-    $pdf->SetCreator('Sound Shop Inventory');
-    $pdf->SetAuthor('Sound Shop');
-    $pdf->SetTitle('Change Order - ' . $changeOrder['show_name']);
-    
-    $pdf->SetMargins(15, 15, 15);
-    $pdf->SetAutoPageBreak(true, 15);
-    $pdf->AddPage();
+    $pdf = new SimplePDF();
+    $page = $pdf->addPage(612, 792); // Letter size
     
     // Logo
     $logoPath = getSetting('logo_path');
-    if ($logoPath && file_exists(UPLOAD_DIR . $logoPath)) {
-        $pdf->Image(UPLOAD_DIR . $logoPath, 15, 10, 40);
+    if ($logoPath && file_exists(__DIR__ . '/../uploads/logos/' . $logoPath)) {
+        $pdf->addText($page, 50, 750, 'CMFT Sound Shop', 14, 'Helvetica');
     }
     
-    // Barcode
+    // Barcode (PDF417 for change orders)
     $barcodeData = generatePDF417Barcode($changeOrder['barcode']);
-    $barcodeFile = tempnam(sys_get_temp_dir(), 'barcode') . '.png';
+    $barcodeFile = sys_get_temp_dir() . '/barcode_' . uniqid() . '.png';
     file_put_contents($barcodeFile, $barcodeData);
-    $pdf->Image($barcodeFile, 155, 10, 40);
-    unlink($barcodeFile);
-    
-    $pdf->SetY(35);
-    $pdf->SetFont('helvetica', 'B', 16);
-    $pdf->Cell(0, 10, 'CHANGE ORDER', 0, 1, 'C');
-    
-    $pdf->SetFont('helvetica', '', 10);
-    $pdf->Cell(0, 6, 'Show: ' . $changeOrder['show_name'], 0, 1);
-    $pdf->Cell(0, 6, 'Shop Lead: ' . $changeOrder['shop_lead'], 0, 1);
-    $pdf->Cell(0, 6, 'Designer: ' . $changeOrder['designer'], 0, 1);
-    $pdf->Cell(0, 6, 'Created: ' . date('m/d/Y', strtotime($changeOrder['created_at'])), 0, 1);
-    
-    $pdf->Ln(5);
-    
-    // Items table
-    $pdf->SetFont('helvetica', 'B', 10);
-    $pdf->Cell(80, 7, 'Item', 1);
-    $pdf->Cell(30, 7, 'Barcode', 1);
-    $pdf->Cell(25, 7, 'Type', 1);
-    $pdf->Cell(30, 7, 'Quantity', 1);
-    $pdf->Ln();
-    
-    $pdf->SetFont('helvetica', '', 9);
-    foreach ($items as $item) {
-        $pdf->Cell(80, 6, $item['item_name'], 1);
-        $pdf->Cell(30, 6, $item['item_barcode'], 1);
-        $pdf->Cell(25, 6, ucfirst($item['type']), 1, 0, 'C');
-        $pdf->Cell(30, 6, abs($item['quantity_change']), 1, 0, 'C');
-        $pdf->Ln();
+    if (file_exists($barcodeFile)) {
+        $pdf->addImage($page, file_get_contents($barcodeFile), 450, 720, 100, 50);
+        unlink($barcodeFile);
     }
     
-    return $pdf->Output('', 'S');
+    // Title
+    $pdf->addText($page, 220, 700, 'CHANGE ORDER', 18, 'Helvetica');
+    
+    // Show details
+    $y = 670;
+    $pdf->addText($page, 50, $y, 'Show: ' . $changeOrder['show_name'], 12);
+    $y -= 20;
+    $pdf->addText($page, 50, $y, 'Shop Lead: ' . $changeOrder['shop_lead'], 12);
+    $y -= 20;
+    $pdf->addText($page, 50, $y, 'Designer: ' . $changeOrder['designer'], 12);
+    $y -= 20;
+    $pdf->addText($page, 50, $y, 'Created: ' . date('m/d/Y', strtotime($changeOrder['created_at'])), 12);
+    $y -= 20;
+    $pdf->addText($page, 50, $y, 'Barcode: ' . $changeOrder['barcode'], 10);
+    
+    // Table headers
+    $y -= 40;
+    $pdf->addText($page, 50, $y, 'Item', 12);
+    $pdf->addText($page, 280, $y, 'Barcode', 12);
+    $pdf->addText($page, 380, $y, 'Type', 12);
+    $pdf->addText($page, 480, $y, 'Quantity', 12);
+    $pdf->addLine($page, 50, $y - 5, 550, $y - 5);
+    
+    // Items
+    $y -= 25;
+    foreach ($items as $item) {
+        $pdf->addText($page, 50, $y, substr($item['item_name'], 0, 30), 10);
+        $pdf->addText($page, 280, $y, $item['item_barcode'], 10);
+        $pdf->addText($page, 380, $y, ucfirst($item['type']), 10);
+        $pdf->addText($page, 490, $y, (string)abs($item['quantity_change']), 10);
+        $y -= 20;
+        
+        if ($y < 50) {
+            $page = $pdf->addPage(612, 792);
+            $y = 750;
+        }
+    }
+    
+    return $pdf->output('change_order_' . $changeOrderId . '.pdf', 'S');
 }
