@@ -30,14 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $repairId = 'RPR-' . strtoupper(substr(uniqid(), -8));
             
             // Create repair
-            $db->execute(
+            $db->query(
                 "INSERT INTO repairs (repair_id, item_id, quantity, category_id, subcategory_id, description, status, reported_by) 
                  VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)",
                 [$repairId, $itemId, $quantity, $item['category_id'], $item['subcategory_id'], $description, $currentUser['id']]
             );
             
             // Remove from stock
-            $db->execute(
+            $db->query(
                 "UPDATE items SET in_stock_quantity = in_stock_quantity - ? WHERE id = ?",
                 [$quantity, $itemId]
             );
@@ -49,16 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $repairId = $_POST['repair_id'] ?? 0;
         $status = $_POST['status'] ?? '';
         
-        $db->execute("UPDATE repairs SET status = ? WHERE id = ?", [$status, $repairId]);
+        $db->query("UPDATE repairs SET status = ? WHERE id = ?", [$status, $repairId]);
         
         // If completed, return items to stock
         if ($status === 'completed') {
             $repair = $db->fetchOne("SELECT item_id, quantity FROM repairs WHERE id = ?", [$repairId]);
-            $db->execute(
+            $db->query(
                 "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
                 [$repair['quantity'], $repair['item_id']]
             );
-            $db->execute("UPDATE repairs SET completed_at = NOW() WHERE id = ?", [$repairId]);
+            $db->query("UPDATE repairs SET completed_at = NOW() WHERE id = ?", [$repairId]);
         }
         
         setAlert('Repair status updated', 'success');
@@ -69,13 +69,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Return items to stock
         $repair = $db->fetchOne("SELECT item_id, quantity, status FROM repairs WHERE id = ?", [$repairId]);
         if ($repair && $repair['status'] !== 'completed') {
-            $db->execute(
+            $db->query(
                 "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
                 [$repair['quantity'], $repair['item_id']]
             );
         }
         
-        $db->execute("DELETE FROM repairs WHERE id = ?", [$repairId]);
+        $db->query("DELETE FROM repairs WHERE id = ?", [$repairId]);
         setAlert('Repair cancelled and items returned to stock', 'success');
         redirect();
     }

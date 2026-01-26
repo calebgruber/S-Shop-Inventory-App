@@ -282,9 +282,13 @@ function validateRequired($value, $fieldName) {
     }
 }
 
-function redirect($url = 'index.php') {
-    // Always redirect to homepage unless explicitly specified
-    header("Location: index.php");
+function redirect($url = null) {
+    if ($url === null) {
+        // Reload current page
+        header("Location: " . $_SERVER['PHP_SELF'] . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : ''));
+    } else {
+        header("Location: " . $url);
+    }
     exit;
 }
 

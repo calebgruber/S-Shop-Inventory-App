@@ -171,30 +171,30 @@ $currentUser = getCurrentUser();
                 </h1>
                 <div class="navbar-nav flex-row order-md-last">
                     <div class="nav-item dropdown">
-                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="User menu">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="User menu" aria-expanded="false">
                             <span class="avatar avatar-sm" style="background-image: url('<?php echo getUserAvatarUrl($currentUser); ?>')"></span>
                             <div class="d-none d-xl-block ps-2">
                                 <div><?php echo htmlspecialchars($currentUser['name']); ?></div>
                                 <div class="mt-1 small text-muted"><?php echo ucfirst($currentUser['role']); ?></div>
                             </div>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="#" id="theme-toggle-dropdown">
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" id="theme-toggle-dropdown">
                                 <i class="ti ti-moon icon me-2"></i>
                                 Toggle Dark Mode
-                            </a>
+                            </a></li>
                             <?php if (isAdmin()): ?>
-                            <a class="dropdown-item" href="user_management.php">
+                            <li><a class="dropdown-item" href="user_management.php">
                                 <i class="ti ti-users icon me-2"></i>
                                 User Management
-                            </a>
+                            </a></li>
                             <?php endif; ?>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="logout.php">
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="logout.php">
                                 <i class="ti ti-logout icon me-2"></i>
                                 Logout
-                            </a>
-                        </div>
+                            </a></li>
+                        </ul>
                     </div>
                     <div class="nav-item ms-2">
                         <a href="#" class="nav-link px-0" id="theme-toggle" title="Toggle dark mode">
@@ -269,20 +269,20 @@ $currentUser = getCurrentUser();
                             <?php if (hasPermission('pick_mode') || hasPermission('return_mode')): ?>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle <?php echo in_array($currentPage, ['pick_mode', 'return_mode']) ? 'active' : ''; ?>" 
-                                   href="#" data-bs-toggle="dropdown">
+                                   href="#" data-bs-toggle="dropdown" aria-expanded="false" role="button">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-scan"></i>
                                     </span>
                                     <span class="nav-link-title">Operations</span>
                                 </a>
-                                <div class="dropdown-menu">
+                                <ul class="dropdown-menu">
                                     <?php if (hasPermission('pick_mode')): ?>
-                                    <a class="dropdown-item" href="pick_mode.php">Pick Mode</a>
+                                    <li><a class="dropdown-item" href="pick_mode.php">Pick Mode</a></li>
                                     <?php endif; ?>
                                     <?php if (hasPermission('return_mode')): ?>
-                                    <a class="dropdown-item" href="return_mode.php">Return Mode</a>
+                                    <li><a class="dropdown-item" href="return_mode.php">Return Mode</a></li>
                                     <?php endif; ?>
-                                </div>
+                                </ul>
                             </li>
                             <?php endif; ?>
                             
