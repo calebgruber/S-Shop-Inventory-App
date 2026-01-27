@@ -42,8 +42,16 @@ if ($isStudent) {
         [$currentUser['id']]
     );
 } elseif ($isDesigner) {
-    // Designers DON'T see student requests on dashboard (Requirement 2)
-    $studentRequests = null;
+    // Designers see ALL student requests on dashboard
+    $studentRequests = getDB()->fetchAll(
+        "SELECT sr.*, i.name as item_name, u.full_name as student_name, u2.full_name as approved_by_name
+         FROM student_requests sr
+         LEFT JOIN items i ON sr.item_id = i.id
+         LEFT JOIN users u ON sr.student_id = u.id
+         LEFT JOIN users u2 ON sr.approved_by = u2.id
+         ORDER BY sr.created_at DESC
+         LIMIT 10"
+    );
 } else {
     // Admins see pending requests (existing behavior)
     $pendingStudentRequests = getDB()->fetchAll(
@@ -207,7 +215,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     </div>
 </div>
 
-<?php if (!$isStudent): ?>
+<?php if (!$isStudent && !$isDesigner): ?>
 <div class="row row-deck row-cards mb-4">
     <div class="col-sm-6 col-lg-3">
         <div class="card stat-card">
@@ -504,22 +512,25 @@ $changeOrdersToReturn = getDB()->fetchAll(
 </div>
 <?php endif; ?>
 
-<?php if ($isStudent): ?>
-<!-- Student's Own Requests -->
+<?php if ($isStudent || $isDesigner): ?>
+<!-- Student/Designer Requests Table -->
 <div class="row">
     <div class="col-lg-12 mb-4">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">My Requests</h3>
+                <h3 class="card-title"><?php echo $isStudent ? 'My Requests' : 'Student Requests'; ?></h3>
             </div>
             <div class="card-body">
                 <?php if (empty($studentRequests)): ?>
-                    <p class="text-muted">You have no requests</p>
+                    <p class="text-muted"><?php echo $isStudent ? 'You have no requests' : 'No student requests'; ?></p>
                 <?php else: ?>
                     <div class="table-responsive">
                         <table class="table table-vcenter">
                             <thead>
                                 <tr>
+                                    <?php if ($isDesigner): ?>
+                                    <th>Student</th>
+                                    <?php endif; ?>
                                     <th>Item</th>
                                     <th>Quantity</th>
                                     <th>Status</th>
@@ -530,6 +541,9 @@ $changeOrdersToReturn = getDB()->fetchAll(
                             <tbody>
                                 <?php foreach ($studentRequests as $request): ?>
                                 <tr>
+                                    <?php if ($isDesigner): ?>
+                                    <td><?php echo htmlspecialchars($request['student_name'] ?? 'N/A'); ?></td>
+                                    <?php endif; ?>
                                     <td><?php echo htmlspecialchars($request['item_name'] ?? 'N/A'); ?></td>
                                     <td><?php echo $request['quantity']; ?></td>
                                     <td>
@@ -550,14 +564,13 @@ $changeOrdersToReturn = getDB()->fetchAll(
                     </div>
                 <?php endif; ?>
                 <div class="text-center mt-3">
-                    <a href="student_requests.php" class="btn btn-primary">View All My Requests</a>
+                    <a href="student_requests.php" class="btn btn-primary"><?php echo $isStudent ? 'View All My Requests' : 'View All Requests'; ?></a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 <?php endif; ?>
-<!-- Note: Designers no longer see student requests section per Requirement 2 -->
 
 <script>
 // Quick Lookup functionality - filter list

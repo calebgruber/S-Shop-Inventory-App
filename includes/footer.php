@@ -45,45 +45,58 @@
             if (themeToggle) themeToggle.innerHTML = '<i class="ti ti-sun icon"></i>';
         }
         
-        // Pink Mode Easter Egg - Triple click on logo
-        let pinkModeClicks = 0;
-        let pinkModeTimer = null;
+        // Pink Mode Easter Egg - Single click on logo
+        let pinkModeActive = localStorage.getItem('pinkMode') === 'true';
         
-        function checkPinkMode() {
-            pinkModeClicks++;
+        function togglePinkMode() {
+            pinkModeActive = !pinkModeActive;
+            localStorage.setItem('pinkMode', pinkModeActive);
             
-            if (pinkModeClicks === 1) {
-                pinkModeTimer = setTimeout(() => {
-                    pinkModeClicks = 0;
-                }, 600);
-            } else if (pinkModeClicks === 3) {
-                clearTimeout(pinkModeTimer);
-                const currentPinkMode = localStorage.getItem('pinkMode') === 'true';
-                const newPinkMode = !currentPinkMode;
-                localStorage.setItem('pinkMode', newPinkMode);
+            if (pinkModeActive) {
+                document.body.classList.add('pink-mode');
                 
-                if (newPinkMode) {
-                    document.body.classList.add('pink-mode');
-                    console.log('🐱 Pink mode activated! Meow! 🎀');
-                } else {
-                    document.body.classList.remove('pink-mode');
-                    console.log('Pink mode deactivated.');
+                // Add floating hearts
+                for (let i = 0; i < 9; i++) {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart';
+                    heart.textContent = '💖';
+                    heart.style.bottom = '-50px';
+                    document.body.appendChild(heart);
                 }
                 
-                pinkModeClicks = 0;
+                console.log('🐱 Pink mode activated! Meow! 🎀');
+            } else {
+                document.body.classList.remove('pink-mode');
+                
+                // Remove floating hearts
+                document.querySelectorAll('.heart').forEach(h => h.remove());
+                
+                console.log('Pink mode deactivated.');
             }
         }
         
         // Apply pink mode if saved
-        if (localStorage.getItem('pinkMode') === 'true') {
+        if (pinkModeActive) {
             document.body.classList.add('pink-mode');
+            
+            // Add floating hearts on page load if pink mode is active
+            setTimeout(() => {
+                for (let i = 0; i < 9; i++) {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart';
+                    heart.textContent = '💖';
+                    heart.style.bottom = '-50px';
+                    document.body.appendChild(heart);
+                }
+            }, 100);
         }
         
-        // Attach triple-click handler to logo
+        // Attach single-click handler to logo
         const logo = document.querySelector('.navbar-brand');
         if (logo) {
             logo.addEventListener('click', (e) => {
-                checkPinkMode();
+                e.preventDefault();
+                togglePinkMode();
             });
         }
         

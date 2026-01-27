@@ -141,6 +141,42 @@ $currentUser = getCurrentUser();
             background: rgba(255, 182, 217, 0.1) !important;
         }
         
+        /* Pink Mode - Floating Hearts Animation */
+        @keyframes floatHearts {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        body.pink-mode .heart {
+            position: fixed;
+            font-size: 2rem;
+            animation: floatHearts 8s linear infinite;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        
+        body.pink-mode .heart:nth-child(1) { left: 10%; animation-delay: 0s; font-size: 1.5rem; }
+        body.pink-mode .heart:nth-child(2) { left: 20%; animation-delay: 1s; font-size: 2rem; }
+        body.pink-mode .heart:nth-child(3) { left: 30%; animation-delay: 2s; font-size: 1.8rem; }
+        body.pink-mode .heart:nth-child(4) { left: 40%; animation-delay: 3s; font-size: 1.6rem; }
+        body.pink-mode .heart:nth-child(5) { left: 50%; animation-delay: 4s; font-size: 2.2rem; }
+        body.pink-mode .heart:nth-child(6) { left: 60%; animation-delay: 5s; font-size: 1.7rem; }
+        body.pink-mode .heart:nth-child(7) { left: 70%; animation-delay: 6s; font-size: 1.9rem; }
+        body.pink-mode .heart:nth-child(8) { left: 80%; animation-delay: 7s; font-size: 2.1rem; }
+        body.pink-mode .heart:nth-child(9) { left: 90%; animation-delay: 0.5s; font-size: 1.4rem; }
+        
         /* Apply consistent border radius */
         .card,
         .btn,
@@ -286,6 +322,19 @@ $currentUser = getCurrentUser();
             background-color: var(--tblr-hover-bg);
         }
     </style>
+    
+    <!-- Random Background Easter Egg - 1% chance -->
+    <script>
+        // 1 in 100 chance to show special background
+        if (Math.random() < 0.01) {
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.style.backgroundImage = 'url(https://preview.tabler.io/static/avatars/000m.jpg)';
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundAttachment = 'fixed';
+            });
+        }
+    </script>
 </head>
 <body>
     <div class="page">
