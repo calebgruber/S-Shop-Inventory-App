@@ -42,16 +42,8 @@ if ($isStudent) {
         [$currentUser['id']]
     );
 } elseif ($isDesigner) {
-    // Designers see ALL student requests
-    $studentRequests = getDB()->fetchAll(
-        "SELECT sr.*, i.name as item_name, u.full_name as student_name, u2.full_name as approved_by_name
-         FROM student_requests sr
-         LEFT JOIN items i ON sr.item_id = i.id
-         LEFT JOIN users u ON sr.student_id = u.id
-         LEFT JOIN users u2 ON sr.approved_by = u2.id
-         ORDER BY sr.created_at DESC
-         LIMIT 10"
-    );
+    // Designers DON'T see student requests on dashboard (Requirement 2)
+    $studentRequests = null;
 } else {
     // Admins see pending requests (existing behavior)
     $pendingStudentRequests = getDB()->fetchAll(
@@ -564,63 +556,8 @@ $changeOrdersToReturn = getDB()->fetchAll(
         </div>
     </div>
 </div>
-<?php elseif ($isDesigner): ?>
-<!-- All Student Requests for Designers -->
-<div class="row">
-    <div class="col-lg-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Student Requests</h3>
-            </div>
-            <div class="card-body">
-                <?php if (empty($studentRequests)): ?>
-                    <p class="text-muted">No student requests</p>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-vcenter">
-                            <thead>
-                                <tr>
-                                    <th>Student</th>
-                                    <th>Item</th>
-                                    <th>Quantity</th>
-                                    <th>Status</th>
-                                    <th>Requested</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($studentRequests as $request): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($request['student_name'] ?? 'Unknown'); ?></td>
-                                    <td><?php echo htmlspecialchars($request['item_name'] ?? 'N/A'); ?></td>
-                                    <td><?php echo $request['quantity']; ?></td>
-                                    <td>
-                                        <span class="badge bg-<?php 
-                                            echo $request['status'] === 'approved' ? 'success' : 
-                                                 ($request['status'] === 'rejected' ? 'danger' : 
-                                                 ($request['status'] === 'fulfilled' ? 'info' : 'warning')); 
-                                        ?>">
-                                            <?php echo ucfirst($request['status']); ?>
-                                        </span>
-                                    </td>
-                                    <td><?php echo date('m/d/Y', strtotime($request['created_at'])); ?></td>
-                                    <td>
-                                        <a href="student_requests.php" class="btn btn-sm btn-primary">View</a>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-                <div class="text-center mt-3">
-                    <a href="student_requests.php" class="btn btn-primary">View All Requests</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 <?php endif; ?>
+<!-- Note: Designers no longer see student requests section per Requirement 2 -->
 
 <script>
 // Quick Lookup functionality - filter list

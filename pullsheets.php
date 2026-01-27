@@ -2,14 +2,56 @@
 $pageTitle = 'Pullsheets';
 require_once 'includes/header.php';
 
+$currentUser = getCurrentUser();
+$isDesigner = $currentUser['role'] === 'designer';
+
 // Handle delete request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
     try {
+        $db = getDB();
         $deleteId = (int)$_POST['delete_id'];
-        getDB()->query("DELETE FROM pullsheets WHERE id = ?", [$deleteId]);
-        setAlert('Pullsheet deleted successfully');
-        redirect('index.php');
+        
+        // Get pullsheet details
+        $pullsheet = getPullsheetById($deleteId);
+        if (!$pullsheet) {
+            throw new Exception('Pullsheet not found');
+        }
+        
+        // Check permission for designers
+        if ($isDesigner && !canAccessShow($currentUser['id'], $pullsheet['show_id'])) {
+            throw new Exception('You do not have permission to delete this pullsheet');
+        }
+        
+        // Start transaction
+        $db->query("START TRANSACTION");
+        
+        // If pullsheet was finalized, unreserve the items
+        if ($pullsheet['status'] === 'finalized' || $pullsheet['status'] === 'picked') {
+            $items = getPullsheetItems($deleteId);
+            foreach ($items as $item) {
+                // Return items to stock
+                $db->query(
+                    "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
+                    [$item['quantity'], $item['item_id']]
+                );
+                logMessage("Unreserved {$item['quantity']} of item ID {$item['item_id']} from pullsheet ID $deleteId", 'INFO');
+            }
+        }
+        
+        // Delete pullsheet items and pullsheet
+        $db->query("DELETE FROM pullsheet_items WHERE pullsheet_id = ?", [$deleteId]);
+        $db->query("DELETE FROM pullsheets WHERE id = ?", [$deleteId]);
+        
+        $db->query("COMMIT");
+        
+        logMessage("Pullsheet ID $deleteId deleted by user ID {$currentUser['id']}", 'INFO');
+        setAlert('Pullsheet deleted successfully and items returned to stock');
+        redirect('pullsheets.php');
     } catch (Exception $e) {
+        if (isset($db)) {
+            $db->query("ROLLBACK");
+        }
+        logException($e, 'Error deleting pullsheet');
         setAlert('Error: ' . $e->getMessage(), 'danger');
     }
 }
@@ -18,6 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_pullsheet'])) {
     try {
         $showId = !empty($_POST['show_id']) ? (int)$_POST['show_id'] : null;
+        
+        // Check permission for designers
+        if ($isDesigner && $showId && !canAccessShow($currentUser['id'], $showId)) {
+            throw new Exception('You do not have permission to create pullsheet for this show');
+        }
+        
         $createdBy = $_POST['created_by'] ?? 'Unknown';
         $barcode = generateUniqueBarcode('PS');
         
@@ -34,14 +82,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_pullsheet'])) 
     }
 }
 
-// Get all pullsheets
-$pullsheets = getDB()->fetchAll("SELECT p.*, s.name as show_name 
-    FROM pullsheets p 
-    LEFT JOIN shows s ON p.show_id = s.id 
-    ORDER BY p.created_at DESC");
-
-// Get all shows for the dropdown
-$shows = getDB()->fetchAll("SELECT id, name FROM shows ORDER BY name ASC");
+// Get pullsheets filtered by show access for designers
+if ($isDesigner) {
+    $assignedShows = getAssignedShows($currentUser['id']);
+    $assignedShowIds = array_column($assignedShows, 'id');
+    
+    if (empty($assignedShowIds)) {
+        $pullsheets = [];
+    } else {
+        $placeholders = implode(',', array_fill(0, count($assignedShowIds), '?'));
+        $pullsheets = getDB()->fetchAll(
+            "SELECT p.*, s.name as show_name 
+             FROM pullsheets p 
+             LEFT JOIN shows s ON p.show_id = s.id 
+             WHERE p.show_id IN ($placeholders)
+             ORDER BY p.created_at DESC",
+            $assignedShowIds
+        );
+    }
+    
+    // Filter shows for dropdown
+    $shows = $assignedShows;
+} else {
+    // Admins see all pullsheets and shows
+    $pullsheets = getDB()->fetchAll("SELECT p.*, s.name as show_name 
+        FROM pullsheets p 
+        LEFT JOIN shows s ON p.show_id = s.id 
+        ORDER BY p.created_at DESC");
+    
+    $shows = getDB()->fetchAll("SELECT id, name FROM shows ORDER BY name ASC");
+}
 
 // Group pullsheets by show
 $pullsheetsByShow = [];

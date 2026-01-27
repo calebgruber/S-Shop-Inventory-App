@@ -190,20 +190,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $statusFilter = $_GET['status'] ?? 'all';
 $categoryFilter = $_GET['category'] ?? 'all';
 
-// Build query for requests list
+// Build query for requests list - but not for students or designers viewing the page
 if ($isStudent) {
-    // Students only see their own requests
-    $query = "SELECT sr.*, i.name as item_name, i.barcode, i.in_stock_quantity, c.name as category_name,
-              u.full_name as student_name, a.full_name as approved_by_name
-              FROM student_requests sr
-              LEFT JOIN items i ON sr.item_id = i.id
-              LEFT JOIN categories c ON i.category_id = c.id
-              LEFT JOIN users u ON sr.student_id = u.id
-              LEFT JOIN users a ON sr.approved_by = a.id
-              WHERE sr.student_id = ?";
-    $params = [$currentUser['id']];
+    // Students don't see the requests table at all - only the create form
+    $requests = [];
+} elseif ($isDesigner) {
+    // Designers don't see the requests table - only the create form
+    $requests = [];
 } else {
-    // Admins/designers see all requests
+    // Admins see all requests
     $query = "SELECT sr.*, i.name as item_name, i.barcode, i.in_stock_quantity, c.name as category_name,
               u.full_name as student_name, a.full_name as approved_by_name
               FROM student_requests sr
@@ -213,21 +208,21 @@ if ($isStudent) {
               LEFT JOIN users a ON sr.approved_by = a.id
               WHERE 1=1";
     $params = [];
+    
+    if ($statusFilter !== 'all') {
+        $query .= " AND sr.status = ?";
+        $params[] = $statusFilter;
+    }
+
+    if ($categoryFilter !== 'all') {
+        $query .= " AND i.category_id = ?";
+        $params[] = $categoryFilter;
+    }
+
+    $query .= " ORDER BY sr.created_at DESC";
+    
+    $requests = $db->fetchAll($query, $params);
 }
-
-if ($statusFilter !== 'all') {
-    $query .= " AND sr.status = ?";
-    $params[] = $statusFilter;
-}
-
-if ($categoryFilter !== 'all') {
-    $query .= " AND i.category_id = ?";
-    $params[] = $categoryFilter;
-}
-
-$query .= " ORDER BY sr.created_at DESC";
-
-$requests = $db->fetchAll($query, $params);
 $categories = getAllCategories();
 $allItems = getAllItems();
 
@@ -242,7 +237,7 @@ foreach ($requests as $request) {
 
 <div class="row mb-4">
     <div class="col-12">
-        <?php if ($isStudent): ?>
+        <?php if ($isStudent || $isDesigner): ?>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#browseItemsModal">
             <i class="ti ti-plus icon"></i> New Request
         </button>
@@ -254,6 +249,7 @@ foreach ($requests as $request) {
     </div>
 </div>
 
+<?php if (!$isStudent && !$isDesigner): ?>
 <!-- Filters -->
 <div class="card mb-4">
     <div class="card-body">
@@ -369,9 +365,10 @@ foreach ($requests as $request) {
         </table>
     </div>
 </div>
+<?php endif; ?>
 
-<!-- Browse Items Modal (for students) -->
-<?php if ($isStudent): ?>
+<!-- Browse Items Modal (for students and designers) -->
+<?php if ($isStudent || $isDesigner): ?>
 <div class="modal fade" id="browseItemsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">

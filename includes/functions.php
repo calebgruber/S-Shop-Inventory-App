@@ -675,3 +675,36 @@ function timeAgo($datetime) {
         return date('M j, Y', $timestamp);
     }
 }
+
+// Show-based permission functions
+function getAssignedShows($userId) {
+    $db = getDB();
+    return $db->fetchAll(
+        "SELECT s.* FROM shows s 
+         INNER JOIN user_show_assignments usa ON s.id = usa.show_id 
+         WHERE usa.user_id = ?
+         ORDER BY s.name",
+        [$userId]
+    );
+}
+
+function canAccessShow($userId, $showId) {
+    $user = getCurrentUser();
+    
+    // Admins can access all shows
+    if ($user && $user['role'] === 'admin') {
+        return true;
+    }
+    
+    // For designers, check if they are assigned to the show
+    if ($user && $user['role'] === 'designer') {
+        $db = getDB();
+        $assignment = $db->fetchOne(
+            "SELECT id FROM user_show_assignments WHERE user_id = ? AND show_id = ?",
+            [$userId, $showId]
+        );
+        return $assignment !== null;
+    }
+    
+    return false;
+}

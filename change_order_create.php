@@ -2,6 +2,9 @@
 $pageTitle = 'Create Change Order';
 require_once 'includes/header.php';
 
+$currentUser = getCurrentUser();
+$isDesigner = $currentUser['role'] === 'designer';
+
 $showId = $_GET['show_id'] ?? null;
 if (!$showId) redirect('shows.php');
 
@@ -9,6 +12,12 @@ $show = getShowById($showId);
 if (!$show) {
     setAlert('Show not found', 'danger');
     redirect('shows.php');
+}
+
+// Check permission for designers
+if ($isDesigner && !canAccessShow($currentUser['id'], $showId)) {
+    setAlert('You do not have permission to create change order for this show', 'danger');
+    redirect('change_orders.php');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

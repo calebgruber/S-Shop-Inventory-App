@@ -53,3 +53,16 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 -- Insert default colors for existing shows
 UPDATE shows SET calendar_color = '#206bc4' WHERE calendar_color IS NULL OR calendar_color = '';
+
+-- User Show Assignments Table (for designer show-based permissions)
+CREATE TABLE IF NOT EXISTS user_show_assignments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    show_id INT NOT NULL,
+    assigned_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (show_id) REFERENCES shows(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE KEY unique_user_show (user_id, show_id)
+);

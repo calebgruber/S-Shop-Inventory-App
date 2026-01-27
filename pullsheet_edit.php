@@ -150,6 +150,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 $pageTitle = 'Edit Pullsheet';
 require_once 'includes/header.php';
 
+$currentUser = getCurrentUser();
+$isDesigner = $currentUser['role'] === 'designer';
+
 if (!$pullsheetId) {
     redirect('pullsheets.php');
 }
@@ -157,6 +160,12 @@ if (!$pullsheetId) {
 $pullsheet = getPullsheetById($pullsheetId);
 if (!$pullsheet) {
     setAlert('Pullsheet not found', 'danger');
+    redirect('pullsheets.php');
+}
+
+// Check permission for designers
+if ($isDesigner && !canAccessShow($currentUser['id'], $pullsheet['show_id'])) {
+    setAlert('You do not have permission to edit this pullsheet', 'danger');
     redirect('pullsheets.php');
 }
 

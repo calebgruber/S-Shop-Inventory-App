@@ -78,6 +78,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         setAlert('Permissions updated successfully', 'success');
         redirect();
+    } elseif ($action === 'update_show_assignments') {
+        $userId = $_POST['user_id'] ?? 0;
+        $showIds = $_POST['show_ids'] ?? [];
+        $currentUserId = getCurrentUser()['id'];
+        
+        // Remove all existing show assignments for this user
+        $db->query("DELETE FROM user_show_assignments WHERE user_id = ?", [$userId]);
+        
+        // Add new show assignments
+        foreach ($showIds as $showId) {
+            $db->query(
+                "INSERT INTO user_show_assignments (user_id, show_id, assigned_by) VALUES (?, ?, ?)",
+                [$userId, (int)$showId, $currentUserId]
+            );
+        }
+        
+        logMessage("Show assignments updated for user ID $userId by user ID $currentUserId", 'INFO');
+        setAlert('Show assignments updated successfully', 'success');
+        redirect();
     }
 }
 
@@ -154,6 +173,11 @@ $allPermissions = [
                             <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#permissionsModal<?php echo $user['id']; ?>">
                                 <i class="ti ti-lock icon"></i>
                             </button>
+                            <?php if ($user['role'] === 'designer'): ?>
+                            <button class="btn btn-sm btn-cyan" data-bs-toggle="modal" data-bs-target="#showAssignmentsModal<?php echo $user['id']; ?>" title="Show Assignments">
+                                <i class="ti ti-calendar icon"></i>
+                            </button>
+                            <?php endif; ?>
                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal<?php echo $user['id']; ?>">
                                 <i class="ti ti-key icon"></i>
                             </button>
@@ -343,6 +367,56 @@ $allPermissions = [
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <?php if ($user['role'] !== 'admin'): ?>
                     <button type="submit" class="btn btn-primary">Update Permissions</button>
+                    <?php endif; ?>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Show Assignments Modal -->
+<div class="modal fade" id="showAssignmentsModal<?php echo $user['id']; ?>" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Show Assignments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <input type="hidden" name="action" value="update_show_assignments">
+                <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
+                <div class="modal-body">
+                    <p>Show assignments for <strong><?php echo htmlspecialchars($user['full_name']); ?></strong></p>
+                    <?php if ($user['role'] === 'designer'): ?>
+                    <?php 
+                    $allShows = getAllShows();
+                    $assignedShows = $db->fetchAll("SELECT show_id FROM user_show_assignments WHERE user_id = ?", [$user['id']]);
+                    $assignedShowIds = array_column($assignedShows, 'show_id');
+                    ?>
+                    <div class="mb-3">
+                        <label class="form-label">Assigned Shows</label>
+                        <?php if (empty($allShows)): ?>
+                            <p class="text-muted">No shows available</p>
+                        <?php else: ?>
+                            <?php foreach ($allShows as $show): ?>
+                            <div class="mb-2">
+                                <label class="form-check">
+                                    <input type="checkbox" class="form-check-input" name="show_ids[]" value="<?php echo $show['id']; ?>" 
+                                           <?php echo in_array($show['id'], $assignedShowIds) ? 'checked' : ''; ?>>
+                                    <span class="form-check-label"><?php echo htmlspecialchars($show['name']); ?></span>
+                                </label>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                    <?php else: ?>
+                    <div class="alert alert-info">Show assignments are only available for designers</div>
+                    <?php endif; ?>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <?php if ($user['role'] === 'designer'): ?>
+                    <button type="submit" class="btn btn-primary">Update Assignments</button>
                     <?php endif; ?>
                 </div>
             </form>

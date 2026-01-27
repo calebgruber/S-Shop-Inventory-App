@@ -149,11 +149,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 $pageTitle = 'Edit Change Order';
 require_once 'includes/header.php';
 
+$currentUser = getCurrentUser();
+$isDesigner = $currentUser['role'] === 'designer';
+
 if (!$coId) redirect('change_orders.php');
 
 $co = getChangeOrderById($coId);
 if (!$co) {
     setAlert('Change order not found', 'danger');
+    redirect('change_orders.php');
+}
+
+// Check permission for designers
+if ($isDesigner && !canAccessShow($currentUser['id'], $co['show_id'])) {
+    setAlert('You do not have permission to edit this change order', 'danger');
     redirect('change_orders.php');
 }
 

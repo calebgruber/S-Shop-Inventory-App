@@ -2,14 +2,59 @@
 $pageTitle = 'Change Orders';
 require_once 'includes/header.php';
 
+$currentUser = getCurrentUser();
+$isDesigner = $currentUser['role'] === 'designer';
+
 // Handle delete request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
     try {
+        $db = getDB();
         $deleteId = (int)$_POST['delete_id'];
-        getDB()->query("DELETE FROM change_orders WHERE id = ?", [$deleteId]);
-        setAlert('Change order deleted successfully');
+        
+        // Get change order details
+        $changeOrder = getChangeOrderById($deleteId);
+        if (!$changeOrder) {
+            throw new Exception('Change order not found');
+        }
+        
+        // Check permission for designers
+        if ($isDesigner && !canAccessShow($currentUser['id'], $changeOrder['show_id'])) {
+            throw new Exception('You do not have permission to delete this change order');
+        }
+        
+        // Start transaction
+        $db->query("START TRANSACTION");
+        
+        // If change order was finalized, unreserve the items
+        if ($changeOrder['status'] === 'finalized' || $changeOrder['status'] === 'picked') {
+            $items = getChangeOrderItems($deleteId);
+            foreach ($items as $item) {
+                // Only unreserve items that were being added (removed from stock)
+                if ($item['type'] === 'add') {
+                    $db->query(
+                        "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
+                        [$item['quantity'], $item['item_id']]
+                    );
+                    logMessage("Unreserved {$item['quantity']} of item ID {$item['item_id']} from change order ID $deleteId", 'INFO');
+                }
+                // Items with type='remove' were being returned, so no stock adjustment needed
+            }
+        }
+        
+        // Delete change order items and change order
+        $db->query("DELETE FROM change_order_items WHERE change_order_id = ?", [$deleteId]);
+        $db->query("DELETE FROM change_orders WHERE id = ?", [$deleteId]);
+        
+        $db->query("COMMIT");
+        
+        logMessage("Change order ID $deleteId deleted by user ID {$currentUser['id']}", 'INFO');
+        setAlert('Change order deleted successfully and items returned to stock');
         redirect('change_orders.php');
     } catch (Exception $e) {
+        if (isset($db)) {
+            $db->query("ROLLBACK");
+        }
+        logException($e, 'Error deleting change order');
         setAlert('Error: ' . $e->getMessage(), 'danger');
     }
 }
@@ -18,6 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_change_order'])) {
     try {
         $showId = !empty($_POST['show_id']) ? (int)$_POST['show_id'] : null;
+        
+        // Check permission for designers
+        if ($isDesigner && $showId && !canAccessShow($currentUser['id'], $showId)) {
+            throw new Exception('You do not have permission to create change order for this show');
+        }
+        
         $createdBy = $_POST['created_by'] ?? 'Unknown';
         $barcode = generateUniqueBarcode('CO');
         
@@ -34,14 +85,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_change_order']
     }
 }
 
-// Get all change orders
-$changeOrders = getDB()->fetchAll("SELECT co.*, s.name as show_name 
-    FROM change_orders co 
-    LEFT JOIN shows s ON co.show_id = s.id 
-    ORDER BY co.created_at DESC");
-
-// Get all shows for the dropdown
-$shows = getDB()->fetchAll("SELECT id, name FROM shows ORDER BY name ASC");
+// Get change orders filtered by show access for designers
+if ($isDesigner) {
+    $assignedShows = getAssignedShows($currentUser['id']);
+    $assignedShowIds = array_column($assignedShows, 'id');
+    
+    if (empty($assignedShowIds)) {
+        $changeOrders = [];
+    } else {
+        $placeholders = implode(',', array_fill(0, count($assignedShowIds), '?'));
+        $changeOrders = getDB()->fetchAll(
+            "SELECT co.*, s.name as show_name 
+             FROM change_orders co 
+             LEFT JOIN shows s ON co.show_id = s.id 
+             WHERE co.show_id IN ($placeholders)
+             ORDER BY co.created_at DESC",
+            $assignedShowIds
+        );
+    }
+    
+    // Filter shows for dropdown
+    $shows = $assignedShows;
+} else {
+    // Admins see all change orders and shows
+    $changeOrders = getDB()->fetchAll("SELECT co.*, s.name as show_name 
+        FROM change_orders co 
+        LEFT JOIN shows s ON co.show_id = s.id 
+        ORDER BY co.created_at DESC");
+    
+    $shows = getDB()->fetchAll("SELECT id, name FROM shows ORDER BY name ASC");
+}
 
 // Group change orders by show
 $changeOrdersByShow = [];

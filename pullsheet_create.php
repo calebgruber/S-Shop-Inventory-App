@@ -2,6 +2,9 @@
 $pageTitle = 'Create Pullsheet';
 require_once 'includes/header.php';
 
+$currentUser = getCurrentUser();
+$isDesigner = $currentUser['role'] === 'designer';
+
 $showId = $_GET['show_id'] ?? null;
 $show = null;
 
@@ -12,6 +15,12 @@ if ($showId) {
         redirect('shows.php');
     }
     
+    // Check permission for designers
+    if ($isDesigner && !canAccessShow($currentUser['id'], $showId)) {
+        setAlert('You do not have permission to create pullsheet for this show', 'danger');
+        redirect('pullsheets.php');
+    }
+    
     // Check if pullsheet already exists
     $existing = getDB()->fetchOne("SELECT id FROM pullsheets WHERE show_id = ?", [$showId]);
     if ($existing) {
@@ -20,14 +29,23 @@ if ($showId) {
     }
 }
 
-// Get all active shows for the dropdown
-$activeShows = getActiveShows();
+// Get shows filtered by permission
+if ($isDesigner) {
+    $activeShows = getAssignedShows($currentUser['id']);
+} else {
+    $activeShows = getActiveShows();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $postShowId = $_POST['show_id'] ?? null;
         if (!$postShowId) {
             throw new Exception('Please select a show');
+        }
+        
+        // Check permission for designers
+        if ($isDesigner && !canAccessShow($currentUser['id'], $postShowId)) {
+            throw new Exception('You do not have permission to create pullsheet for this show');
         }
         
         $barcode = generateUniqueBarcode('PS');
