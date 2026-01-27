@@ -69,12 +69,13 @@ try {
     $logoPath = '';
 }
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - <?php echo htmlspecialchars($appName); ?></title>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>Sign in - <?php echo htmlspecialchars($appName); ?></title>
     
     <!-- Apply theme immediately to prevent flash -->
     <script>
@@ -87,128 +88,81 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
     
     <style>
-        .page {
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            min-height: 100vh;
-        }
-        
-        .page-single {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem 0;
-        }
-        
-        .login-illustration {
-            display: none;
-            background: linear-gradient(135deg, var(--tblr-primary) 0%, var(--tblr-primary-darken) 100%);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .login-illustration img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-            opacity: 0.9;
-        }
-        
-        @media (min-width: 768px) {
-            .login-illustration {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 2rem;
-            }
-        }
-        
-        .card-login {
-            max-width: 24rem;
-        }
+      @import url('https://rsms.me/inter/inter.css');
+      :root {
+      	--tblr-font-sans-serif: 'Inter Var', -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif;
+      }
+      body {
+      	font-feature-settings: "cv03", "cv04", "cv11";
+      }
     </style>
-</head>
-<body class="d-flex flex-column border-top-wide border-primary">
-    <div class="page page-center">
-        <div class="container container-tight py-4">
-            <div class="row g-0">
-                <?php if ($loginIllustration && file_exists(__DIR__ . '/uploads/' . basename($loginIllustration))): ?>
-                <!-- Login with illustration (Tabler style) -->
-                <div class="col-12 col-md-6 login-illustration">
-                    <img src="uploads/<?php echo htmlspecialchars(basename($loginIllustration)); ?>" alt="Login illustration">
-                </div>
-                <div class="col-12 col-md-6 d-flex align-items-center justify-content-center p-4">
-                <?php else: ?>
-                <!-- Login without illustration -->
-                <div class="col-12 d-flex align-items-center justify-content-center">
-                <?php endif; ?>
-                    <div class="card card-login card-md">
-                        <div class="card-body">
-                            <div class="text-center mb-4">
-                                <?php if ($logoPath): 
-                                    $logoFile = basename($logoPath);
-                                    $logoFullPath = __DIR__ . '/uploads/' . $logoFile;
-                                    if (file_exists($logoFullPath)): 
-                                        $logoExt = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
-                                        if (in_array($logoExt, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'])): ?>
-                                            <img src="uploads/<?php echo htmlspecialchars($logoFile); ?>" alt="Logo" style="height: 48px; margin-bottom: 1rem;">
-                                <?php endif; endif; endif; ?>
-                                <h2 class="h2 text-center mb-2"><?php echo htmlspecialchars($appName); ?></h2>
-                                <p class="text-muted">Sign in to your account to continue</p>
-                            </div>
-                            
-                            <?php if ($error): ?>
-                                <div class="alert alert-danger alert-dismissible" role="alert">
-                                    <div class="d-flex">
-                                        <div>
-                                            <i class="ti ti-alert-circle icon alert-icon"></i>
-                                        </div>
-                                        <div>
-                                            <?php echo htmlspecialchars($error); ?>
-                                        </div>
-                                    </div>
-                                    <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-                                </div>
-                            <?php endif; ?>
-                            
-                            <form method="POST" action="login.php" autocomplete="off">
-                                <div class="mb-3">
-                                    <label class="form-label" for="email">Email Address</label>
-                                    <input type="email" class="form-control" id="email" name="email" 
-                                           placeholder="your@email.com" required autofocus autocomplete="username"
-                                           value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
-                                </div>
-                                
-                                <div class="mb-2">
-                                    <label class="form-label" for="password">Password</label>
-                                    <input type="password" class="form-control" id="password" name="password" 
-                                           placeholder="Your password" required autocomplete="current-password">
-                                </div>
-                                
-                                <div class="form-footer">
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="ti ti-login icon"></i>
-                                        Sign In
-                                    </button>
-                                </div>
-                            </form>
-                            
-                            <div class="hr-text text-muted mt-3">Help</div>
-                            <div class="text-center text-muted small">
-                                Default credentials: <code>admin@example.com</code> / <code>admin123</code>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Bootstrap & Tabler JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </head>
+  <body class="d-flex flex-column bg-white">
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/js/tabler.min.js"></script>
-</body>
+    <div class="row g-0 flex-fill">
+      <div class="col-12 col-lg-6 col-xl-4 border-top-wide border-primary d-flex flex-column justify-content-center">
+        <div class="container container-tight my-5 px-lg-5">
+          <div class="text-center mb-4">
+            <?php if ($logoPath): 
+                $logoFile = basename($logoPath);
+                $logoFullPath = __DIR__ . '/uploads/' . $logoFile;
+                if (file_exists($logoFullPath)): 
+                    $logoExt = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
+                    if (in_array($logoExt, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'])): ?>
+                        <a href="." class="navbar-brand navbar-brand-autodark">
+                          <img src="uploads/<?php echo htmlspecialchars($logoFile); ?>" height="36" alt="<?php echo htmlspecialchars($appName); ?>">
+                        </a>
+            <?php endif; endif; endif; ?>
+          </div>
+          <h2 class="h3 text-center mb-3">
+            Login to your account
+          </h2>
+          
+          <?php if ($error): ?>
+          <div class="alert alert-danger alert-dismissible" role="alert">
+            <div class="d-flex">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 8v4" /><path d="M12 16h.01" /></svg>
+              </div>
+              <div>
+                <?php echo htmlspecialchars($error); ?>
+              </div>
+            </div>
+            <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+          </div>
+          <?php endif; ?>
+          
+          <form action="login.php" method="post" autocomplete="off" novalidate>
+            <div class="mb-3">
+              <label class="form-label">Email address</label>
+              <input type="email" name="email" class="form-control" placeholder="your@email.com" autocomplete="off" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Password</label>
+              <div class="input-group input-group-flat">
+                <input type="password" name="password" class="form-control" placeholder="Your password" autocomplete="off" required>
+              </div>
+            </div>
+            <div class="form-footer">
+              <button type="submit" class="btn btn-primary w-100">Sign in</button>
+            </div>
+          </form>
+          
+          <div class="text-center text-muted mt-3">
+            <small>Default: <code>admin@example.com</code> / <code>admin123</code></small>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6 col-xl-8 d-none d-lg-block">
+        <!-- Photo -->
+        <div class="bg-cover h-100 min-vh-100" style="background-image: url(<?php 
+          if ($loginIllustration && file_exists(__DIR__ . '/uploads/' . basename($loginIllustration))) {
+            echo 'uploads/' . htmlspecialchars(basename($loginIllustration));
+          } else {
+            echo 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80';
+          }
+        ?>)"></div>
+      </div>
+    </div>
+  </body>
 </html>
