@@ -150,7 +150,7 @@ function getPullsheetByBarcode($barcode) {
     return $db->fetchOne(
         "SELECT p.*, s.name as show_name, s.shop_lead, s.designer, s.theatre_space_id 
          FROM pullsheets p 
-         JOIN shows s ON p.show_id = s.id 
+         LEFT JOIN shows s ON p.show_id = s.id 
          WHERE p.barcode = ?",
         [$barcode]
     );

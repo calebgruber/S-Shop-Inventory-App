@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Handle logo upload
                     if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
                         // Validate file is an actual image
-                        $imageInfo = @getimagesize($_FILES['logo']['tmp_name']);
+                        $imageInfo = getimagesize($_FILES['logo']['tmp_name']);
                         if ($imageInfo === false) {
                             setAlert('Invalid image file. Please upload a valid image.', 'danger');
                             redirect('settings.php');
