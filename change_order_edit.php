@@ -41,17 +41,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
-            // Validate type parameter
-            $type = $_POST['type'] ?? '';
+            // Validate and normalize type parameter
+            $type = strtolower(trim($_POST['type'] ?? ''));
             if (!in_array($type, ['add', 'remove'], true)) {
+                logMessage("Invalid type parameter received: '$type'", 'WARNING');
                 echo json_encode(['success' => false, 'message' => 'Invalid type parameter. Must be "add" or "remove"']);
                 exit;
             }
             
-            getDB()->query(
-                "INSERT INTO change_order_items (change_order_id, item_id, quantity_change, type) VALUES (?, ?, ?, ?)",
-                [$coId, $item['id'], (int)$_POST['quantity'], $type]
-            );
+            try {
+                getDB()->query(
+                    "INSERT INTO change_order_items (change_order_id, item_id, quantity_change, type) VALUES (?, ?, ?, ?)",
+                    [$coId, $item['id'], (int)$_POST['quantity'], $type]
+                );
+                logMessage("Change order item added: CO=$coId, Item={$item['id']}, Type=$type, Qty={$_POST['quantity']}", 'INFO');
+            } catch (Exception $e) {
+                logException($e, "Error adding item to change order");
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+                exit;
+            }
             
             echo json_encode(['success' => true]);
             exit;

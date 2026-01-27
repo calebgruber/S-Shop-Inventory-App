@@ -20,19 +20,19 @@ if (empty($searchTerm)) {
 
 $db = getDB();
 
-// Search by barcode first (exact match)
+// Search by barcode first (exact match) - include photo_path
 $item = $db->fetchOne(
-    "SELECT i.*, c.name as category_name 
+    "SELECT i.*, c.name as category_name, i.photo_path 
      FROM items i 
      LEFT JOIN categories c ON i.category_id = c.id 
      WHERE i.barcode = ?",
     [$searchTerm]
 );
 
-// If not found, search by name (partial match)
+// If not found, search by name (partial match) - include photo_path
 if (!$item) {
     $item = $db->fetchOne(
-        "SELECT i.*, c.name as category_name 
+        "SELECT i.*, c.name as category_name, i.photo_path 
          FROM items i 
          LEFT JOIN categories c ON i.category_id = c.id 
          WHERE i.name LIKE ? 

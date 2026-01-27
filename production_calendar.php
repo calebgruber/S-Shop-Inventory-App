@@ -343,15 +343,22 @@ function saveEvent() {
     .then(data => {
         if (data.success) {
             calendar.refetchEvents();
-            bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
-            showAlert('Event saved successfully', 'success');
+            const modalEl = document.getElementById('eventModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) {
+                modal.hide();
+            }
+            // Reload the page to show updated events
+            setTimeout(() => {
+                location.reload();
+            }, 500);
         } else {
-            showAlert(data.message || 'Error saving event', 'danger');
+            alert(data.message || 'Error saving event');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showAlert('Error saving event', 'danger');
+        alert('Error saving event');
     });
 }
 

@@ -339,11 +339,8 @@ function validateRequired($value, $fieldName) {
 }
 
 function redirect($url = null) {
-    if ($url === null) {
-        header("Location: " . $_SERVER['PHP_SELF'] . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : ''));
-    } else {
-        header("Location: " . $url);
-    }
+    // Always reload the current page
+    header("Location: " . $_SERVER['PHP_SELF'] . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : ''));
     exit;
 }
 

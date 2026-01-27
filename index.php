@@ -83,23 +83,33 @@ $changeOrdersToReturn = getDB()->fetchAll(
                     ?>
                     <?php if ($isStudent): ?>
                     <div class="list-group-item quick-lookup-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <?php if (!empty($item['photo_path']) && file_exists(__DIR__ . '/' . $item['photo_path'])): ?>
+                            <img src="<?php echo htmlspecialchars($item['photo_path']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" class="me-2" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                            <?php endif; ?>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
+                                <small class="text-muted"><?php echo htmlspecialchars($item['category_name'] ?? 'Uncategorized'); ?> - <?php echo htmlspecialchars($item['barcode']); ?></small>
+                            </div>
                             <small class="<?php echo $item['in_stock_quantity'] > 0 ? 'text-success' : 'text-danger'; ?>">
                                 <?php echo $item['in_stock_quantity']; ?> / <?php echo $item['total_quantity']; ?> available
                             </small>
                         </div>
-                        <small class="text-muted"><?php echo htmlspecialchars($item['category_name'] ?? 'Uncategorized'); ?> - <?php echo htmlspecialchars($item['barcode']); ?></small>
                     </div>
                     <?php else: ?>
                     <a href="item_edit.php?id=<?php echo $item['id']; ?>" class="list-group-item list-group-item-action quick-lookup-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <?php if (!empty($item['photo_path']) && file_exists(__DIR__ . '/' . $item['photo_path'])): ?>
+                            <img src="<?php echo htmlspecialchars($item['photo_path']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" class="me-2" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                            <?php endif; ?>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
+                                <small class="text-muted"><?php echo htmlspecialchars($item['category_name'] ?? 'Uncategorized'); ?> - <?php echo htmlspecialchars($item['barcode']); ?></small>
+                            </div>
                             <small class="<?php echo $item['in_stock_quantity'] > 0 ? 'text-success' : 'text-danger'; ?>">
                                 <?php echo $item['in_stock_quantity']; ?> / <?php echo $item['total_quantity']; ?> available
                             </small>
                         </div>
-                        <small class="text-muted"><?php echo htmlspecialchars($item['category_name'] ?? 'Uncategorized'); ?> - <?php echo htmlspecialchars($item['barcode']); ?></small>
                     </a>
                     <?php endif; ?>
                     <?php endforeach; ?>
@@ -244,8 +254,8 @@ $changeOrdersToReturn = getDB()->fetchAll(
         </button>
     </div>
     
-    <!-- Student Requests (always visible) -->
-    <?php if (hasPermission('student_requests')): ?>
+    <!-- Student Requests (visible for students and designers, not admins) -->
+    <?php if (hasPermission('student_requests') && !isAdmin()): ?>
     <div class="col-md-6 col-lg-3 mb-3">
         <a href="student_requests.php" class="btn btn-primary w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
             <i class="ti ti-clipboard-list icon mb-2" style="font-size: 2rem;"></i>
