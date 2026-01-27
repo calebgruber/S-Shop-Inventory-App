@@ -387,7 +387,7 @@ $allPermissions = [
                 <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                 <div class="modal-body">
                     <p>Show assignments for <strong><?php echo htmlspecialchars($user['full_name']); ?></strong></p>
-                    <?php if ($user['role'] === 'designer'): ?>
+                    <?php if ($user['role'] === 'designer' || $user['role'] === 'student'): ?>
                     <?php 
                     $allShows = getAllShows();
                     $assignedShows = $db->fetchAll("SELECT show_id FROM user_show_assignments WHERE user_id = ?", [$user['id']]);
@@ -410,12 +410,12 @@ $allPermissions = [
                         <?php endif; ?>
                     </div>
                     <?php else: ?>
-                    <div class="alert alert-info">Show assignments are only available for designers</div>
+                    <div class="alert alert-info">Show assignments are only available for designers and students</div>
                     <?php endif; ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <?php if ($user['role'] === 'designer'): ?>
+                    <?php if ($user['role'] === 'designer' || $user['role'] === 'student'): ?>
                     <button type="submit" class="btn btn-primary">Update Assignments</button>
                     <?php endif; ?>
                 </div>

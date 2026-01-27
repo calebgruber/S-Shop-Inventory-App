@@ -135,10 +135,10 @@ try {
     <div class="page page-center">
         <div class="container container-tight py-4">
             <div class="row g-0">
-                <?php if ($loginIllustration && file_exists(UPLOAD_DIR . basename($loginIllustration))): ?>
+                <?php if ($loginIllustration && file_exists(__DIR__ . '/uploads/' . basename($loginIllustration))): ?>
                 <!-- Login with illustration (Tabler style) -->
                 <div class="col-12 col-md-6 login-illustration">
-                    <img src="<?php echo htmlspecialchars(UPLOAD_DIR . basename($loginIllustration)); ?>" alt="Login illustration">
+                    <img src="uploads/<?php echo htmlspecialchars(basename($loginIllustration)); ?>" alt="Login illustration">
                 </div>
                 <div class="col-12 col-md-6 d-flex align-items-center justify-content-center p-4">
                 <?php else: ?>

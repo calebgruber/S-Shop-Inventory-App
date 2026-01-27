@@ -120,8 +120,8 @@ $changeOrdersToReturn = getDB()->fetchAll(
                                     <?php echo $item['in_stock_quantity']; ?> / <?php echo $item['total_quantity']; ?>
                                 </small>
                             </div>
-                            <?php if (!empty($item['photo_path']) && file_exists(__DIR__ . '/' . $item['photo_path'])): ?>
-                            <img src="<?php echo htmlspecialchars($item['photo_path']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                            <?php if (!empty($item['photo_path']) && file_exists(__DIR__ . '/uploads/items/' . $item['photo_path'])): ?>
+                            <img src="uploads/items/<?php echo htmlspecialchars($item['photo_path']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
                             <?php endif; ?>
                         </div>
                     </div>
@@ -137,8 +137,8 @@ $changeOrdersToReturn = getDB()->fetchAll(
                                     <?php echo $item['in_stock_quantity']; ?> / <?php echo $item['total_quantity']; ?>
                                 </small>
                             </div>
-                            <?php if (!empty($item['photo_path']) && file_exists(__DIR__ . '/' . $item['photo_path'])): ?>
-                            <img src="<?php echo htmlspecialchars($item['photo_path']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                            <?php if (!empty($item['photo_path']) && file_exists(__DIR__ . '/uploads/items/' . $item['photo_path'])): ?>
+                            <img src="uploads/items/<?php echo htmlspecialchars($item['photo_path']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
                             <?php endif; ?>
                         </div>
                     </a>
