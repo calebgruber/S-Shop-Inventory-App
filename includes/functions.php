@@ -387,7 +387,8 @@ function hasPermission($permissionKey) {
     // Default permissions based on role
     if (!$perm) {
         if ($user['role'] === 'designer') {
-            // Designers have most permissions except repairs, settings, and user management
+            // Designers have most permissions but cannot edit inventory items (enforced in item_edit.php),
+            // and cannot access repairs, settings, or user management
             $designerPermissions = ['dashboard', 'inventory', 'shows', 'pullsheets', 
                                    'change_orders', 'pick_mode', 'return_mode', 
                                    'reports', 'paperwork', 'student_requests'];
