@@ -204,12 +204,24 @@ $currentUser = getCurrentUser();
                     <a href="index.php">
                         <?php 
                         $logoPath = getSetting('logo_path');
-                        if ($logoPath && file_exists(__DIR__ . '/../' . $logoPath)): 
+                        if ($logoPath) {
+                            // Sanitize logo path to prevent path traversal and validate it's safe
+                            $logoPath = str_replace(['../', '..\\'], '', $logoPath);
+                            $fullPath = __DIR__ . '/../' . $logoPath;
+                            $allowedExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'];
+                            $hasValidExtension = false;
+                            foreach ($allowedExtensions as $ext) {
+                                if (substr(strtolower($logoPath), -strlen($ext)) === $ext) {
+                                    $hasValidExtension = true;
+                                    break;
+                                }
+                            }
+                            if ($hasValidExtension && file_exists($fullPath) && strpos(realpath($fullPath), realpath(__DIR__ . '/..')) === 0): 
                         ?>
                             <img src="<?php echo htmlspecialchars($logoPath); ?>" height="32" alt="<?php echo htmlspecialchars($appName); ?>">
                         <?php else: ?>
                             <?php echo htmlspecialchars($appName); ?>
-                        <?php endif; ?>
+                        <?php endif; } else { echo htmlspecialchars($appName); } ?>
                     </a>
                 </h1>
                 <div class="navbar-nav flex-row order-md-last">
