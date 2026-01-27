@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $requestId = 'REQ-' . strtoupper(substr(uniqid(), -8));
                 
                 // Create request
-                $db->execute(
+                $db->query(
                     "INSERT INTO student_requests (request_id, student_id, item_id, quantity, reason, status) 
                      VALUES (?, ?, ?, ?, ?, 'pending')",
                     [$requestId, $currentUser['id'], $itemId, $quantity, $reason]

@@ -73,10 +73,24 @@ $changeOrdersToReturn = getDB()->fetchAll(
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label">Search or Scan Item</label>
-                    <input type="text" class="form-control" id="quickLookupInput" placeholder="Enter item name or scan barcode" autofocus>
+                    <input type="text" class="form-control" id="quickLookupInput" placeholder="Search items by name, barcode, or category..." autofocus>
                 </div>
-                <div id="quickLookupResult"></div>
+                <div class="list-group" id="quickLookupList" style="max-height: 400px; overflow-y: auto;">
+                    <?php
+                    $allItems = getAllItems();
+                    foreach ($allItems as $item):
+                    ?>
+                    <a href="item_edit.php?id=<?php echo $item['id']; ?>" class="list-group-item list-group-item-action quick-lookup-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
+                            <small class="<?php echo $item['in_stock_quantity'] > 0 ? 'text-success' : 'text-danger'; ?>">
+                                <?php echo $item['in_stock_quantity']; ?> / <?php echo $item['total_quantity']; ?> available
+                            </small>
+                        </div>
+                        <small class="text-muted"><?php echo htmlspecialchars($item['category_name'] ?? 'Uncategorized'); ?> - <?php echo htmlspecialchars($item['barcode']); ?></small>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </div>
     </div>
@@ -147,6 +161,12 @@ $changeOrdersToReturn = getDB()->fetchAll(
     </div>
 </div>
 
+<?php
+// Only show stats for non-students
+$isStudent = $currentUser['role'] === 'student';
+?>
+
+<?php if (!$isStudent): ?>
 <div class="row row-deck row-cards mb-4">
     <div class="col-sm-6 col-lg-3">
         <div class="card stat-card">
@@ -201,6 +221,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="row mb-4">
     <div class="col-12">
@@ -215,6 +236,17 @@ $changeOrdersToReturn = getDB()->fetchAll(
         </button>
     </div>
     
+    <!-- Student Requests (always visible) -->
+    <?php if (hasPermission('student_requests')): ?>
+    <div class="col-md-6 col-lg-3 mb-3">
+        <a href="student_requests.php" class="btn btn-primary w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
+            <i class="ti ti-clipboard-list icon mb-2" style="font-size: 2rem;"></i>
+            <span>Requests</span>
+        </a>
+    </div>
+    <?php endif; ?>
+    
+    <?php if (!$isStudent): ?>
     <?php if (hasPermission('inventory')): ?>
     <!-- Inventory -->
     <div class="col-md-6 col-lg-3 mb-3">
@@ -283,6 +315,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
             <span>Change Orders</span>
         </a>
     </div>
+    <?php endif; ?>
     <?php endif; ?>
 </div>
 
@@ -428,62 +461,28 @@ $changeOrdersToReturn = getDB()->fetchAll(
 </div>
 
 <script>
-// Quick Lookup functionality
+// Quick Lookup functionality - filter list
 document.getElementById('quickLookupInput')?.addEventListener('input', function(e) {
-    const searchTerm = e.target.value.trim();
-    const resultDiv = document.getElementById('quickLookupResult');
+    const searchTerm = e.target.value.toLowerCase();
+    const items = document.querySelectorAll('#quickLookupList .quick-lookup-item');
     
-    if (searchTerm.length < 2) {
-        resultDiv.innerHTML = '';
-        return;
-    }
-    
-    // Debounce the search
-    clearTimeout(window.quickLookupTimeout);
-    window.quickLookupTimeout = setTimeout(async () => {
-        try {
-            const response = await fetch('api_quick_lookup.php?q=' + encodeURIComponent(searchTerm));
-            const data = await response.json();
-            
-            if (data.success && data.item) {
-                const item = data.item;
-                let photoHtml = '';
-                if (item.photo_path) {
-                    photoHtml = `<img src="uploads/items/${item.photo_path}" class="img-fluid mb-3" style="max-height: 200px; border-radius: 4px;" alt="${item.name}">`;
-                }
-                
-                let locationHtml = '';
-                if (item.location) {
-                    locationHtml = `<p><strong>Location:</strong> ${item.location}</p>`;
-                }
-                
-                resultDiv.innerHTML = `
-                    <div class="card">
-                        <div class="card-body">
-                            ${photoHtml}
-                            <h3>${item.name}</h3>
-                            <p class="text-muted">${item.description || 'No description'}</p>
-                            ${locationHtml}
-                            <p><strong>Barcode:</strong> ${item.barcode}</p>
-                            <p><strong>Category:</strong> ${item.category_name || 'N/A'}</p>
-                            <p><strong>In Stock:</strong> <span class="badge bg-${item.in_stock_quantity > 0 ? 'success' : 'danger'}">${item.in_stock_quantity}</span> / ${item.total_quantity}</p>
-                            <a href="item_edit.php?id=${item.id}" class="btn btn-primary">View/Edit Item</a>
-                        </div>
-                    </div>
-                `;
-            } else {
-                resultDiv.innerHTML = '<div class="alert alert-warning">No item found</div>';
-            }
-        } catch (error) {
-            resultDiv.innerHTML = '<div class="alert alert-danger">Error searching for item</div>';
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
         }
-    }, 300);
+    });
 });
 
 // Reset modal when closed
 document.getElementById('quickLookupModal')?.addEventListener('hidden.bs.modal', function() {
     document.getElementById('quickLookupInput').value = '';
-    document.getElementById('quickLookupResult').innerHTML = '';
+    const items = document.querySelectorAll('#quickLookupList .quick-lookup-item');
+    items.forEach(item => {
+        item.style.display = '';
+    });
 });
 
 // Focus input when modal opens

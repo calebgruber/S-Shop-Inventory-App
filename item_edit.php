@@ -2,6 +2,13 @@
 $pageTitle = 'Edit Item';
 require_once 'includes/header.php';
 
+// Designers can view inventory but not edit
+$currentUser = getCurrentUser();
+if ($currentUser['role'] === 'designer') {
+    setAlert('You do not have permission to edit items', 'danger');
+    redirect('items.php');
+}
+
 $itemId = $_GET['id'] ?? null;
 $item = $itemId ? getItemById($itemId) : null;
 $categories = getAllCategories();

@@ -387,14 +387,14 @@ function hasPermission($permissionKey) {
     // Default permissions based on role
     if (!$perm) {
         if ($user['role'] === 'designer') {
-            // Designers can access most things except user management
+            // Designers can access most things except user management, repairs, and settings
             $designerPermissions = ['dashboard', 'inventory', 'shows', 'pullsheets', 
                                    'change_orders', 'pick_mode', 'return_mode', 
-                                   'reports', 'repairs', 'paperwork'];
+                                   'reports', 'paperwork', 'student_requests'];
             return in_array($permissionKey, $designerPermissions);
         } else if ($user['role'] === 'student') {
-            // Students can only view inventory and make requests
-            $studentPermissions = ['dashboard', 'inventory', 'student_requests'];
+            // Students can only view dashboard and make requests
+            $studentPermissions = ['dashboard', 'student_requests'];
             return in_array($permissionKey, $studentPermissions);
         }
         return false;
