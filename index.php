@@ -80,6 +80,17 @@ $changeOrdersToReturn = getDB()->fetchAll(
                     $allItems = getAllItems();
                     foreach ($allItems as $item):
                     ?>
+                    <?php if ($isStudent): ?>
+                    <div class="list-group-item quick-lookup-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
+                            <small class="<?php echo $item['in_stock_quantity'] > 0 ? 'text-success' : 'text-danger'; ?>">
+                                <?php echo $item['in_stock_quantity']; ?> / <?php echo $item['total_quantity']; ?> available
+                            </small>
+                        </div>
+                        <small class="text-muted"><?php echo htmlspecialchars($item['category_name'] ?? 'Uncategorized'); ?> - <?php echo htmlspecialchars($item['barcode']); ?></small>
+                    </div>
+                    <?php else: ?>
                     <a href="item_edit.php?id=<?php echo $item['id']; ?>" class="list-group-item list-group-item-action quick-lookup-item">
                         <div class="d-flex w-100 justify-content-between">
                             <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
@@ -89,6 +100,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
                         </div>
                         <small class="text-muted"><?php echo htmlspecialchars($item['category_name'] ?? 'Uncategorized'); ?> - <?php echo htmlspecialchars($item['barcode']); ?></small>
                     </a>
+                    <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
             </div>

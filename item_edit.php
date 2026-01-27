@@ -6,7 +6,7 @@ require_once 'includes/header.php';
 $currentUser = getCurrentUser();
 if ($currentUser['role'] === 'designer') {
     setAlert('You do not have permission to edit items', 'danger');
-    redirect('items.php');
+    redirect('index.php');
 }
 
 $itemId = $_GET['id'] ?? null;
