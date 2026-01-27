@@ -119,9 +119,10 @@ function getItemByBarcode($barcode) {
 function getAllItems() {
     $db = getDB();
     return $db->fetchAll(
-        "SELECT i.*, c.name as category_name 
+        "SELECT i.*, c.name as category_name, sc.name as subcategory_name 
          FROM items i 
          LEFT JOIN categories c ON i.category_id = c.id 
+         LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
          ORDER BY i.name"
     );
 }

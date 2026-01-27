@@ -4,10 +4,20 @@ require_once 'includes/header.php';
 
 $reportType = $_GET['type'] ?? 'inventory';
 $categoryFilter = $_GET['category'] ?? 'all';
+$subcategoryFilter = $_GET['subcategory'] ?? 'all';
 $items = getAllItems();
 $shows = getAllShows();
 $spaces = getAllTheatreSpaces();
 $categories = getAllCategories();
+
+// Get subcategories for the selected category
+$subcategories = [];
+if ($categoryFilter !== 'all') {
+    $subcategories = getDB()->fetchAll(
+        "SELECT * FROM subcategories WHERE category_id = ? ORDER BY name",
+        [$categoryFilter]
+    );
+}
 ?>
 
 <div class="row mb-4">
@@ -16,6 +26,7 @@ $categories = getAllCategories();
             <a href="?type=inventory" class="btn btn-<?php echo $reportType === 'inventory' ? 'primary' : 'outline-primary'; ?>">Inventory</a>
             <a href="?type=by_show" class="btn btn-<?php echo $reportType === 'by_show' ? 'primary' : 'outline-primary'; ?>">By Show</a>
             <a href="?type=by_space" class="btn btn-<?php echo $reportType === 'by_space' ? 'primary' : 'outline-primary'; ?>">By Space</a>
+            <a href="?type=by_category" class="btn btn-<?php echo $reportType === 'by_category' ? 'primary' : 'outline-primary'; ?>">By Category</a>
         </div>
     </div>
 </div>
@@ -23,11 +34,11 @@ $categories = getAllCategories();
 <?php if ($reportType === 'inventory'): ?>
     <div class="card mb-3">
         <div class="card-body">
-            <form method="GET" class="row g-3">
+            <form method="GET" class="row g-3" id="filterForm">
                 <input type="hidden" name="type" value="inventory">
                 <div class="col-md-4">
                     <label class="form-label">Filter by Category</label>
-                    <select class="form-select" name="category" onchange="this.form.submit()">
+                    <select class="form-select" name="category" id="categorySelect" onchange="document.getElementById('filterForm').submit()">
                         <option value="all" <?php echo $categoryFilter === 'all' ? 'selected' : ''; ?>>All Categories</option>
                         <?php foreach ($categories as $category): ?>
                         <option value="<?php echo $category['id']; ?>" <?php echo $categoryFilter == $category['id'] ? 'selected' : ''; ?>>
@@ -36,9 +47,22 @@ $categories = getAllCategories();
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <?php if (!empty($subcategories)): ?>
+                <div class="col-md-4">
+                    <label class="form-label">Filter by Subcategory</label>
+                    <select class="form-select" name="subcategory" onchange="this.form.submit()">
+                        <option value="all" <?php echo $subcategoryFilter === 'all' ? 'selected' : ''; ?>>All Subcategories</option>
+                        <?php foreach ($subcategories as $subcategory): ?>
+                        <option value="<?php echo $subcategory['id']; ?>" <?php echo $subcategoryFilter == $subcategory['id'] ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($subcategory['name']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php endif; ?>
                 <div class="col-md-2">
                     <label class="form-label">&nbsp;</label>
-                    <a href="?type=inventory" class="btn btn-secondary w-100">Clear Filter</a>
+                    <a href="?type=inventory" class="btn btn-secondary w-100">Clear Filters</a>
                 </div>
             </form>
         </div>
@@ -59,6 +83,9 @@ $categories = getAllCategories();
                     <tr>
                         <th>Name</th>
                         <th>Category</th>
+                        <?php if ($categoryFilter !== 'all'): ?>
+                        <th>Subcategory</th>
+                        <?php endif; ?>
                         <th>Barcode</th>
                         <th>In Stock</th>
                         <th>Total</th>
@@ -66,10 +93,15 @@ $categories = getAllCategories();
                 </thead>
                 <tbody>
                     <?php 
-                    // Group items by category
+                    // Group items by category and subcategory
                     $itemsByCategory = [];
                     foreach ($items as $item) {
+                        // Apply category filter
                         if ($categoryFilter !== 'all' && $item['category_id'] != $categoryFilter) {
+                            continue;
+                        }
+                        // Apply subcategory filter
+                        if ($subcategoryFilter !== 'all' && $item['subcategory_id'] != $subcategoryFilter) {
                             continue;
                         }
                         $catName = $item['category_name'] ?? 'Uncategorized';
@@ -82,12 +114,15 @@ $categories = getAllCategories();
                     
                     foreach ($itemsByCategory as $catName => $catItems): ?>
                         <tr class="table-active">
-                            <td colspan="5" style="padding-left: 0;"><strong><?php echo htmlspecialchars($catName); ?></strong></td>
+                            <td colspan="<?php echo $categoryFilter !== 'all' ? '6' : '5'; ?>" style="padding-left: 0;"><strong><?php echo htmlspecialchars($catName); ?></strong></td>
                         </tr>
                         <?php foreach ($catItems as $item): ?>
                         <tr>
                             <td style="padding-left: 2rem;"><?php echo htmlspecialchars($item['name']); ?></td>
                             <td><?php echo htmlspecialchars($item['category_name'] ?? 'N/A'); ?></td>
+                            <?php if ($categoryFilter !== 'all'): ?>
+                            <td><?php echo htmlspecialchars($item['subcategory_name'] ?? 'N/A'); ?></td>
+                            <?php endif; ?>
                             <td><code><?php echo htmlspecialchars($item['barcode']); ?></code></td>
                             <td><?php echo $item['in_stock_quantity']; ?></td>
                             <td><?php echo $item['total_quantity']; ?></td>

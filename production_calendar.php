@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'get_events') {
             // Fetch all events with show colors
             $events = $db->fetchAll(
-                "SELECT e.*, s.name as show_name, s.calendar_color 
+                "SELECT e.*, s.name as show_name, COALESCE(s.calendar_color, '#206bc4') as calendar_color 
                  FROM show_events e 
                  JOIN shows s ON e.show_id = s.id 
                  ORDER BY e.start_date"
@@ -95,8 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'title' => $event['title'],
                     'start' => $event['start_date'],
                     'end' => $event['end_date'],
-                    'backgroundColor' => $event['calendar_color'],
-                    'borderColor' => $event['calendar_color'],
+                    'backgroundColor' => $event['calendar_color'] ?? '#206bc4',
+                    'borderColor' => $event['calendar_color'] ?? '#206bc4',
                     'extendedProps' => [
                         'show_name' => $event['show_name'],
                         'show_id' => $event['show_id'],
@@ -105,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
             }
             
+            header('Content-Type: application/json');
             echo json_encode($calendarEvents);
             exit;
         }

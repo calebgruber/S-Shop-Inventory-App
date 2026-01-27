@@ -2,8 +2,11 @@
 $pageTitle = 'Items';
 require_once 'includes/header.php';
 
-// Handle delete request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+$currentUser = getCurrentUser();
+$canEdit = isAdmin(); // Only admins can edit items
+
+// Handle delete request - only admins
+if ($canEdit && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
     try {
         $deleteId = (int)$_POST['delete_id'];
         getDB()->query("DELETE FROM items WHERE id = ?", [$deleteId]);
@@ -17,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
 $items = getAllItems();
 ?>
 
+<?php if ($canEdit): ?>
 <div class="row mb-3">
     <div class="col">
         <a href="item_edit.php" class="btn btn-primary">
@@ -24,12 +28,13 @@ $items = getAllItems();
         </a>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">All Items</h3>
+                <h3 class="card-title">All Items <?php if (!$canEdit): ?><span class="badge bg-info ms-2">Read-Only</span><?php endif; ?></h3>
                 <div class="ms-auto">
                     <input type="text" class="form-control barcode-autofocus" id="searchInput" placeholder="Search items...">
                 </div>
@@ -44,7 +49,9 @@ $items = getAllItems();
                             <th>Type</th>
                             <th>In Stock</th>
                             <th>Total</th>
+                            <?php if ($canEdit): ?>
                             <th class="w-1">Actions</th>
+                            <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -56,6 +63,7 @@ $items = getAllItems();
                                 <td><span class="badge"><?php echo ucfirst($item['tracking_type']); ?></span></td>
                                 <td><?php echo $item['in_stock_quantity']; ?></td>
                                 <td><?php echo $item['total_quantity']; ?></td>
+                                <?php if ($canEdit): ?>
                                 <td>
                                     <div class="btn-group">
                                         <a href="item_edit.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-primary">
@@ -72,6 +80,7 @@ $items = getAllItems();
                                         </form>
                                     </div>
                                 </td>
+                                <?php endif; ?>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
