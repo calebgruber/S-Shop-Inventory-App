@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/db.php';
+require_once 'includes/functions.php';
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
@@ -16,42 +17,57 @@ if (isset($_SESSION['user_id'])) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    
-    if (empty($email) || empty($password)) {
-        $error = 'Please enter both email and password.';
-    } else {
-        // Fetch user from database
-        $user = getDB()->fetchOne(
-            "SELECT * FROM users WHERE email = ? AND is_active = 1 AND is_deleted = 0",
-            [$email]
-        );
+    try {
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
         
-        if ($user && password_verify($password, $user['password_hash'])) {
-            // Login successful
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_email'] = $user['email'];
-            $_SESSION['user_name'] = $user['full_name'];
-            $_SESSION['user_role'] = $user['role'];
-            
-            // Update last login
-            getDB()->query(
-                "UPDATE users SET last_login = NOW() WHERE id = ?",
-                [$user['id']]
+        if (empty($email) || empty($password)) {
+            $error = 'Please enter both email and password.';
+        } else {
+            // Fetch user from database
+            $user = getDB()->fetchOne(
+                "SELECT * FROM users WHERE email = ? AND is_active = 1 AND is_deleted = 0",
+                [$email]
             );
             
-            header('Location: index.php');
-            exit;
-        } else {
-            $error = 'Invalid email or password.';
+            if ($user && password_verify($password, $user['password_hash'])) {
+                // Login successful
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['user_name'] = $user['full_name'];
+                $_SESSION['user_role'] = $user['role'];
+                
+                // Update last login
+                getDB()->query(
+                    "UPDATE users SET last_login = NOW() WHERE id = ?",
+                    [$user['id']]
+                );
+                
+                logMessage("User logged in: " . $email, 'INFO');
+                
+                header('Location: index.php');
+                exit;
+            } else {
+                $error = 'Invalid email or password.';
+                logMessage("Failed login attempt for email: " . $email, 'WARNING');
+            }
         }
+    } catch (Exception $e) {
+        $error = 'An error occurred during login. Please try again.';
+        logMessage("Login error: " . $e->getMessage(), 'ERROR');
     }
 }
 
-$appName = getSetting('app_name', 'CMFT Sound Shop Inventory');
-$loginIllustration = getSetting('login_illustration_path', '');
-$logoPath = getSetting('logo_path', '');
+try {
+    $appName = getSetting('app_name', 'CMFT Sound Shop Inventory');
+    $loginIllustration = getSetting('login_illustration_path', '');
+    $logoPath = getSetting('logo_path', '');
+} catch (Exception $e) {
+    logMessage("Error loading settings: " . $e->getMessage(), 'ERROR');
+    $appName = 'CMFT Sound Shop Inventory';
+    $loginIllustration = '';
+    $logoPath = '';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">

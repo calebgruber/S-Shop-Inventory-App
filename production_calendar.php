@@ -8,93 +8,112 @@ $db = getDB();
 
 // Handle event operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-    
-    if ($action === 'create_event') {
-        $show_id = $_POST['show_id'] ?? 0;
-        $title = trim($_POST['title'] ?? '');
-        $start_date = $_POST['start_date'] ?? '';
-        $end_date = $_POST['end_date'] ?? '';
-        $description = trim($_POST['description'] ?? '');
+    try {
+        $action = $_POST['action'] ?? '';
         
-        $errors = [];
-        if (empty($title)) $errors[] = 'title';
-        if (empty($start_date)) $errors[] = 'start_date';
-        if (empty($end_date)) $errors[] = 'end_date';
-        if (empty($show_id)) $errors[] = 'show_id';
-        
-        if (!empty($errors)) {
-            echo json_encode([
-                'success' => false, 
-                'message' => 'Missing required fields: ' . implode(', ', $errors)
-            ]);
+        if ($action === 'create_event') {
+            $show_id = $_POST['show_id'] ?? 0;
+            $title = trim($_POST['title'] ?? '');
+            $start_date = $_POST['start_date'] ?? '';
+            $end_date = $_POST['end_date'] ?? '';
+            $description = trim($_POST['description'] ?? '');
+            
+            $errors = [];
+            if (empty($title)) $errors[] = 'title';
+            if (empty($start_date)) $errors[] = 'start_date';
+            if (empty($end_date)) $errors[] = 'end_date';
+            if (empty($show_id)) $errors[] = 'show_id';
+            
+            if (!empty($errors)) {
+                logMessage("Calendar event creation failed - missing fields: " . implode(', ', $errors), 'WARNING');
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Missing required fields: ' . implode(', ', $errors)
+                ]);
+                exit;
+            }
+            
+            $result = $db->query(
+                "INSERT INTO show_events (show_id, title, start_date, end_date, description, created_by) 
+                 VALUES (?, ?, ?, ?, ?, ?)",
+                [$show_id, $title, $start_date, $end_date, $description, $currentUser['id']]
+            );
+            
+            $eventId = $db->lastInsertId();
+            logMessage("Calendar event created: ID=$eventId, Show=$show_id, Title=$title", 'INFO');
+            
+            echo json_encode(['success' => true, 'event_id' => $eventId]);
+            exit;
+        } elseif ($action === 'update_event') {
+            $event_id = $_POST['event_id'] ?? 0;
+            $title = trim($_POST['title'] ?? '');
+            $start_date = $_POST['start_date'] ?? '';
+            $end_date = $_POST['end_date'] ?? '';
+            $description = trim($_POST['description'] ?? '');
+            
+            $db->query(
+                "UPDATE show_events SET title = ?, start_date = ?, end_date = ?, description = ? WHERE id = ?",
+                [$title, $start_date, $end_date, $description, $event_id]
+            );
+            
+            logMessage("Calendar event updated: ID=$event_id", 'INFO');
+            
+            echo json_encode(['success' => true]);
+            exit;
+        } elseif ($action === 'delete_event') {
+            $event_id = $_POST['event_id'] ?? 0;
+            
+            $db->query("DELETE FROM show_events WHERE id = ?", [$event_id]);
+            
+            logMessage("Calendar event deleted: ID=$event_id", 'INFO');
+            
+            echo json_encode(['success' => true]);
+            exit;
+        } elseif ($action === 'update_show_color') {
+            $show_id = $_POST['show_id'] ?? 0;
+            $color = $_POST['color'] ?? '#206bc4';
+            
+            $db->query("UPDATE shows SET calendar_color = ? WHERE id = ?", [$color, $show_id]);
+            
+            logMessage("Show calendar color updated: ShowID=$show_id, Color=$color", 'INFO');
+            
+            echo json_encode(['success' => true]);
+            exit;
+        } elseif ($action === 'get_events') {
+            // Fetch all events with show colors
+            $events = $db->fetchAll(
+                "SELECT e.*, s.name as show_name, s.calendar_color 
+                 FROM show_events e 
+                 JOIN shows s ON e.show_id = s.id 
+                 ORDER BY e.start_date"
+            );
+            
+            $calendarEvents = [];
+            foreach ($events as $event) {
+                $calendarEvents[] = [
+                    'id' => $event['id'],
+                    'title' => $event['title'],
+                    'start' => $event['start_date'],
+                    'end' => $event['end_date'],
+                    'backgroundColor' => $event['calendar_color'],
+                    'borderColor' => $event['calendar_color'],
+                    'extendedProps' => [
+                        'show_name' => $event['show_name'],
+                        'show_id' => $event['show_id'],
+                        'description' => $event['description']
+                    ]
+                ];
+            }
+            
+            echo json_encode($calendarEvents);
             exit;
         }
-        
-        $db->query(
-            "INSERT INTO show_events (show_id, title, start_date, end_date, description, created_by) 
-             VALUES (?, ?, ?, ?, ?, ?)",
-            [$show_id, $title, $start_date, $end_date, $description, $currentUser['id']]
-        );
-        
-        echo json_encode(['success' => true, 'event_id' => $db->lastInsertId()]);
-        exit;
-    } elseif ($action === 'update_event') {
-        $event_id = $_POST['event_id'] ?? 0;
-        $title = trim($_POST['title'] ?? '');
-        $start_date = $_POST['start_date'] ?? '';
-        $end_date = $_POST['end_date'] ?? '';
-        $description = trim($_POST['description'] ?? '');
-        
-        $db->query(
-            "UPDATE show_events SET title = ?, start_date = ?, end_date = ?, description = ? WHERE id = ?",
-            [$title, $start_date, $end_date, $description, $event_id]
-        );
-        
-        echo json_encode(['success' => true]);
-        exit;
-    } elseif ($action === 'delete_event') {
-        $event_id = $_POST['event_id'] ?? 0;
-        
-        $db->query("DELETE FROM show_events WHERE id = ?", [$event_id]);
-        
-        echo json_encode(['success' => true]);
-        exit;
-    } elseif ($action === 'update_show_color') {
-        $show_id = $_POST['show_id'] ?? 0;
-        $color = $_POST['color'] ?? '#206bc4';
-        
-        $db->query("UPDATE shows SET calendar_color = ? WHERE id = ?", [$color, $show_id]);
-        
-        echo json_encode(['success' => true]);
-        exit;
-    } elseif ($action === 'get_events') {
-        // Fetch all events with show colors
-        $events = $db->fetchAll(
-            "SELECT e.*, s.name as show_name, s.calendar_color 
-             FROM show_events e 
-             JOIN shows s ON e.show_id = s.id 
-             ORDER BY e.start_date"
-        );
-        
-        $calendarEvents = [];
-        foreach ($events as $event) {
-            $calendarEvents[] = [
-                'id' => $event['id'],
-                'title' => $event['title'],
-                'start' => $event['start_date'],
-                'end' => $event['end_date'],
-                'backgroundColor' => $event['calendar_color'],
-                'borderColor' => $event['calendar_color'],
-                'extendedProps' => [
-                    'show_name' => $event['show_name'],
-                    'show_id' => $event['show_id'],
-                    'description' => $event['description']
-                ]
-            ];
-        }
-        
-        echo json_encode($calendarEvents);
+    } catch (Exception $e) {
+        logException($e, "Calendar operation error");
+        echo json_encode([
+            'success' => false,
+            'message' => 'An error occurred: ' . $e->getMessage()
+        ]);
         exit;
     }
 }

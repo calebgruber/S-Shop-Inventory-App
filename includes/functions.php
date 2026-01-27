@@ -4,20 +4,60 @@ require_once __DIR__ . '/barcode/Code128.php';
 require_once __DIR__ . '/barcode/PDF417.php';
 require_once __DIR__ . '/pdf/SimplePDF.php';
 
+// Error logging function
+function logMessage($message, $level = 'INFO') {
+    $logDir = __DIR__ . '/../logs';
+    if (!file_exists($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    
+    $logFile = $logDir . '/app_' . date('Y-m-d') . '.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $logEntry = "[$timestamp] [$level] $message" . PHP_EOL;
+    
+    // Write to log file
+    @file_put_contents($logFile, $logEntry, FILE_APPEND);
+    
+    // Also log to PHP error log for critical errors
+    if (in_array($level, ['ERROR', 'CRITICAL'])) {
+        error_log("S-Shop [$level]: $message");
+    }
+}
+
+// Exception handler
+function logException($e, $context = '') {
+    $message = $context ? "$context: " : '';
+    $message .= get_class($e) . ': ' . $e->getMessage();
+    $message .= ' in ' . $e->getFile() . ':' . $e->getLine();
+    logMessage($message, 'ERROR');
+    logMessage('Stack trace: ' . $e->getTraceAsString(), 'DEBUG');
+}
+
 // Settings functions
 function getSetting($key, $default = '') {
-    $db = getDB();
-    $result = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = ?", [$key]);
-    return $result ? $result['setting_value'] : $default;
+    try {
+        $db = getDB();
+        $result = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = ?", [$key]);
+        return $result ? $result['setting_value'] : $default;
+    } catch (Exception $e) {
+        logException($e, "Error getting setting '$key'");
+        return $default;
+    }
 }
 
 function setSetting($key, $value) {
-    $db = getDB();
-    $db->query(
-        "INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) 
-         ON DUPLICATE KEY UPDATE setting_value = ?",
-        [$key, $value, $value]
-    );
+    try {
+        $db = getDB();
+        $db->query(
+            "INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) 
+             ON DUPLICATE KEY UPDATE setting_value = ?",
+            [$key, $value, $value]
+        );
+        logMessage("Setting updated: $key", 'INFO');
+    } catch (Exception $e) {
+        logException($e, "Error setting '$key'");
+        throw $e;
+    }
 }
 
 // Barcode generation functions using barcodeapi.org
