@@ -323,16 +323,26 @@ $currentUser = getCurrentUser();
         }
     </style>
     
-    <!-- Random Background Easter Egg - 1% chance -->
+    <!-- Random Cursor Easter Egg - 1% chance -->
     <!-- Note: External image dependency - consider hosting locally for production -->
     <script>
-        // 1 in 100 chance to show special background
+        // 1 in 100 chance to show special cursor
         if (Math.random() < 0.01) {
             document.addEventListener('DOMContentLoaded', function() {
-                document.body.style.backgroundImage = 'url(https://preview.tabler.io/static/avatars/000m.jpg)';
-                document.body.style.backgroundSize = 'cover';
-                document.body.style.backgroundPosition = 'center';
-                document.body.style.backgroundAttachment = 'fixed';
+                // Set cursor to the image
+                const cursorStyle = 'url(https://preview.tabler.io/static/avatars/000m.jpg), auto';
+                document.body.style.cursor = cursorStyle;
+                
+                // Apply to all elements for consistency
+                const style = document.createElement('style');
+                style.textContent = `
+                    * {
+                        cursor: url(https://preview.tabler.io/static/avatars/000m.jpg), auto !important;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                console.log('🎉 Special cursor Easter egg activated! (1% chance)');
             });
         }
     </script>
