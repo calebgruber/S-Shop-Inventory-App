@@ -49,12 +49,21 @@ $currentUser = getCurrentUser();
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
         
-        /* Pink Mode - Secret Easter Egg */
+        /* Pink Mode - Secret Easter Egg - OVERLOADING PINK! 🎀 */
         body.pink-mode {
             --bs-primary: #ff69b4 !important;
             --bs-primary-rgb: 255, 105, 180 !important;
             --bs-link-color: #ff1493 !important;
             --bs-link-hover-color: #c71585 !important;
+            background: linear-gradient(180deg, #ffe6f0 0%, #fff0f8 50%, #ffe6f0 100%) !important;
+        }
+        
+        body.pink-mode .page-wrapper {
+            background: linear-gradient(180deg, #ffe6f0 0%, #fff0f8 50%, #ffe6f0 100%) !important;
+        }
+        
+        body.pink-mode .page-body {
+            background: transparent !important;
         }
         
         body.pink-mode .navbar,
@@ -62,6 +71,7 @@ $currentUser = getCurrentUser();
         body.pink-mode .btn-primary {
             background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%) !important;
             border-color: #ff69b4 !important;
+            color: white !important;
         }
         
         body.pink-mode .navbar-brand img {
@@ -82,25 +92,53 @@ $currentUser = getCurrentUser();
         }
         
         body.pink-mode .card {
-            border-color: #ffb6d9 !important;
+            border-color: #ff69b4 !important;
+            background: rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 2px 8px rgba(255, 105, 180, 0.2) !important;
         }
         
-        body.pink-mode a {
+        body.pink-mode .card-header {
+            border-bottom: 2px solid #ff69b4 !important;
+        }
+        
+        body.pink-mode a:not(.btn) {
             color: #ff1493 !important;
         }
         
-        body.pink-mode a:hover {
+        body.pink-mode a:not(.btn):hover {
             color: #c71585 !important;
         }
         
         body.pink-mode .badge {
             background-color: #ff69b4 !important;
+            color: white !important;
         }
         
         body.pink-mode .form-control:focus,
         body.pink-mode .form-select:focus {
             border-color: #ff69b4 !important;
             box-shadow: 0 0 0 0.25rem rgba(255, 105, 180, 0.25) !important;
+        }
+        
+        body.pink-mode .btn-secondary,
+        body.pink-mode .btn-info,
+        body.pink-mode .btn-success {
+            background: linear-gradient(135deg, #ffa6d2 0%, #ff69b4 100%) !important;
+            border-color: #ff69b4 !important;
+            color: white !important;
+        }
+        
+        body.pink-mode .list-group-item {
+            background: rgba(255, 230, 240, 0.3) !important;
+            border-color: #ffb6d9 !important;
+        }
+        
+        body.pink-mode .table {
+            background: rgba(255, 255, 255, 0.8) !important;
+        }
+        
+        body.pink-mode .table-striped tbody tr:nth-of-type(odd) {
+            background: rgba(255, 182, 217, 0.1) !important;
         }
         
         /* Apply consistent border radius */

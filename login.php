@@ -148,11 +148,14 @@ try {
                     <div class="card card-login card-md">
                         <div class="card-body">
                             <div class="text-center mb-4">
-                                <?php if ($logoPath && file_exists(UPLOAD_DIR . basename($logoPath))): 
-                                    $logoExt = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
-                                    if (in_array($logoExt, ['png', 'jpg', 'jpeg', 'gif', 'webp'])): ?>
-                                        <img src="<?php echo htmlspecialchars(UPLOAD_DIR . basename($logoPath)); ?>" alt="Logo" style="height: 48px; margin-bottom: 1rem;">
-                                <?php endif; endif; ?>
+                                <?php if ($logoPath): 
+                                    $logoFile = basename($logoPath);
+                                    $logoFullPath = __DIR__ . '/uploads/' . $logoFile;
+                                    if (file_exists($logoFullPath)): 
+                                        $logoExt = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
+                                        if (in_array($logoExt, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'])): ?>
+                                            <img src="uploads/<?php echo htmlspecialchars($logoFile); ?>" alt="Logo" style="height: 48px; margin-bottom: 1rem;">
+                                <?php endif; endif; endif; ?>
                                 <h2 class="h2 text-center mb-2"><?php echo htmlspecialchars($appName); ?></h2>
                                 <p class="text-muted">Sign in to your account to continue</p>
                             </div>
