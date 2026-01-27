@@ -60,7 +60,7 @@ $items = getChangeOrderItems($changeOrderId);
                 <h3 class="card-title">Change Order for <?php echo htmlspecialchars($changeOrder['show_name'] ?? 'Unknown Show'); ?></h3>
             </div>
             <div class="card-body">
-                <?php if ($changeOrder['status'] === 'finalized' || $changeOrder['status'] === 'processed' || $changeOrder['status'] === 'completed'): ?>
+                <?php if (($changeOrder['status'] === 'finalized' || $changeOrder['status'] === 'processed' || $changeOrder['status'] === 'completed') && !empty($changeOrder['barcode'])): ?>
                     <div class="mb-4 text-center">
                         <img src="data:image/png;base64,<?php echo base64_encode(generatePDF417Barcode($changeOrder['barcode'])); ?>" 
                              alt="Change Order Barcode" style="max-width: 400px;">
