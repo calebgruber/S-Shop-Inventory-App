@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         
         setAlert('Show created successfully');
-        redirect('shows.php');
+        redirect();
     } catch (Exception $e) {
         setAlert($e->getMessage(), 'danger');
     }

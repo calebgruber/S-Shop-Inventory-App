@@ -16,14 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $maxSize = 5 * 1024 * 1024; // 5MB
                         if ($_FILES['logo']['size'] > $maxSize) {
                             setAlert('Logo file is too large. Maximum size is 5MB.', 'danger');
-                            redirect('settings.php');
+                            redirect();
                         }
                         
                         // Validate file is an actual image
                         $imageInfo = getimagesize($_FILES['logo']['tmp_name']);
                         if ($imageInfo === false) {
                             setAlert('Invalid image file. Please upload a valid image.', 'danger');
-                            redirect('settings.php');
+                            redirect();
                         }
                         
                         // Validate extension matches MIME type
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
                         if (!in_array($ext, $allowedExtensions)) {
                             setAlert('Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions), 'danger');
-                            redirect('settings.php');
+                            redirect();
                         }
                         
                         // Validate MIME type
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
                         if (!in_array($mimeType, $allowedMimeTypes)) {
                             setAlert('Invalid image type. File MIME type does not match extension.', 'danger');
-                            redirect('settings.php');
+                            redirect();
                         }
                         
                         // Generate unique filename and move file
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             setSetting('logo_path', $filename);
                         } else {
                             setAlert('Failed to upload logo file.', 'danger');
-                            redirect('settings.php');
+                            redirect();
                         }
                     }
                     
@@ -58,14 +58,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $maxSize = 5 * 1024 * 1024; // 5MB
                         if ($_FILES['login_illustration']['size'] > $maxSize) {
                             setAlert('Login illustration file is too large. Maximum size is 5MB.', 'danger');
-                            redirect('settings.php');
+                            redirect();
                         }
                         
                         // Validate file is an actual image
                         $imageInfo = getimagesize($_FILES['login_illustration']['tmp_name']);
                         if ($imageInfo === false) {
                             setAlert('Invalid image file. Please upload a valid image.', 'danger');
-                            redirect('settings.php');
+                            redirect();
                         }
                         
                         // Validate extension matches MIME type
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
                         if (!in_array($ext, $allowedExtensions)) {
                             setAlert('Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions), 'danger');
-                            redirect('settings.php');
+                            redirect();
                         }
                         
                         // Validate MIME type
@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
                         if (!in_array($mimeType, $allowedMimeTypes)) {
                             setAlert('Invalid image type. File MIME type does not match extension.', 'danger');
-                            redirect('settings.php');
+                            redirect();
                         }
                         
                         // Generate unique filename and move file
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             setSetting('login_illustration_path', $filename);
                         } else {
                             setAlert('Failed to upload login illustration file.', 'danger');
-                            redirect('settings.php');
+                            redirect();
                         }
                     }
                     
@@ -137,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
             }
         }
-        redirect('settings.php');
+        redirect();
     } catch (Exception $e) {
         setAlert($e->getMessage(), 'danger');
     }

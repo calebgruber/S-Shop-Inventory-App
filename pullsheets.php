@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         
         logMessage("Pullsheet ID $deleteId deleted by user ID {$currentUser['id']}", 'INFO');
         setAlert('Pullsheet deleted successfully and items returned to stock');
-        redirect('pullsheets.php');
+        redirect();
     } catch (Exception $e) {
         if (isset($db)) {
             $db->query("ROLLBACK");

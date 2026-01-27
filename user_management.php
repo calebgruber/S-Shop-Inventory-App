@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         logMessage("Show assignments updated for user ID $userId by user ID $currentUserId", 'INFO');
         setAlert('Show assignments updated successfully', 'success');
-        redirect('user_management.php');
+        redirect();
     }
 }
 

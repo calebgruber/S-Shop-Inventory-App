@@ -11,7 +11,7 @@ if ($canEdit && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id
         $deleteId = (int)$_POST['delete_id'];
         getDB()->query("DELETE FROM items WHERE id = ?", [$deleteId]);
         setAlert('Item deleted successfully');
-        redirect('index.php');
+        redirect();
     } catch (Exception $e) {
         setAlert('Error deleting item: ' . $e->getMessage(), 'danger');
     }

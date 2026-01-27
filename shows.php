@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         $deleteId = (int)$_POST['delete_id'];
         getDB()->query("DELETE FROM shows WHERE id = ?", [$deleteId]);
         setAlert('Show deleted successfully');
-        redirect('index.php');
+        redirect();
     } catch (Exception $e) {
         setAlert('Error: ' . $e->getMessage(), 'danger');
     }

@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setAlert('Item created successfully');
         }
         
-        redirect('items.php');
+        redirect();
     } catch (Exception $e) {
         setAlert($e->getMessage(), 'danger');
     }

@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($_POST['action'] === 'delete') {
                 getDB()->query("DELETE FROM shows WHERE id = ?", [$showId]);
                 setAlert('Show deleted successfully');
-                redirect('shows.php');
+                redirect();
             }
         } else {
             validateRequired($_POST['name'], 'Show name');
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             setAlert('Show updated successfully');
-            redirect('shows.php');
+            redirect();
         }
     } catch (Exception $e) {
         setAlert($e->getMessage(), 'danger');

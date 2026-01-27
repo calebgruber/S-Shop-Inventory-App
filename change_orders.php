@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         
         logMessage("Change order ID $deleteId deleted by user ID {$currentUser['id']}", 'INFO');
         setAlert('Change order deleted successfully and items returned to stock');
-        redirect('change_orders.php');
+        redirect();
     } catch (Exception $e) {
         if (isset($db)) {
             $db->query("ROLLBACK");
