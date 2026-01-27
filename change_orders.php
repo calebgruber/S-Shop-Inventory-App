@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         $deleteId = (int)$_POST['delete_id'];
         getDB()->query("DELETE FROM change_orders WHERE id = ?", [$deleteId]);
         setAlert('Change order deleted successfully');
-        redirect('index.php');
+        redirect('change_orders.php');
     } catch (Exception $e) {
         setAlert('Error: ' . $e->getMessage(), 'danger');
     }
@@ -161,9 +161,15 @@ foreach ($changeOrders as $changeOrder) {
                                                 </div>
                                                 <div class="card-footer">
                                                     <div class="d-flex gap-2">
-                                                        <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
-                                                            <i class="ti ti-edit"></i> View/Edit
-                                                        </a>
+                                                        <?php if ($co['status'] === 'draft'): ?>
+                                                            <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
+                                                                <i class="ti ti-edit"></i> Edit
+                                                            </a>
+                                                        <?php else: ?>
+                                                            <a href="change_order_view.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info">
+                                                                <i class="ti ti-eye"></i> View
+                                                            </a>
+                                                        <?php endif; ?>
                                                         <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this change order? This cannot be undone.');">
                                                             <input type="hidden" name="delete_id" value="<?php echo $co['id']; ?>">
                                                             <button type="submit" class="btn btn-sm btn-danger" title="Delete">
@@ -222,9 +228,15 @@ foreach ($changeOrders as $changeOrder) {
                                                 </div>
                                                 <div class="card-footer">
                                                     <div class="d-flex gap-2">
-                                                        <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
-                                                            <i class="ti ti-edit"></i> View/Edit
-                                                        </a>
+                                                        <?php if ($co['status'] === 'draft'): ?>
+                                                            <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
+                                                                <i class="ti ti-edit"></i> Edit
+                                                            </a>
+                                                        <?php else: ?>
+                                                            <a href="change_order_view.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info">
+                                                                <i class="ti ti-eye"></i> View
+                                                            </a>
+                                                        <?php endif; ?>
                                                         <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this change order? This cannot be undone.');">
                                                             <input type="hidden" name="delete_id" value="<?php echo $co['id']; ?>">
                                                             <button type="submit" class="btn btn-sm btn-danger" title="Delete">

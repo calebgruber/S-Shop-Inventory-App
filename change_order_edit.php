@@ -373,7 +373,8 @@ document.getElementById('saveDraftBtn').addEventListener('click', () => {
     .then(data => {
         if (data.success) {
             playSuccessSound();
-            window.location.href = 'change_orders.php?saved=1';
+            // Stay on the same page with a success alert
+            location.reload();
         } else {
             alert(data.message || 'Error saving draft');
             playErrorSound();
@@ -398,8 +399,8 @@ document.getElementById('finalizeBtn').addEventListener('click', () => {
     .then(data => {
         if (data.success) {
             playSuccessSound();
-            // Redirect to homepage
-            window.location.href = 'index.php';
+            // Redirect to change order view page
+            window.location.href = 'change_order_view.php?id=<?php echo htmlspecialchars($coId, ENT_QUOTES, 'UTF-8'); ?>&finalized=1';
         } else {
             alert(data.message || 'Error finalizing');
             playErrorSound();
