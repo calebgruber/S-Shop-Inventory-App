@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'approve' && $canManageRequests) {
         $requestId = $_POST['request_id'] ?? 0;
         
-        $db->execute(
+        $db->query(
             "UPDATE student_requests SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE id = ?",
             [$currentUser['id'], $requestId]
         );
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $requestId = $_POST['request_id'] ?? 0;
         $reason = trim($_POST['rejection_reason'] ?? '');
         
-        $db->execute(
+        $db->query(
             "UPDATE student_requests SET status = 'rejected', approved_by = ?, approved_at = NOW() WHERE id = ?",
             [$currentUser['id'], $requestId]
         );
@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'fulfill' && $canManageRequests) {
         $requestId = $_POST['request_id'] ?? 0;
         
-        $db->execute("UPDATE student_requests SET status = 'fulfilled' WHERE id = ?", [$requestId]);
+        $db->query("UPDATE student_requests SET status = 'fulfilled' WHERE id = ?", [$requestId]);
         
         setAlert('Request marked as fulfilled', 'success');
         redirect();
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         
         if ($request) {
-            $db->execute("DELETE FROM student_requests WHERE id = ?", [$requestId]);
+            $db->query("DELETE FROM student_requests WHERE id = ?", [$requestId]);
             setAlert('Request deleted', 'success');
         } else {
             setAlert('Cannot delete this request', 'danger');
@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $barcode = 'PULL-' . strtoupper(substr(uniqid(), -8));
             
             // Create pullsheet (with null show_id for student requests)
-            $db->execute(
+            $db->query(
                 "INSERT INTO pullsheets (show_id, barcode, created_by, status) VALUES (NULL, ?, ?, 'draft')",
                 [$barcode, $currentUser['name']]
             );
@@ -121,19 +121,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     );
                     
                     if ($existing) {
-                        $db->execute(
+                        $db->query(
                             "UPDATE pullsheet_items SET quantity_needed = quantity_needed + ? WHERE id = ?",
                             [$request['quantity'], $existing['id']]
                         );
                     } else {
-                        $db->execute(
+                        $db->query(
                             "INSERT INTO pullsheet_items (pullsheet_id, item_id, quantity_needed) VALUES (?, ?, ?)",
                             [$pullsheetId, $request['item_id'], $request['quantity']]
                         );
                     }
                     
                     // Update request with pullsheet_id
-                    $db->execute(
+                    $db->query(
                         "UPDATE student_requests SET pullsheet_id = ? WHERE id = ?",
                         [$pullsheetId, $requestId]
                     );
