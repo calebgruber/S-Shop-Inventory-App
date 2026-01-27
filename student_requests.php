@@ -18,7 +18,7 @@ $canManageRequests = hasPermission('inventory') && !$isStudent && !$isDesigner;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
-    if ($action === 'create' && $isStudent) {
+    if ($action === 'create' && ($isStudent || $isDesigner)) {
         $itemId = $_POST['item_id'] ?? 0;
         $quantity = (int)($_POST['quantity'] ?? 1);
         $reason = trim($_POST['reason'] ?? '');
