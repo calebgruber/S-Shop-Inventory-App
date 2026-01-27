@@ -5,6 +5,7 @@ require_once 'includes/header.php';
 $stats = getDashboardStats();
 $activeShows = getActiveShows();
 $currentUser = getCurrentUser();
+$isStudent = $currentUser['role'] === 'student';
 
 // Get pending pullsheets (finalized but not picked)
 $pendingPullsheets = getDB()->fetchAll(
@@ -172,11 +173,6 @@ $changeOrdersToReturn = getDB()->fetchAll(
         </div>
     </div>
 </div>
-
-<?php
-// Only show stats for non-students
-$isStudent = $currentUser['role'] === 'student';
-?>
 
 <?php if (!$isStudent): ?>
 <div class="row row-deck row-cards mb-4">

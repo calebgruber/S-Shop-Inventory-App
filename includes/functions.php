@@ -387,7 +387,7 @@ function hasPermission($permissionKey) {
     // Default permissions based on role
     if (!$perm) {
         if ($user['role'] === 'designer') {
-            // Designers can access most things except user management, repairs, and settings
+            // Designers have most permissions except repairs, settings, and user management
             $designerPermissions = ['dashboard', 'inventory', 'shows', 'pullsheets', 
                                    'change_orders', 'pick_mode', 'return_mode', 
                                    'reports', 'paperwork', 'student_requests'];
