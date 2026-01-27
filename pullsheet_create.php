@@ -1,7 +1,7 @@
 <?php
-$pageTitle = 'Create Pullsheet';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
+// Validate and check permissions BEFORE including header
 $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';
 
@@ -28,6 +28,9 @@ if ($showId) {
         redirect('pullsheet_edit.php?id=' . $existing['id']);
     }
 }
+
+$pageTitle = 'Create Pullsheet';
+require_once 'includes/header.php';
 
 // Get shows filtered by permission
 if ($isDesigner) {

@@ -1,12 +1,14 @@
 <?php
-$pageTitle = 'Student Requests';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
-// Check permissions
+// Check permissions BEFORE including header
 if (!hasPermission('student_requests')) {
     setAlert('You do not have permission to access student requests', 'danger');
     redirect('index.php');
 }
+
+$pageTitle = 'Student Requests';
+require_once 'includes/header.php';
 
 $db = getDB();
 $currentUser = getCurrentUser();

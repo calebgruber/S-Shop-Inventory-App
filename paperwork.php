@@ -1,12 +1,14 @@
 <?php
-$pageTitle = 'Paperwork';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
-// Check permissions
+// Check permissions BEFORE including header
 if (!hasPermission('paperwork')) {
     setAlert('You do not have permission to access paperwork', 'danger');
     redirect('index.php');
 }
+
+$pageTitle = 'Paperwork';
+require_once 'includes/header.php';
 
 $db = getDB();
 

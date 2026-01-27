@@ -1,7 +1,7 @@
 <?php
-$pageTitle = 'Print Barcodes';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
+// Validate item BEFORE including header
 $itemId = $_GET['id'] ?? null;
 if (!$itemId) {
     redirect('items.php');
@@ -12,6 +12,9 @@ if (!$item) {
     setAlert('Item not found', 'danger');
     redirect('items.php');
 }
+
+$pageTitle = 'Print Barcodes';
+require_once 'includes/header.php';
 
 $quantity = $_GET['quantity'] ?? 30;
 ?>

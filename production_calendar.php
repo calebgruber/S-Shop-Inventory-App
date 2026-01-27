@@ -1,13 +1,14 @@
 <?php
-$pageTitle = 'Production Calendar';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
 requireRole(['admin', 'designer']);
 
 $db = getDB();
+$currentUser = getCurrentUser();
 
-// Handle event operations
+// Handle event operations BEFORE any HTML output
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
     try {
         $action = $_POST['action'] ?? '';
         
@@ -105,7 +106,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
             }
             
-            header('Content-Type: application/json');
             echo json_encode($calendarEvents);
             exit;
         }
@@ -118,6 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+
+$pageTitle = 'Production Calendar';
+require_once 'includes/header.php';
 
 // Get all shows with colors
 $shows = $db->fetchAll(

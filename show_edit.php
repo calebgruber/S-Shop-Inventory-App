@@ -1,7 +1,7 @@
 <?php
-$pageTitle = 'Edit Show';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
+// Validate show BEFORE including header
 $showId = $_GET['id'] ?? null;
 if (!$showId) {
     redirect('shows.php');
@@ -12,6 +12,9 @@ if (!$show) {
     setAlert('Show not found', 'danger');
     redirect('shows.php');
 }
+
+$pageTitle = 'Edit Show';
+require_once 'includes/header.php';
 
 $theatreSpaces = getAllTheatreSpaces();
 

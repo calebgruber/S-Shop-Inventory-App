@@ -1,13 +1,15 @@
 <?php
-$pageTitle = 'Edit Item';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
-// Designers can view inventory but not edit
+// Designers can view inventory but not edit - check BEFORE including header
 $currentUser = getCurrentUser();
 if ($currentUser['role'] === 'designer') {
     setAlert('You do not have permission to edit items', 'danger');
     redirect('index.php');
 }
+
+$pageTitle = 'Edit Item';
+require_once 'includes/header.php';
 
 $itemId = $_GET['id'] ?? null;
 $item = $itemId ? getItemById($itemId) : null;

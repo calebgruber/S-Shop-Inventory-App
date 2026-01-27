@@ -1,12 +1,14 @@
 <?php
-$pageTitle = 'Repairs';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
-// Check permissions
+// Check permissions BEFORE including header
 if (!hasPermission('repairs')) {
     setAlert('You do not have permission to access repairs', 'danger');
     redirect('index.php');
 }
+
+$pageTitle = 'Repairs';
+require_once 'includes/header.php';
 
 $db = getDB();
 $currentUser = getCurrentUser();

@@ -1,7 +1,7 @@
 <?php
-$pageTitle = 'Create Change Order';
-require_once 'includes/header.php';
+require_once 'includes/functions.php';
 
+// Validate show and permissions BEFORE including header
 $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';
 
@@ -19,6 +19,9 @@ if ($isDesigner && !canAccessShow($currentUser['id'], $showId)) {
     setAlert('You do not have permission to create change order for this show', 'danger');
     redirect('change_orders.php');
 }
+
+$pageTitle = 'Create Change Order';
+require_once 'includes/header.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
