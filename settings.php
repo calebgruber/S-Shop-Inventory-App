@@ -12,10 +12,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Handle logo upload
                     if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
-                        $ext = pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION);
+                        // Validate file is an actual image
+                        $imageInfo = @getimagesize($_FILES['logo']['tmp_name']);
+                        if ($imageInfo === false) {
+                            setAlert('Invalid image file. Please upload a valid image.', 'danger');
+                            redirect('settings.php');
+                        }
+                        
+                        // Validate extension
+                        $ext = strtolower(pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION));
+                        $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
+                        if (!in_array($ext, $allowedExtensions)) {
+                            setAlert('Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions), 'danger');
+                            redirect('settings.php');
+                        }
+                        
+                        // Generate unique filename and move file
                         $filename = 'logo_' . time() . '.' . $ext;
-                        move_uploaded_file($_FILES['logo']['tmp_name'], UPLOAD_DIR . $filename);
-                        setSetting('logo_path', $filename);
+                        if (move_uploaded_file($_FILES['logo']['tmp_name'], UPLOAD_DIR . $filename)) {
+                            setSetting('logo_path', $filename);
+                        } else {
+                            setAlert('Failed to upload logo file.', 'danger');
+                            redirect('settings.php');
+                        }
                     }
                     
                     setAlert('Settings updated successfully');
