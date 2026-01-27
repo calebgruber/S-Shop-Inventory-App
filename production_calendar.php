@@ -95,8 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'title' => $event['title'],
                     'start' => $event['start_date'],
                     'end' => $event['end_date'],
-                    'backgroundColor' => $event['calendar_color'] ?? '#206bc4',
-                    'borderColor' => $event['calendar_color'] ?? '#206bc4',
+                    'backgroundColor' => $event['calendar_color'],
+                    'borderColor' => $event['calendar_color'],
                     'extendedProps' => [
                         'show_name' => $event['show_name'],
                         'show_id' => $event['show_id'],
