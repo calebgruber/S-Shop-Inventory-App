@@ -45,6 +45,40 @@
             if (themeToggle) themeToggle.innerHTML = '<i class="ti ti-sun icon"></i>';
         }
         
+        // Pink Mode Easter Egg - Double click detection
+        let pinkModeClicks = 0;
+        let pinkModeTimer = null;
+        
+        function checkPinkMode() {
+            pinkModeClicks++;
+            
+            if (pinkModeClicks === 1) {
+                pinkModeTimer = setTimeout(() => {
+                    pinkModeClicks = 0;
+                }, 500);
+            } else if (pinkModeClicks === 2) {
+                clearTimeout(pinkModeTimer);
+                const currentPinkMode = localStorage.getItem('pinkMode') === 'true';
+                const newPinkMode = !currentPinkMode;
+                localStorage.setItem('pinkMode', newPinkMode);
+                
+                if (newPinkMode) {
+                    document.body.classList.add('pink-mode');
+                    console.log('🐱 Pink mode activated! Meow! 🎀');
+                } else {
+                    document.body.classList.remove('pink-mode');
+                    console.log('Pink mode deactivated.');
+                }
+                
+                pinkModeClicks = 0;
+            }
+        }
+        
+        // Apply pink mode if saved
+        if (localStorage.getItem('pinkMode') === 'true') {
+            document.body.classList.add('pink-mode');
+        }
+        
         function toggleTheme(e) {
             e.preventDefault();
             const currentTheme = html.getAttribute('data-bs-theme');
@@ -62,10 +96,18 @@
         
         if (themeToggle) {
             themeToggle.addEventListener('click', toggleTheme);
+            themeToggle.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                checkPinkMode();
+            });
         }
         
         if (themeToggleDropdown) {
             themeToggleDropdown.addEventListener('click', toggleTheme);
+            themeToggleDropdown.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                checkPinkMode();
+            });
         }
         
 
