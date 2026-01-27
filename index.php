@@ -578,6 +578,24 @@ document.getElementById('quickLookupInput')?.addEventListener('input', function(
     const searchTerm = e.target.value.toLowerCase();
     const items = document.querySelectorAll('#quickLookupList .quick-lookup-item');
     
+    // Easter egg: Play whopper.mp3 at 300% volume if CHZ-BGR barcode is scanned
+    if (searchTerm.includes('chz-bgr')) {
+        try {
+            const audio = new Audio('sounds/whopper.mp3');
+            audio.volume = 1.0; // Max volume (300% would require Web Audio API)
+            // Using Web Audio API for 300% volume
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaElementSource(audio);
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = 3.0; // 300% volume
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            audio.play().catch(err => console.log('Audio play failed:', err));
+        } catch (err) {
+            console.log('Whopper Easter egg failed:', err);
+        }
+    }
+    
     items.forEach(item => {
         const text = item.textContent.toLowerCase();
         if (text.includes(searchTerm)) {

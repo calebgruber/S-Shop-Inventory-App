@@ -1,0 +1,5 @@
+# Sounds Directory
+
+Place whopper.mp3 in this directory.
+
+This file ensures the directory is tracked by git even if empty.
