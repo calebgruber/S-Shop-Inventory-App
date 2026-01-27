@@ -205,20 +205,21 @@ $currentUser = getCurrentUser();
                         <?php 
                         $logoPath = getSetting('logo_path');
                         if ($logoPath) {
-                            // Sanitize logo path to prevent path traversal and validate it's safe
-                            $logoPath = str_replace(['../', '..\\'], '', $logoPath);
-                            $fullPath = __DIR__ . '/../' . $logoPath;
+                            // Validate logo path - should be just a filename, not a path
+                            $logoFilename = basename($logoPath); // Extract just the filename
+                            $fullPath = __DIR__ . '/../uploads/' . $logoFilename;
                             $allowedExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'];
                             $hasValidExtension = false;
                             foreach ($allowedExtensions as $ext) {
-                                if (substr(strtolower($logoPath), -strlen($ext)) === $ext) {
+                                if (substr(strtolower($logoFilename), -strlen($ext)) === $ext) {
                                     $hasValidExtension = true;
                                     break;
                                 }
                             }
-                            if ($hasValidExtension && file_exists($fullPath) && strpos(realpath($fullPath), realpath(__DIR__ . '/..')) === 0): 
+                            // Verify file exists and has valid extension
+                            if ($hasValidExtension && file_exists($fullPath)): 
                         ?>
-                            <img src="<?php echo htmlspecialchars($logoPath); ?>" height="32" alt="<?php echo htmlspecialchars($appName); ?>">
+                            <img src="uploads/<?php echo htmlspecialchars($logoFilename); ?>" height="32" alt="<?php echo htmlspecialchars($appName); ?>">
                         <?php else: ?>
                             <?php echo htmlspecialchars($appName); ?>
                         <?php endif; } else { echo htmlspecialchars($appName); } ?>
