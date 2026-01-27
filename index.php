@@ -215,7 +215,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     </div>
 </div>
 
-<?php if (!$isStudent && !$isDesigner): ?>
+<?php if (isAdmin()): ?>
 <div class="row row-deck row-cards mb-4">
     <div class="col-sm-6 col-lg-3">
         <div class="card stat-card">

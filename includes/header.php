@@ -324,6 +324,7 @@ $currentUser = getCurrentUser();
     </style>
     
     <!-- Random Background Easter Egg - 1% chance -->
+    <!-- Note: External image dependency - consider hosting locally for production -->
     <script>
         // 1 in 100 chance to show special background
         if (Math.random() < 0.01) {

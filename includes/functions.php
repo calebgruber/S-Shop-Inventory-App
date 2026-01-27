@@ -340,7 +340,8 @@ function validateRequired($value, $fieldName) {
 }
 
 function redirect($url = null) {
-    // Always reload the current page
+    // Ignores $url parameter - always reloads the current page
+    // This is intentional to prevent accidental redirects away from the current page
     header("Location: " . $_SERVER['PHP_SELF'] . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : ''));
     exit;
 }
