@@ -204,25 +204,28 @@ $currentUser = getCurrentUser();
                     <a href="index.php">
                         <?php 
                         $logoPath = getSetting('logo_path');
+                        $showLogo = false;
+                        $logoSrc = '';
+                        
                         if ($logoPath) {
                             // Validate logo path - should be just a filename, not a path
-                            $logoFilename = basename($logoPath); // Extract just the filename
+                            $logoFilename = basename($logoPath);
                             $fullPath = __DIR__ . '/../uploads/' . $logoFilename;
-                            $allowedExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'];
-                            $hasValidExtension = false;
-                            foreach ($allowedExtensions as $ext) {
-                                if (substr(strtolower($logoFilename), -strlen($ext)) === $ext) {
-                                    $hasValidExtension = true;
-                                    break;
-                                }
+                            $extension = strtolower(pathinfo($logoFilename, PATHINFO_EXTENSION));
+                            $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
+                            
+                            if (in_array($extension, $allowedExtensions) && file_exists($fullPath)) {
+                                $showLogo = true;
+                                $logoSrc = 'uploads/' . htmlspecialchars($logoFilename);
                             }
-                            // Verify file exists and has valid extension
-                            if ($hasValidExtension && file_exists($fullPath)): 
+                        }
+                        
+                        if ($showLogo):
                         ?>
-                            <img src="uploads/<?php echo htmlspecialchars($logoFilename); ?>" height="32" alt="<?php echo htmlspecialchars($appName); ?>">
+                            <img src="<?php echo $logoSrc; ?>" height="32" alt="<?php echo htmlspecialchars($appName); ?>">
                         <?php else: ?>
                             <?php echo htmlspecialchars($appName); ?>
-                        <?php endif; } else { echo htmlspecialchars($appName); } ?>
+                        <?php endif; ?>
                     </a>
                 </h1>
                 <div class="navbar-nav flex-row order-md-last">
