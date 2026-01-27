@@ -235,7 +235,7 @@ function getChangeOrderByBarcode($barcode) {
     return $db->fetchOne(
         "SELECT co.*, s.name as show_name, s.shop_lead, s.designer, s.theatre_space_id 
          FROM change_orders co 
-         JOIN shows s ON co.show_id = s.id 
+         LEFT JOIN shows s ON co.show_id = s.id 
          WHERE co.barcode = ?",
         [$barcode]
     );
