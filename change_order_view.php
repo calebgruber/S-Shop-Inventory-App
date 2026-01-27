@@ -18,6 +18,14 @@ if (isset($_GET['download_pdf']) && isset($_GET['id'])) {
     }
 }
 
+require_once 'includes/functions.php';
+
+// Check permissions
+if (!hasPermission('change_orders')) {
+    setAlert('You do not have permission to access change orders', 'danger');
+    redirect('index.php');
+}
+
 $pageTitle = 'View Change Order';
 require_once 'includes/header.php';
 

@@ -1,4 +1,12 @@
 <?php
+require_once 'includes/functions.php';
+
+// Check permissions - only admins and designers can view inventory
+if (!hasPermission('inventory') && !hasPermission('dashboard')) {
+    setAlert('You do not have permission to access inventory', 'danger');
+    redirect('index.php');
+}
+
 $pageTitle = 'Items';
 require_once 'includes/header.php';
 

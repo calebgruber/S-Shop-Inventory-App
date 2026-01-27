@@ -1,4 +1,9 @@
 <?php
+require_once 'includes/functions.php';
+
+// Check permissions - only admins and designers can view shows
+requireRole(['admin', 'designer']);
+
 $pageTitle = 'Shows';
 require_once 'includes/header.php';
 

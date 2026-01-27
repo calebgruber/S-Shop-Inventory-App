@@ -1,4 +1,9 @@
 <?php
+require_once 'includes/functions.php';
+
+// Only admins can access settings
+requireRole('admin');
+
 $pageTitle = 'Settings';
 require_once 'includes/header.php';
 

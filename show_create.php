@@ -1,4 +1,9 @@
 <?php
+require_once 'includes/functions.php';
+
+// Only admins and designers can create shows
+requireRole(['admin', 'designer']);
+
 $pageTitle = 'Create Show';
 require_once 'includes/header.php';
 

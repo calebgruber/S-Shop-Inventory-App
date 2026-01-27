@@ -1,4 +1,9 @@
 <?php
+require_once 'includes/functions.php';
+
+// Only admins can view reports
+requireRole('admin');
+
 $pageTitle = 'Reports';
 require_once 'includes/header.php';
 

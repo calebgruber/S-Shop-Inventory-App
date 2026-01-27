@@ -18,6 +18,14 @@ if (isset($_GET['download_pdf']) && isset($_GET['id'])) {
     }
 }
 
+require_once 'includes/functions.php';
+
+// Check permissions
+if (!hasPermission('pullsheets')) {
+    setAlert('You do not have permission to access pullsheets', 'danger');
+    redirect('index.php');
+}
+
 $pageTitle = 'View Pullsheet';
 require_once 'includes/header.php';
 

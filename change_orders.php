@@ -1,4 +1,12 @@
 <?php
+require_once 'includes/functions.php';
+
+// Check permissions - designers and admins can access change orders
+if (!hasPermission('change_orders')) {
+    setAlert('You do not have permission to access change orders', 'danger');
+    redirect('index.php');
+}
+
 $pageTitle = 'Change Orders';
 require_once 'includes/header.php';
 
