@@ -32,8 +32,8 @@ $currentUser = getCurrentUser();
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Tabler CSS - Temporarily disabled for troubleshooting -->
-    <!-- <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet"/> -->
+    <!-- Tabler CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
     
     <style>
@@ -202,7 +202,14 @@ $currentUser = getCurrentUser();
                 </button>
                 <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
                     <a href="index.php">
-                        <?php echo htmlspecialchars($appName); ?>
+                        <?php 
+                        $logoPath = getSetting('logo_path');
+                        if ($logoPath && file_exists(__DIR__ . '/../' . $logoPath)): 
+                        ?>
+                            <img src="<?php echo htmlspecialchars($logoPath); ?>" height="32" alt="<?php echo htmlspecialchars($appName); ?>">
+                        <?php else: ?>
+                            <?php echo htmlspecialchars($appName); ?>
+                        <?php endif; ?>
                     </a>
                 </h1>
                 <div class="navbar-nav flex-row order-md-last">

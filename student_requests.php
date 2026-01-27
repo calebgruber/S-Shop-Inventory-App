@@ -11,7 +11,8 @@ if (!hasPermission('student_requests')) {
 $db = getDB();
 $currentUser = getCurrentUser();
 $isStudent = $currentUser['role'] === 'student';
-$canManageRequests = hasPermission('inventory') && !$isStudent;
+$isDesigner = $currentUser['role'] === 'designer';
+$canManageRequests = hasPermission('inventory') && !$isStudent && !$isDesigner;
 
 // Handle request operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

@@ -41,9 +41,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
+            // Validate type parameter
+            $type = $_POST['type'] ?? '';
+            if (!in_array($type, ['add', 'remove'], true)) {
+                echo json_encode(['success' => false, 'message' => 'Invalid type parameter. Must be "add" or "remove"']);
+                exit;
+            }
+            
             getDB()->query(
                 "INSERT INTO change_order_items (change_order_id, item_id, quantity_change, type) VALUES (?, ?, ?, ?)",
-                [$coId, $item['id'], (int)$_POST['quantity'], $_POST['type']]
+                [$coId, $item['id'], (int)$_POST['quantity'], $type]
             );
             
             echo json_encode(['success' => true]);

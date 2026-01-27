@@ -139,7 +139,7 @@ function getPullsheetById($id) {
     return $db->fetchOne(
         "SELECT p.*, s.name as show_name, s.shop_lead, s.designer 
          FROM pullsheets p 
-         JOIN shows s ON p.show_id = s.id 
+         LEFT JOIN shows s ON p.show_id = s.id 
          WHERE p.id = ?",
         [$id]
     );
@@ -387,11 +387,9 @@ function hasPermission($permissionKey) {
     // Default permissions based on role
     if (!$perm) {
         if ($user['role'] === 'designer') {
-            // Designers have most permissions but cannot edit inventory items (enforced in item_edit.php),
-            // and cannot access repairs, settings, or user management
-            $designerPermissions = ['dashboard', 'inventory', 'shows', 'pullsheets', 
-                                   'change_orders', 'pick_mode', 'return_mode', 
-                                   'reports', 'paperwork', 'student_requests'];
+            // Designers can view dashboard, submit student requests (not approve), view pullsheets, change orders, and quick lookup
+            $designerPermissions = ['dashboard', 'student_requests', 'pullsheets', 
+                                   'change_orders', 'quick_lookup'];
             return in_array($permissionKey, $designerPermissions);
         } else if ($user['role'] === 'student') {
             // Students can only view dashboard and make requests

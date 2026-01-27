@@ -110,9 +110,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             
             // Create notification for users with pick_mode permission
             $pullsheet = getPullsheetById($pullsheetId);
+            $showName = $pullsheet['show_name'] ?? 'Student Requests';
             createNotificationForDesigners(
                 'pending_pick',
-                "New pullsheet ready for picking: " . $pullsheet['show_name'],
+                "New pullsheet ready for picking: " . $showName,
                 "pick_mode.php?pullsheet=" . $pullsheet['barcode']
             );
             
@@ -152,7 +153,7 @@ $allItems = getAllItems();
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Edit Pullsheet - <?php echo htmlspecialchars($pullsheet['show_name']); ?></h3>
+                <h3 class="card-title">Edit Pullsheet - <?php echo htmlspecialchars($pullsheet['show_name'] ?? 'Student Requests'); ?></h3>
             </div>
             <div class="card-body">
                 <div class="row mb-4">

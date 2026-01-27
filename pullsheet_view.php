@@ -9,8 +9,9 @@ if (isset($_GET['download_pdf']) && isset($_GET['id'])) {
     
     if ($pullsheet) {
         $pdf = generatePullsheetPDF($pullsheetId);
+        $showName = $pullsheet['show_name'] ?? 'Student_Requests';
         header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="pullsheet_' . $pullsheet['show_name'] . '.pdf"');
+        header('Content-Disposition: attachment; filename="pullsheet_' . $showName . '.pdf"');
         header('Content-Length: ' . strlen($pdf));
         echo $pdf;
         exit;
@@ -56,7 +57,7 @@ $items = getPullsheetItems($pullsheetId);
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Pullsheet for <?php echo htmlspecialchars($pullsheet['show_name']); ?></h3>
+                <h3 class="card-title">Pullsheet for <?php echo htmlspecialchars($pullsheet['show_name'] ?? 'Student Requests'); ?></h3>
             </div>
             <div class="card-body">
                 <?php if ($pullsheet['status'] === 'finalized' || $pullsheet['status'] === 'picked'): ?>
@@ -149,7 +150,7 @@ $items = getPullsheetItems($pullsheetId);
                 
                 <div class="mb-3">
                     <small class="text-muted">Show Details</small>
-                    <div><strong><?php echo htmlspecialchars($pullsheet['show_name']); ?></strong></div>
+                    <div><strong><?php echo htmlspecialchars($pullsheet['show_name'] ?? 'Student Requests'); ?></strong></div>
                     <div>Shop Lead: <?php echo htmlspecialchars($pullsheet['shop_lead'] ?? 'N/A'); ?></div>
                     <div>Designer: <?php echo htmlspecialchars($pullsheet['designer'] ?? 'N/A'); ?></div>
                 </div>
