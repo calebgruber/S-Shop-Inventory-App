@@ -91,8 +91,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         if ($_POST['action'] === 'finalize') {
             $pullsheet = getPullsheetById($pullsheetId);
             
-            // Mark items as reserved
+            // Check if all items are available
             $items = getPullsheetItems($pullsheetId);
+            $unavailableItems = [];
+            
+            foreach ($items as $item) {
+                if ($item['in_stock_quantity'] < $item['quantity_needed']) {
+                    $unavailableItems[] = $item['item_name'] . ' (Need: ' . $item['quantity_needed'] . ', Available: ' . $item['in_stock_quantity'] . ')';
+                }
+            }
+            
+            if (!empty($unavailableItems)) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Cannot finalize: Some items are not available',
+                    'unavailable_items' => $unavailableItems,
+                    'can_save_draft' => true
+                ]);
+                exit;
+            }
+            
+            // Mark items as reserved
             foreach ($items as $item) {
                 getDB()->query(
                     "INSERT INTO item_allocations (item_id, show_id, pullsheet_id, quantity, status) 

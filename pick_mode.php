@@ -41,9 +41,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
-            // Try change order
+            // Try change order for picking
             $changeOrder = getChangeOrderByBarcode($barcode);
             if ($changeOrder && $changeOrder['status'] === 'finalized') {
+                // Check if this change order has items to add
+                $itemsToAdd = getDB()->fetchAll(
+                    "SELECT * FROM change_order_items WHERE change_order_id = ? AND type = 'add'",
+                    [$changeOrder['id']]
+                );
+                
+                if (empty($itemsToAdd)) {
+                    echo json_encode(['success' => false, 'message' => 'This change order has no items to pick']);
+                    exit;
+                }
+                
                 $_SESSION['pick_session'] = [
                     'type' => 'change_order',
                     'id' => $changeOrder['id'],

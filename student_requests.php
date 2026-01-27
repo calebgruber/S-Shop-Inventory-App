@@ -54,10 +54,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'approve' && $canManageRequests) {
         $requestId = $_POST['request_id'] ?? 0;
         
+        // Get request details for notification
+        $request = $db->fetchOne(
+            "SELECT sr.*, i.name as item_name 
+             FROM student_requests sr
+             LEFT JOIN items i ON sr.item_id = i.id
+             WHERE sr.id = ?",
+            [$requestId]
+        );
+        
         $db->query(
             "UPDATE student_requests SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE id = ?",
             [$currentUser['id'], $requestId]
         );
+        
+        // Notify the student
+        if ($request) {
+            createNotification(
+                $request['student_id'],
+                'student_request_approved',
+                "Your request for " . $request['item_name'] . " (Qty: " . $request['quantity'] . ") has been approved",
+                "student_requests.php"
+            );
+        }
         
         setAlert('Request approved', 'success');
         redirect();
@@ -65,10 +84,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $requestId = $_POST['request_id'] ?? 0;
         $reason = trim($_POST['rejection_reason'] ?? '');
         
+        // Get request details for notification
+        $request = $db->fetchOne(
+            "SELECT sr.*, i.name as item_name 
+             FROM student_requests sr
+             LEFT JOIN items i ON sr.item_id = i.id
+             WHERE sr.id = ?",
+            [$requestId]
+        );
+        
         $db->query(
             "UPDATE student_requests SET status = 'rejected', approved_by = ?, approved_at = NOW() WHERE id = ?",
             [$currentUser['id'], $requestId]
         );
+        
+        // Notify the student
+        if ($request) {
+            createNotification(
+                $request['student_id'],
+                'student_request_rejected',
+                "Your request for " . $request['item_name'] . " (Qty: " . $request['quantity'] . ") has been rejected" . ($reason ? ": $reason" : ""),
+                "student_requests.php"
+            );
+        }
         
         setAlert('Request rejected', 'success');
         redirect();
