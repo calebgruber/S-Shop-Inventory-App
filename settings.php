@@ -52,6 +52,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                     
+                    // Handle login illustration upload
+                    if (isset($_FILES['login_illustration']) && $_FILES['login_illustration']['error'] === UPLOAD_ERR_OK) {
+                        // Validate file size (max 5MB)
+                        $maxSize = 5 * 1024 * 1024; // 5MB
+                        if ($_FILES['login_illustration']['size'] > $maxSize) {
+                            setAlert('Login illustration file is too large. Maximum size is 5MB.', 'danger');
+                            redirect('settings.php');
+                        }
+                        
+                        // Validate file is an actual image
+                        $imageInfo = getimagesize($_FILES['login_illustration']['tmp_name']);
+                        if ($imageInfo === false) {
+                            setAlert('Invalid image file. Please upload a valid image.', 'danger');
+                            redirect('settings.php');
+                        }
+                        
+                        // Validate extension matches MIME type
+                        $ext = strtolower(pathinfo($_FILES['login_illustration']['name'], PATHINFO_EXTENSION));
+                        $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+                        if (!in_array($ext, $allowedExtensions)) {
+                            setAlert('Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions), 'danger');
+                            redirect('settings.php');
+                        }
+                        
+                        // Validate MIME type
+                        $mimeType = $imageInfo['mime'] ?? '';
+                        $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+                        if (!in_array($mimeType, $allowedMimeTypes)) {
+                            setAlert('Invalid image type. File MIME type does not match extension.', 'danger');
+                            redirect('settings.php');
+                        }
+                        
+                        // Generate unique filename and move file
+                        $filename = 'login_illustration_' . time() . '.' . $ext;
+                        if (move_uploaded_file($_FILES['login_illustration']['tmp_name'], UPLOAD_DIR . $filename)) {
+                            setSetting('login_illustration_path', $filename);
+                        } else {
+                            setAlert('Failed to upload login illustration file.', 'danger');
+                            redirect('settings.php');
+                        }
+                    }
+                    
                     setAlert('Settings updated successfully');
                     break;
                     
@@ -106,6 +148,7 @@ $subcategories = getAllSubcategories();
 $theatreSpaces = getAllTheatreSpaces();
 $appName = getSetting('app_name');
 $logoPath = getSetting('logo_path');
+$loginIllustrationPath = getSetting('login_illustration_path');
 ?>
 
 <div class="row">
@@ -123,18 +166,34 @@ $logoPath = getSetting('logo_path');
                         <input type="text" class="form-control" name="app_name" value="<?php echo htmlspecialchars($appName); ?>" required>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Logo (for PDFs)</label>
-                        <?php if ($logoPath && file_exists(UPLOAD_DIR . $logoPath)): ?>
-                            <div class="mb-2">
-                                <img src="uploads/<?php echo htmlspecialchars($logoPath); ?>" alt="Logo" style="max-height: 100px;">
-                            </div>
-                        <?php endif; ?>
-                        <input type="file" class="form-control" name="logo" accept="image/*">
-                        <small class="form-hint">Upload a logo to appear on PDFs</small>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Logo (for Header & PDFs)</label>
+                            <?php if ($logoPath && file_exists(UPLOAD_DIR . $logoPath)): ?>
+                                <div class="mb-2">
+                                    <img src="uploads/<?php echo htmlspecialchars($logoPath); ?>" alt="Logo" style="max-height: 80px; border: 1px solid #ddd; padding: 5px;">
+                                </div>
+                            <?php endif; ?>
+                            <input type="file" class="form-control" name="logo" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
+                            <small class="form-hint">Upload a logo to appear in header and on PDFs (PNG, JPG, GIF, WebP - max 5MB)</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Login Illustration (optional)</label>
+                            <?php if ($loginIllustrationPath && file_exists(UPLOAD_DIR . $loginIllustrationPath)): ?>
+                                <div class="mb-2">
+                                    <img src="uploads/<?php echo htmlspecialchars($loginIllustrationPath); ?>" alt="Login Illustration" style="max-height: 80px; border: 1px solid #ddd; padding: 5px;">
+                                </div>
+                            <?php endif; ?>
+                            <input type="file" class="form-control" name="login_illustration" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
+                            <small class="form-hint">Upload an illustration for the login page (PNG, JPG, GIF, WebP - max 5MB)</small>
+                        </div>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-device-floppy icon"></i>
+                        Save Settings
+                    </button>
                 </form>
             </div>
         </div>

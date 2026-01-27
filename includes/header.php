@@ -36,6 +36,9 @@ $currentUser = getCurrentUser();
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
     
+    <!-- Tabler JS in head for dropdown functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+    
     <style>
         /* Modern UI with consistent border radius */
         :root {
