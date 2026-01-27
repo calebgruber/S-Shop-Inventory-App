@@ -212,7 +212,7 @@ $currentUser = getCurrentUser();
                             $logoFilename = basename($logoPath);
                             $fullPath = UPLOAD_DIR . $logoFilename;
                             $extension = strtolower(pathinfo($logoFilename, PATHINFO_EXTENSION));
-                            $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
+                            $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
                             
                             if (in_array($extension, $allowedExtensions) && file_exists($fullPath)) {
                                 $showLogo = true;

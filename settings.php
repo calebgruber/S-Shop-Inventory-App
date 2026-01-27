@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         // Validate extension matches MIME type
                         $ext = strtolower(pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION));
-                        $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
+                        $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
                         if (!in_array($ext, $allowedExtensions)) {
                             setAlert('Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions), 'danger');
                             redirect('settings.php');
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         // Validate MIME type
                         $mimeType = $imageInfo['mime'] ?? '';
-                        $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/svg+xml', 'image/webp'];
+                        $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
                         if (!in_array($mimeType, $allowedMimeTypes)) {
                             setAlert('Invalid image type. File MIME type does not match extension.', 'danger');
                             redirect('settings.php');
