@@ -12,6 +12,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Handle logo upload
                     if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
+                        // Validate file size (max 5MB)
+                        $maxSize = 5 * 1024 * 1024; // 5MB
+                        if ($_FILES['logo']['size'] > $maxSize) {
+                            setAlert('Logo file is too large. Maximum size is 5MB.', 'danger');
+                            redirect('settings.php');
+                        }
+                        
                         // Validate file is an actual image
                         $imageInfo = getimagesize($_FILES['logo']['tmp_name']);
                         if ($imageInfo === false) {
@@ -19,11 +26,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             redirect('settings.php');
                         }
                         
-                        // Validate extension
+                        // Validate extension matches MIME type
                         $ext = strtolower(pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION));
                         $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
                         if (!in_array($ext, $allowedExtensions)) {
                             setAlert('Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions), 'danger');
+                            redirect('settings.php');
+                        }
+                        
+                        // Validate MIME type
+                        $mimeType = $imageInfo['mime'] ?? '';
+                        $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/svg+xml', 'image/webp'];
+                        if (!in_array($mimeType, $allowedMimeTypes)) {
+                            setAlert('Invalid image type. File MIME type does not match extension.', 'danger');
                             redirect('settings.php');
                         }
                         

@@ -210,7 +210,7 @@ $currentUser = getCurrentUser();
                         if ($logoPath) {
                             // Validate logo path - should be just a filename, not a path
                             $logoFilename = basename($logoPath);
-                            $fullPath = __DIR__ . '/../uploads/' . $logoFilename;
+                            $fullPath = UPLOAD_DIR . $logoFilename;
                             $extension = strtolower(pathinfo($logoFilename, PATHINFO_EXTENSION));
                             $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
                             
