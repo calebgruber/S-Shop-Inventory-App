@@ -917,3 +917,424 @@ function validateChangeOrderStock($changeOrderId) {
         'errors' => $errors
     ];
 }
+
+/**
+ * =====================================================
+ * PICK & RETURN MODE HELPER FUNCTIONS
+ * =====================================================
+ */
+
+/**
+ * Get order (pull sheet or change order) by barcode for picking
+ * @param string $barcode Order barcode
+ * @return array|null Order data with items or null if not found/not pickable
+ */
+function getOrderForPicking($barcode) {
+    $conn = getDbConnection();
+    
+    // Try to find as pull sheet
+    $query = "SELECT 'pullsheet' as order_type, p.id, p.barcode, p.show_id, p.status, p.created_by, p.signature_data, p.signature_name,
+                     s.name as show_name, s.color as show_color,
+                     u.first_name, u.last_name
+              FROM pullsheets p
+              JOIN shows s ON p.show_id = s.id
+              JOIN users u ON p.created_by = u.id
+              WHERE p.barcode = ? AND p.status = 'approved'";
+    
+    $result = executeQuery($query, [$barcode]);
+    if ($result && numRows($result) > 0) {
+        $order = fetchAssoc($result);
+        $order['items'] = getPullSheetItemsForPicking($order['id']);
+        return $order;
+    }
+    
+    // Try to find as change order
+    $query = "SELECT 'changeorder' as order_type, c.id, c.barcode, c.show_id, c.status, c.created_by, c.signature_data, c.signature_name,
+                     s.name as show_name, s.color as show_color,
+                     u.first_name, u.last_name
+              FROM change_orders c
+              JOIN shows s ON c.show_id = s.id
+              JOIN users u ON c.created_by = u.id
+              WHERE c.barcode = ? AND c.status = 'approved'";
+    
+    $result = executeQuery($query, [$barcode]);
+    if ($result && numRows($result) > 0) {
+        $order = fetchAssoc($result);
+        $order['items'] = getChangeOrderItemsForPicking($order['id']);
+        return $order;
+    }
+    
+    return null;
+}
+
+/**
+ * Get pull sheet items with details for picking interface
+ * @param int $pullsheetId Pull sheet ID
+ * @return array Array of items with details
+ */
+function getPullSheetItemsForPicking($pullsheetId) {
+    $query = "SELECT pi.id, pi.item_id, pi.quantity_needed, pi.quantity_picked, pi.serial_numbers_picked,
+                     i.name as item_name, i.barcode as item_barcode, i.tracking_type, i.photo_path,
+                     i.serial_numbers as available_serials, i.location,
+                     c.name as category_name, sc.name as subcategory_name
+              FROM pullsheet_items pi
+              JOIN items i ON pi.item_id = i.id
+              LEFT JOIN categories c ON i.category_id = c.id
+              LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
+              WHERE pi.pullsheet_id = ?
+              ORDER BY c.name, sc.name, i.name";
+    
+    $result = executeQuery($query, [$pullsheetId]);
+    $items = [];
+    while ($result && $row = fetchAssoc($result)) {
+        $items[] = $row;
+    }
+    return $items;
+}
+
+/**
+ * Get change order items with details for picking interface
+ * @param int $changeOrderId Change order ID
+ * @return array Array of items with details
+ */
+function getChangeOrderItemsForPicking($changeOrderId) {
+    $query = "SELECT ci.id, ci.item_id, ci.action, ci.quantity as quantity_needed, ci.quantity_picked, ci.serial_numbers_picked,
+                     i.name as item_name, i.barcode as item_barcode, i.tracking_type, i.photo_path,
+                     i.serial_numbers as available_serials, i.location,
+                     c.name as category_name, sc.name as subcategory_name
+              FROM change_order_items ci
+              JOIN items i ON ci.item_id = i.id
+              LEFT JOIN categories c ON i.category_id = c.id
+              LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
+              WHERE ci.change_order_id = ?
+              ORDER BY ci.action, c.name, sc.name, i.name";
+    
+    $result = executeQuery($query, [$changeOrderId]);
+    $items = [];
+    while ($result && $row = fetchAssoc($result)) {
+        $items[] = $row;
+    }
+    return $items;
+}
+
+/**
+ * Record an item scan during picking
+ * @param string $orderType 'pullsheet' or 'changeorder'
+ * @param int $orderItemId Order item ID
+ * @param string $itemBarcode Scanned item barcode
+ * @param string $serialNumber Optional serial number if tracked
+ * @return array Status array with success flag and message
+ */
+function recordItemScan($orderType, $orderItemId, $itemBarcode, $serialNumber = null) {
+    $conn = getDbConnection();
+    
+    // Get current item details
+    if ($orderType === 'pullsheet') {
+        $query = "SELECT pi.*, i.barcode as item_barcode, i.tracking_type
+                  FROM pullsheet_items pi
+                  JOIN items i ON pi.item_id = i.id
+                  WHERE pi.id = ?";
+    } else {
+        $query = "SELECT ci.*, ci.quantity as quantity_needed, i.barcode as item_barcode, i.tracking_type
+                  FROM change_order_items ci
+                  JOIN items i ON ci.item_id = i.id
+                  WHERE ci.id = ?";
+    }
+    
+    $result = executeQuery($query, [$orderItemId]);
+    if (!$result || numRows($result) === 0) {
+        return ['success' => false, 'message' => 'Item not found'];
+    }
+    
+    $item = fetchAssoc($result);
+    
+    // Validate barcode matches
+    if ($item['item_barcode'] !== $itemBarcode) {
+        return ['success' => false, 'message' => 'Wrong item scanned'];
+    }
+    
+    // Check if already complete
+    if ($item['quantity_picked'] >= $item['quantity_needed']) {
+        return ['success' => false, 'message' => 'Item already complete', 'over' => true];
+    }
+    
+    // Update quantity picked
+    $newQtyPicked = $item['quantity_picked'] + 1;
+    
+    // Handle serial numbers if tracked
+    $pickedSerials = $item['serial_numbers_picked'] ? json_decode($item['serial_numbers_picked'], true) : [];
+    if ($item['tracking_type'] === 'serial' && $serialNumber) {
+        $pickedSerials[] = $serialNumber;
+    }
+    $serialsJson = json_encode($pickedSerials);
+    
+    // Update the database
+    if ($orderType === 'pullsheet') {
+        $updateQuery = "UPDATE pullsheet_items SET quantity_picked = ?, serial_numbers_picked = ? WHERE id = ?";
+    } else {
+        $updateQuery = "UPDATE change_order_items SET quantity_picked = ?, serial_numbers_picked = ? WHERE id = ?";
+    }
+    
+    executeQuery($updateQuery, [$newQtyPicked, $serialsJson, $orderItemId]);
+    
+    $status = $newQtyPicked >= $item['quantity_needed'] ? 'complete' : 'incomplete';
+    if ($newQtyPicked > $item['quantity_needed']) {
+        $status = 'over';
+    }
+    
+    return [
+        'success' => true,
+        'message' => 'Item scanned successfully',
+        'quantity_picked' => $newQtyPicked,
+        'quantity_needed' => $item['quantity_needed'],
+        'status' => $status
+    ];
+}
+
+/**
+ * Check if all items in an order are picked
+ * @param string $orderType 'pullsheet' or 'changeorder'
+ * @param int $orderId Order ID
+ * @return array Status with complete flag and details
+ */
+function isPickingComplete($orderType, $orderId) {
+    if ($orderType === 'pullsheet') {
+        $query = "SELECT COUNT(*) as total,
+                         SUM(CASE WHEN quantity_picked >= quantity_needed THEN 1 ELSE 0 END) as complete,
+                         SUM(CASE WHEN quantity_picked > quantity_needed THEN 1 ELSE 0 END) as over
+                  FROM pullsheet_items
+                  WHERE pullsheet_id = ?";
+    } else {
+        $query = "SELECT COUNT(*) as total,
+                         SUM(CASE WHEN quantity_picked >= quantity THEN 1 ELSE 0 END) as complete,
+                         SUM(CASE WHEN quantity_picked > quantity THEN 1 ELSE 0 END) as over
+                  FROM change_order_items
+                  WHERE change_order_id = ?";
+    }
+    
+    $result = executeQuery($query, [$orderId]);
+    $stats = fetchAssoc($result);
+    
+    return [
+        'complete' => ($stats['complete'] == $stats['total']),
+        'total' => $stats['total'],
+        'picked' => $stats['complete'],
+        'over' => $stats['over']
+    ];
+}
+
+/**
+ * Save signature data
+ * @param string $signatureData Base64 encoded signature image
+ * @param string $firstName First name
+ * @param string $lastName Last name
+ * @return string|false Signature filename or false on failure
+ */
+function saveSignature($signatureData, $firstName, $lastName) {
+    // Create signatures directory if needed
+    $signaturesDir = UPLOADS_PATH . '/signatures';
+    if (!file_exists($signaturesDir)) {
+        mkdir($signaturesDir, 0755, true);
+    }
+    
+    // Remove data:image/png;base64, prefix if present
+    $signatureData = preg_replace('/^data:image\/png;base64,/', '', $signatureData);
+    
+    // Decode base64
+    $imageData = base64_decode($signatureData);
+    if ($imageData === false) {
+        return false;
+    }
+    
+    // Generate unique filename
+    $filename = 'sig_' . time() . '_' . uniqid() . '.png';
+    $filepath = $signaturesDir . '/' . $filename;
+    
+    // Save file
+    if (file_put_contents($filepath, $imageData)) {
+        return $filename;
+    }
+    
+    return false;
+}
+
+/**
+ * Finalize pick session - mark order as picked
+ * @param string $orderType 'pullsheet' or 'changeorder'
+ * @param int $orderId Order ID
+ * @param int $userId User ID who picked
+ * @param string|null $signatureFilename Signature filename (if required)
+ * @param string|null $signatureName Signature name (if required)
+ * @return bool Success status
+ */
+function finalizePickSession($orderType, $orderId, $userId, $signatureFilename = null, $signatureName = null) {
+    $signatureData = $signatureFilename ? 'uploads/signatures/' . $signatureFilename : null;
+    
+    if ($orderType === 'pullsheet') {
+        $query = "UPDATE pullsheets SET status = 'picked', picked_by = ?, signature_data = ?, signature_name = ? WHERE id = ?";
+    } else {
+        $query = "UPDATE change_orders SET status = 'picked', picked_by = ?, signature_data = ?, signature_name = ? WHERE id = ?";
+    }
+    
+    executeQuery($query, [$userId, $signatureData, $signatureName, $orderId]);
+    
+    // Create notification for creator
+    createNotification($orderType, $orderId, 'picked');
+    
+    return true;
+}
+
+/**
+ * Get order for return mode
+ * @param string $barcode Order barcode
+ * @return array|null Order data or null
+ */
+function getOrderForReturn($barcode) {
+    $conn = getDbConnection();
+    
+    // Try pull sheet
+    $query = "SELECT 'pullsheet' as order_type, p.id, p.barcode, p.show_id, p.status, p.created_by, p.picked_by,
+                     s.name as show_name, s.color as show_color,
+                     u.first_name, u.last_name
+              FROM pullsheets p
+              JOIN shows s ON p.show_id = s.id
+              JOIN users u ON p.created_by = u.id
+              WHERE p.barcode = ? AND p.status = 'picked'";
+    
+    $result = executeQuery($query, [$barcode]);
+    if ($result && numRows($result) > 0) {
+        $order = fetchAssoc($result);
+        $order['items'] = getPullSheetItemsForReturn($order['id']);
+        return $order;
+    }
+    
+    // Try change order
+    $query = "SELECT 'changeorder' as order_type, c.id, c.barcode, c.show_id, c.status, c.created_by, c.picked_by,
+                     s.name as show_name, s.color as show_color,
+                     u.first_name, u.last_name
+              FROM change_orders c
+              JOIN shows s ON c.show_id = s.id
+              JOIN users u ON c.created_by = u.id
+              WHERE c.barcode = ? AND c.status = 'picked'";
+    
+    $result = executeQuery($query, [$barcode]);
+    if ($result && numRows($result) > 0) {
+        $order = fetchAssoc($result);
+        $order['items'] = getChangeOrderItemsForReturn($order['id']);
+        return $order;
+    }
+    
+    return null;
+}
+
+/**
+ * Get pull sheet items for return interface
+ * @param int $pullsheetId Pull sheet ID
+ * @return array Items
+ */
+function getPullSheetItemsForReturn($pullsheetId) {
+    // Same as picking but we're checking returns
+    return getPullSheetItemsForPicking($pullsheetId);
+}
+
+/**
+ * Get change order items for return interface
+ * @param int $changeOrderId Change order ID
+ * @return array Items
+ */
+function getChangeOrderItemsForReturn($changeOrderId) {
+    // Same as picking but we're checking returns
+    return getChangeOrderItemsForPicking($changeOrderId);
+}
+
+/**
+ * Record item return scan
+ * @param string $orderType 'pullsheet' or 'changeorder'
+ * @param int $orderItemId Order item ID
+ * @param string $itemBarcode Scanned item barcode
+ * @return array Status
+ */
+function recordReturnScan($orderType, $orderItemId, $itemBarcode) {
+    // For returns, we're essentially the same as picking but updating stock back
+    return recordItemScan($orderType, $orderItemId, $itemBarcode);
+}
+
+/**
+ * Check if all items returned
+ * @param string $orderType 'pullsheet' or 'changeorder'
+ * @param int $orderId Order ID
+ * @return array Status
+ */
+function isReturnComplete($orderType, $orderId) {
+    // Same check as picking complete
+    return isPickingComplete($orderType, $orderId);
+}
+
+/**
+ * Finalize return session
+ * @param string $orderType 'pullsheet' or 'changeorder'
+ * @param int $orderId Order ID
+ * @param int $userId User ID
+ * @param string|null $signatureFilename Signature filename
+ * @param string|null $signatureName Signature name
+ * @return bool Success
+ */
+function finalizeReturnSession($orderType, $orderId, $userId, $signatureFilename = null, $signatureName = null) {
+    $conn = getDbConnection();
+    $signatureData = $signatureFilename ? 'uploads/signatures/' . $signatureFilename : null;
+    
+    // Update order status
+    if ($orderType === 'pullsheet') {
+        $query = "UPDATE pullsheets SET status = 'returned', returned_by = ?, signature_data = ?, signature_name = ? WHERE id = ?";
+        executeQuery($query, [$userId, $signatureData, $signatureName, $orderId]);
+        
+        // Return items to stock
+        $itemsQuery = "SELECT item_id, quantity_picked FROM pullsheet_items WHERE pullsheet_id = ?";
+    } else {
+        $query = "UPDATE change_orders SET status = 'returned', returned_by = ?, signature_data = ?, signature_name = ? WHERE id = ?";
+        executeQuery($query, [$userId, $signatureData, $signatureName, $orderId]);
+        
+        // Return items to stock
+        $itemsQuery = "SELECT item_id, quantity_picked, action FROM change_order_items WHERE change_order_id = ?";
+    }
+    
+    // Get items and return to stock
+    $itemsResult = executeQuery($itemsQuery, [$orderId]);
+    while ($itemsResult && $item = fetchAssoc($itemsResult)) {
+        if ($orderType === 'changeorder' && $item['action'] === 'remove') {
+            // For change order remove actions, we already added back to stock on approval
+            continue;
+        }
+        // Add quantity back to in_stock_quantity
+        $updateStock = "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?";
+        executeQuery($updateStock, [$item['quantity_picked'], $item['item_id']]);
+    }
+    
+    // Create notification
+    createNotification($orderType, $orderId, 'returned');
+    
+    return true;
+}
+
+/**
+ * Create notification for order status change
+ * @param string $orderType 'pullsheet' or 'changeorder'
+ * @param int $orderId Order ID
+ * @param string $action 'picked' or 'returned'
+ */
+function createNotification($orderType, $orderId, $action) {
+    // Get order creator
+    if ($orderType === 'pullsheet') {
+        $query = "SELECT created_by, barcode FROM pullsheets WHERE id = ?";
+    } else {
+        $query = "SELECT created_by, barcode FROM change_orders WHERE id = ?";
+    }
+    
+    $result = executeQuery($query, [$orderId]);
+    if ($result && $order = fetchAssoc($result)) {
+        $message = ucfirst($orderType) . " " . $order['barcode'] . " has been " . $action;
+        
+        $insertQuery = "INSERT INTO notifications (user_id, message, type, created_at) VALUES (?, ?, ?, NOW())";
+        executeQuery($insertQuery, [$order['created_by'], $message, $action]);
+    }
+}
