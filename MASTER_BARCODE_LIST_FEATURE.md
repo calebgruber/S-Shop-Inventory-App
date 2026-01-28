@@ -1,11 +1,13 @@
 # Master Barcode List Feature
 
 ## Overview
-The Master Barcode List feature allows users to generate and print barcode labels for every item in the inventory at once. This is useful for:
-- Initial setup when labeling all inventory items
-- Reprinting labels after damage or loss
-- Creating backup label sheets
-- Printing labels for new items in bulk
+The Master Barcode List feature allows users to generate and print barcode labels for every item in the inventory at once. Barcodes are pre-generated and cached on the server for fast, reliable printing.
+
+## Key Features
+- **Server-Side Caching**: Barcodes are generated once and saved as PNG files on the server
+- **Bulk Generation**: "Generate All Barcodes" button creates all barcodes at once
+- **Fast Loading**: Cached barcodes load instantly, no API delays
+- **Reliable Printing**: PDFs print correctly with all barcode images included
 
 ## Location
 The feature is accessible from the **Paperwork** page (`paperwork.php`) under "Paperwork Tools" section.
@@ -14,11 +16,18 @@ The feature is accessible from the **Paperwork** page (`paperwork.php`) under "P
 
 ### 1. Master Barcode List Page (`master_barcode_list.php`)
 - **View All Items**: Displays all inventory items with their barcodes
+- **Generate All Barcodes**: Pre-generates and caches all barcodes as PNG files
 - **Filtering**: Filter by category to print specific subsets
 - **Sorting**: Sort by item name, barcode, or category
 - **Print All**: Print all barcodes at once (one label per item)
 
-### 2. Barcode Label Format
+### 2. Barcode Caching System
+- **Storage**: Barcodes saved in `uploads/barcodes/` directory
+- **Format**: PNG files named after barcode text
+- **Automatic Caching**: Generates and caches on first use
+- **Manual Regeneration**: "Generate All Barcodes" button for bulk processing
+
+### 3. Barcode Label Format
 - **Dimensions**: 4" x 2" (compatible with Avery 8195 label sheets)
 - **Layout**: 2-column grid layout for efficient printing
 - **Content**: Each label includes:
@@ -35,12 +44,17 @@ The feature is accessible from the **Paperwork** page (`paperwork.php`) under "P
 
 ## How to Use
 
-### Accessing the Feature
+### First Time Setup
 1. Navigate to **Paperwork** page from the main menu
 2. Look for the "Paperwork Tools" section at the top
 3. Click the **"View & Print All Barcodes"** button
+4. **Important**: Click **"Generate All Barcodes"** button first
+   - This will download and save all barcode images to the server
+   - Wait for the confirmation message
+   - Page will reload automatically
+5. Now you can print!
 
-### Printing All Barcodes
+### Printing All Barcodes (After Generation)
 1. On the Master Barcode List page, you'll see all items with preview
 2. Optional: Use filters to narrow down items
    - **Category**: Select a specific category
@@ -62,6 +76,25 @@ The feature is accessible from the **Paperwork** page (`paperwork.php`) under "P
 
 ## Technical Details
 
+### Barcode Caching System
+```
+Workflow:
+1. User clicks "Generate All Barcodes"
+2. AJAX call to generate_barcodes.php
+3. Server fetches all items from database
+4. For each item:
+   - Calls barcodeapi.org API
+   - Saves PNG to uploads/barcodes/
+5. Returns success/failure counts
+6. Page reloads to show cached images
+
+File Structure:
+uploads/barcodes/
+├── ITEM-A1B2C3D4.png
+├── ITEM-E5F6G7H8.png
+└── ...
+```
+
 ### Code Structure
 ```
 master_barcode_list.php
@@ -73,6 +106,27 @@ master_barcode_list.php
 │   ├── Info box (item count)
 │   └── Barcode grid (2-column)
 └── Print styling (@media print)
+```
+
+### Barcode Generation & Caching Functions (includes/functions.php)
+```php
+// Get file path for a barcode
+getBarcodeFilePath($barcodeText)
+
+// Save barcode image to file
+saveBarcodeToFile($barcodeText, $imageData)
+
+// Get cached barcode image
+getCachedBarcodeImage($barcodeText)
+
+// Get or generate barcode (with caching)
+getOrGenerateBarcodeImage($barcodeText, $saveToCache = true)
+
+// Get URL to cached barcode file
+getBarcodeImageUrl($barcodeText)
+
+// Generate all barcodes in database
+generateAllBarcodes()
 ```
 
 ### Database Query
