@@ -50,6 +50,9 @@ $printMode = isset($_GET['print']) && $_GET['print'] === '1';
             <div class="card-header">
                 <h3 class="card-title">Master Barcode List</h3>
                 <div class="ms-auto">
+                    <button onclick="generateAllBarcodes()" class="btn btn-success me-2" id="generateBtn">
+                        <i class="ti ti-download"></i> Generate All Barcodes
+                    </button>
                     <button onclick="window.print()" class="btn btn-primary">
                         <i class="ti ti-printer"></i> Print All Barcodes
                     </button>
@@ -176,16 +179,19 @@ $printMode = isset($_GET['print']) && $_GET['print'] === '1';
                 <?php else: ?>
                 <div class="barcode-grid">
                     <?php 
-                    // Pre-generate all barcodes to avoid per-item API calls in the loop
-                    $barcodeCache = [];
-                    foreach ($items as $item) {
-                        if (!isset($barcodeCache[$item['barcode']])) {
-                            $barcodeCache[$item['barcode']] = 'data:image/png;base64,' . base64_encode(generateCode128Barcode($item['barcode']));
-                        }
-                    }
-                    
+                    // Use cached barcodes or generate them
                     foreach ($items as $item): 
-                        $barcodeData = $barcodeCache[$item['barcode']];
+                        // Try to get cached barcode URL first
+                        $barcodeUrl = getBarcodeImageUrl($item['barcode']);
+                        
+                        if ($barcodeUrl) {
+                            // Use cached file
+                            $barcodeData = $barcodeUrl;
+                        } else {
+                            // Generate and cache if not exists
+                            $imageData = getOrGenerateBarcodeImage($item['barcode'], true);
+                            $barcodeData = 'data:image/png;base64,' . base64_encode($imageData);
+                        }
                     ?>
                         <div class="barcode-label">
                             <div class="barcode-text" title="<?php echo htmlspecialchars($item['name']); ?>">
@@ -206,6 +212,43 @@ $printMode = isset($_GET['print']) && $_GET['print'] === '1';
         </div>
     </div>
 </div>
+
+<script>
+function generateAllBarcodes() {
+    const btn = document.getElementById('generateBtn');
+    const originalText = btn.innerHTML;
+    
+    // Disable button and show loading
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+    
+    // Make AJAX request
+    fetch('generate_barcodes.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Success! Generated ${data.generated} barcodes out of ${data.total} items.${data.failed > 0 ? '\nFailed: ' + data.failed : ''}`);
+            // Reload page to show cached barcodes
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to generate barcodes'));
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    })
+    .finally(() => {
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+</script>
 <?php endif; ?>
 
 <?php require_once 'includes/footer.php'; ?>

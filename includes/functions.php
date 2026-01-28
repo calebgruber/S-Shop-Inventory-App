@@ -93,6 +93,86 @@ function generateUniqueBarcode($prefix = 'ITEM') {
     return $prefix . '-' . strtoupper(substr(uniqid(), -8));
 }
 
+// Barcode caching functions
+function getBarcodeFilePath($barcodeText) {
+    $uploadsDir = __DIR__ . '/../uploads/barcodes';
+    if (!file_exists($uploadsDir)) {
+        @mkdir($uploadsDir, 0755, true);
+    }
+    // Sanitize filename
+    $safeFilename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $barcodeText);
+    return $uploadsDir . '/' . $safeFilename . '.png';
+}
+
+function saveBarcodeToFile($barcodeText, $imageData) {
+    $filePath = getBarcodeFilePath($barcodeText);
+    $success = @file_put_contents($filePath, $imageData);
+    if ($success) {
+        logMessage("Barcode saved: $barcodeText to $filePath", 'INFO');
+        return true;
+    } else {
+        logMessage("Failed to save barcode: $barcodeText", 'ERROR');
+        return false;
+    }
+}
+
+function getCachedBarcodeImage($barcodeText) {
+    $filePath = getBarcodeFilePath($barcodeText);
+    if (file_exists($filePath)) {
+        return file_get_contents($filePath);
+    }
+    return null;
+}
+
+function getOrGenerateBarcodeImage($barcodeText, $saveToCache = true) {
+    // Try to get from cache first
+    $cachedImage = getCachedBarcodeImage($barcodeText);
+    if ($cachedImage !== null) {
+        return $cachedImage;
+    }
+    
+    // Generate new barcode
+    $imageData = generateCode128Barcode($barcodeText);
+    
+    // Save to cache if requested
+    if ($saveToCache && $imageData) {
+        saveBarcodeToFile($barcodeText, $imageData);
+    }
+    
+    return $imageData;
+}
+
+function getBarcodeImageUrl($barcodeText) {
+    $safeFilename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $barcodeText);
+    $filePath = __DIR__ . '/../uploads/barcodes/' . $safeFilename . '.png';
+    
+    if (file_exists($filePath)) {
+        // Return relative URL to the cached file
+        return 'uploads/barcodes/' . $safeFilename . '.png';
+    }
+    
+    return null;
+}
+
+function generateAllBarcodes() {
+    $db = getDB();
+    $items = $db->fetchAll("SELECT barcode FROM items");
+    
+    $success = 0;
+    $failed = 0;
+    
+    foreach ($items as $item) {
+        $imageData = generateCode128Barcode($item['barcode']);
+        if ($imageData && saveBarcodeToFile($item['barcode'], $imageData)) {
+            $success++;
+        } else {
+            $failed++;
+        }
+    }
+    
+    return ['success' => $success, 'failed' => $failed, 'total' => count($items)];
+}
+
 // Item functions
 function getItemById($id) {
     $db = getDB();

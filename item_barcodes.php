@@ -91,7 +91,15 @@ $quantity = $_GET['quantity'] ?? 30;
                 
                 <div class="barcode-grid">
                     <?php 
-                    $barcodeData = 'data:image/png;base64,' . base64_encode(generateCode128Barcode($item['barcode']));
+                    // Use cached barcode or generate
+                    $barcodeUrl = getBarcodeImageUrl($item['barcode']);
+                    if ($barcodeUrl) {
+                        $barcodeData = $barcodeUrl;
+                    } else {
+                        $imageData = getOrGenerateBarcodeImage($item['barcode'], true);
+                        $barcodeData = 'data:image/png;base64,' . base64_encode($imageData);
+                    }
+                    
                     for ($i = 0; $i < $quantity; $i++): 
                     ?>
                         <div class="barcode-label">

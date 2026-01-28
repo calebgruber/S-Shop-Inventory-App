@@ -1,6 +1,8 @@
 # Uploads
 uploads/logos/*
 !uploads/logos/.gitkeep
+uploads/barcodes/*
+!uploads/barcodes/.gitkeep
 
 # Config (if containing sensitive data)
 # includes/config.php
