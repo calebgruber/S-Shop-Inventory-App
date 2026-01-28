@@ -14,6 +14,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             // Try pullsheet first
             $pullsheet = getPullsheetByBarcode($barcode);
             if ($pullsheet && $pullsheet['status'] === 'finalized') {
+                // Check if approval is required and approved
+                if ($pullsheet['requires_approval'] && $pullsheet['approval_status'] !== 'approved') {
+                    echo json_encode(['success' => false, 'message' => 'This pullsheet requires admin approval before it can be picked']);
+                    exit;
+                }
+                
                 $_SESSION['pick_session'] = [
                     'type' => 'pullsheet',
                     'id' => $pullsheet['id'],
@@ -44,6 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             // Try change order for picking
             $changeOrder = getChangeOrderByBarcode($barcode);
             if ($changeOrder && $changeOrder['status'] === 'finalized') {
+                // Check if approval is required and approved
+                if ($changeOrder['requires_approval'] && $changeOrder['approval_status'] !== 'approved') {
+                    echo json_encode(['success' => false, 'message' => 'This change order requires admin approval before it can be picked']);
+                    exit;
+                }
+                
                 // Check if this change order has items to add
                 $itemsToAdd = getDB()->fetchAll(
                     "SELECT * FROM change_order_items WHERE change_order_id = ? AND type = 'add'",
