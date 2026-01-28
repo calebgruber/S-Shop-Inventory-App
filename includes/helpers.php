@@ -709,3 +709,207 @@ function getItemStockInfo($itemId) {
     }
     return null;
 }
+
+/**
+ * Generate unique barcode for change order
+ * @return string
+ */
+function generateChangeOrderBarcode() {
+    $prefix = 'CHG-';
+    $attempts = 0;
+    $maxAttempts = 10;
+    
+    do {
+        $number = str_pad(rand(1, 999999), 6, '0', STR_PAD_LEFT);
+        $barcode = $prefix . $number;
+        
+        $query = "SELECT id FROM change_orders WHERE barcode = ?";
+        $result = executeQuery($query, [$barcode], 's');
+        
+        if (!$result || numRows($result) === 0) {
+            return $barcode;
+        }
+        
+        $attempts++;
+    } while ($attempts < $maxAttempts);
+    
+    return $prefix . time();
+}
+
+/**
+ * Get change order by ID with full details
+ * @param int $id Change order ID
+ * @return array|null
+ */
+function getChangeOrderById($id) {
+    $query = "SELECT co.*, 
+              s.name as show_name, s.color as show_color,
+              ts.name as theatre_space_name,
+              u1.first_name as creator_first, u1.last_name as creator_last,
+              u2.first_name as approver_first, u2.last_name as approver_last
+              FROM change_orders co
+              LEFT JOIN shows s ON co.show_id = s.id
+              LEFT JOIN theatre_spaces ts ON s.theatre_space_id = ts.id
+              LEFT JOIN users u1 ON co.created_by = u1.id
+              LEFT JOIN users u2 ON co.finalized_by = u2.id
+              WHERE co.id = ?";
+    $result = executeQuery($query, [$id], 'i');
+    
+    if ($result && numRows($result) > 0) {
+        return fetchAssoc($result);
+    }
+    return null;
+}
+
+/**
+ * Get items in a change order with full details
+ * @param int $changeOrderId Change order ID
+ * @return array
+ */
+function getChangeOrderItems($changeOrderId) {
+    $query = "SELECT coi.*, 
+              i.name as item_name, i.barcode as item_barcode,
+              i.tracking_type, i.in_stock_quantity, i.location,
+              i.photo_path, i.total_quantity,
+              c.name as category_name,
+              sc.name as subcategory_name
+              FROM change_order_items coi
+              LEFT JOIN items i ON coi.item_id = i.id
+              LEFT JOIN categories c ON i.category_id = c.id
+              LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
+              WHERE coi.change_order_id = ?
+              ORDER BY coi.action DESC, c.name, sc.name, i.name";
+    $result = executeQuery($query, [$changeOrderId], 'i');
+    
+    $items = [];
+    if ($result && numRows($result) > 0) {
+        while ($row = fetchAssoc($result)) {
+            $items[] = $row;
+        }
+    }
+    return $items;
+}
+
+/**
+ * Check if user can edit a change order
+ * @param int $changeOrderId Change order ID
+ * @param int $userId User ID
+ * @param string $role User role
+ * @return bool
+ */
+function canEditChangeOrder($changeOrderId, $userId, $role) {
+    if ($role === 'admin') {
+        return true;
+    }
+    
+    $changeOrder = getChangeOrderById($changeOrderId);
+    if (!$changeOrder) {
+        return false;
+    }
+    
+    // Only drafts can be edited
+    if ($changeOrder['status'] !== 'draft') {
+        return false;
+    }
+    
+    // Owner can edit their own draft
+    return $changeOrder['created_by'] == $userId;
+}
+
+/**
+ * Check if user can finalize change orders
+ * @param string $role User role
+ * @return bool
+ */
+function canFinalizeChangeOrder($role) {
+    return $role === 'admin';
+}
+
+/**
+ * Get change order status badge HTML
+ * @param string $status Status
+ * @return string
+ */
+function getChangeOrderStatusBadge($status) {
+    $badges = [
+        'draft' => '<span class="badge bg-secondary">Draft</span>',
+        'pending_approval' => '<span class="badge bg-warning">Pending Approval</span>',
+        'finalized' => '<span class="badge bg-success">Finalized</span>',
+        'cancelled' => '<span class="badge bg-danger">Cancelled</span>',
+    ];
+    return $badges[$status] ?? '<span class="badge bg-secondary">' . htmlspecialchars($status) . '</span>';
+}
+
+/**
+ * Apply stock changes for a change order
+ * @param int $changeOrderId Change order ID
+ * @return bool
+ */
+function applyChangeOrderStockChanges($changeOrderId) {
+    $items = getChangeOrderItems($changeOrderId);
+    
+    foreach ($items as $item) {
+        if ($item['action'] === 'add') {
+            // Adding items - increase in_stock and total
+            $query = "UPDATE items 
+                      SET in_stock_quantity = in_stock_quantity + ?,
+                          total_quantity = total_quantity + ?
+                      WHERE id = ?";
+            $result = executeQuery($query, [
+                $item['quantity'],
+                $item['quantity'],
+                $item['item_id']
+            ], 'iii');
+        } else {
+            // Removing items - decrease both in_stock and total
+            $query = "UPDATE items 
+                      SET in_stock_quantity = in_stock_quantity - ?,
+                          total_quantity = total_quantity - ?
+                      WHERE id = ? AND in_stock_quantity >= ? AND total_quantity >= ?";
+            $result = executeQuery($query, [
+                $item['quantity'],
+                $item['quantity'],
+                $item['item_id'],
+                $item['quantity'],
+                $item['quantity']
+            ], 'iiiii');
+        }
+        
+        if (!$result) {
+            error_log("Failed to apply stock changes for change order {$changeOrderId}, item {$item['item_id']}");
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+/**
+ * Validate that items being removed have sufficient stock
+ * @param int $changeOrderId Change order ID
+ * @return array ['valid' => bool, 'errors' => array]
+ */
+function validateChangeOrderStock($changeOrderId) {
+    $items = getChangeOrderItems($changeOrderId);
+    $errors = [];
+    
+    foreach ($items as $item) {
+        // Only validate "remove" actions
+        if ($item['action'] === 'remove') {
+            $available = min($item['in_stock_quantity'], $item['total_quantity']);
+            if ($available < $item['quantity']) {
+                $errors[] = [
+                    'item_name' => $item['item_name'],
+                    'action' => 'remove',
+                    'needed' => $item['quantity'],
+                    'available' => $available
+                ];
+            }
+        }
+    }
+    
+    return [
+        'valid' => empty($errors),
+        'errors' => $errors
+    ];
+}
