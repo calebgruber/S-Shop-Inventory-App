@@ -158,7 +158,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     <div class="card-body">
         <div class="row g-2">
             <div class="col-6 col-md-4 col-lg-2">
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center" style="cursor: pointer;" id="redCableBlock">
                     <div class="me-2" style="width: 24px; height: 24px; background-color: #dc3545; border-radius: 2px;"></div>
                     <div>
                         <strong>Red</strong><br>
@@ -618,6 +618,17 @@ document.getElementById('quickLookupModal')?.addEventListener('hidden.bs.modal',
 // Focus input when modal opens
 document.getElementById('quickLookupModal')?.addEventListener('shown.bs.modal', function() {
     document.getElementById('quickLookupInput').focus();
+});
+
+// Easter egg: Bonk sound when red cable block is clicked
+document.getElementById('redCableBlock')?.addEventListener('click', function() {
+    try {
+        const audio = new Audio('assets/sounds/bonk.mp3');
+        audio.volume = 1.0;
+        audio.play().catch(err => console.log('Bonk sound failed:', err));
+    } catch (err) {
+        console.log('Bonk Easter egg failed:', err);
+    }
 });
 </script>
 

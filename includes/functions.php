@@ -390,6 +390,11 @@ function isStudent() {
     return $user && $user['role'] === 'student';
 }
 
+function isProductionAudio() {
+    $user = getCurrentUser();
+    return $user && $user['role'] === 'production_audio';
+}
+
 function requireRole($role) {
     $user = getCurrentUser();
     if (!$user) {
@@ -428,11 +433,17 @@ function hasPermission($permissionKey) {
         if ($user['role'] === 'designer') {
             // Designers can view dashboard, submit student requests (not approve), view pullsheets, change orders, and quick lookup
             $designerPermissions = ['dashboard', 'student_requests', 'pullsheets', 
-                                   'change_orders', 'quick_lookup'];
+                                   'change_orders', 'quick_lookup', 'shows', 'items'];
             return in_array($permissionKey, $designerPermissions);
+        } else if ($user['role'] === 'production_audio') {
+            // Production Audio: read-only inventory, create orders, assigned to shows, can pick/return (with signature)
+            $productionAudioPermissions = ['dashboard', 'items', 'shows', 'pullsheets', 
+                                          'change_orders', 'pick_mode', 'return_mode', 
+                                          'student_requests', 'quick_lookup'];
+            return in_array($permissionKey, $productionAudioPermissions);
         } else if ($user['role'] === 'student') {
-            // Students can only view dashboard and make requests
-            $studentPermissions = ['dashboard', 'student_requests'];
+            // Students can only view dashboard, read-only inventory, and make requests
+            $studentPermissions = ['dashboard', 'student_requests', 'items', 'quick_lookup'];
             return in_array($permissionKey, $studentPermissions);
         }
         return false;
@@ -697,15 +708,166 @@ function canAccessShow($userId, $showId) {
         return true;
     }
     
-    // For designers, check if they are assigned to the show
-    if ($user && $user['role'] === 'designer') {
+    // For designers and production audio, check if they are assigned to the show
+    if ($user && in_array($user['role'], ['designer', 'production_audio'])) {
         $db = getDB();
         $assignment = $db->fetchOne(
-            "SELECT id FROM user_show_assignments WHERE user_id = ? AND show_id = ?",
+            "SELECT id FROM show_assignments WHERE user_id = ? AND show_id = ?",
             [$userId, $showId]
         );
         return $assignment !== null;
     }
     
     return false;
+}
+
+// Approval system functions
+function requiresApproval($userId) {
+    $user = getCurrentUser();
+    if (!$user) return false;
+    
+    // Designers and Production Audio users need approval
+    return in_array($user['role'], ['designer', 'production_audio']);
+}
+
+function approvePullsheet($pullsheetId, $adminId) {
+    $db = getDB();
+    try {
+        $db->query(
+            "UPDATE pullsheets SET approval_status = 'approved', approved_by = ?, approved_at = NOW() 
+             WHERE id = ?",
+            [$adminId, $pullsheetId]
+        );
+        
+        // Get pullsheet details for notification
+        $pullsheet = getPullsheetById($pullsheetId);
+        if ($pullsheet && $pullsheet['created_by_id']) {
+            createNotification(
+                $pullsheet['created_by_id'],
+                'pullsheet_approved',
+                'Your pullsheet for ' . $pullsheet['show_name'] . ' has been approved',
+                'pullsheet_view.php?id=' . $pullsheetId
+            );
+        }
+        
+        logMessage("Pullsheet $pullsheetId approved by admin $adminId", 'INFO');
+        return true;
+    } catch (Exception $e) {
+        logException($e, "Error approving pullsheet $pullsheetId");
+        return false;
+    }
+}
+
+function rejectPullsheet($pullsheetId, $adminId) {
+    $db = getDB();
+    try {
+        $db->query(
+            "UPDATE pullsheets SET approval_status = 'rejected', approved_by = ?, approved_at = NOW() 
+             WHERE id = ?",
+            [$adminId, $pullsheetId]
+        );
+        
+        // Get pullsheet details for notification
+        $pullsheet = getPullsheetById($pullsheetId);
+        if ($pullsheet && $pullsheet['created_by_id']) {
+            createNotification(
+                $pullsheet['created_by_id'],
+                'pullsheet_rejected',
+                'Your pullsheet for ' . $pullsheet['show_name'] . ' has been rejected',
+                'pullsheet_edit.php?id=' . $pullsheetId
+            );
+        }
+        
+        logMessage("Pullsheet $pullsheetId rejected by admin $adminId", 'INFO');
+        return true;
+    } catch (Exception $e) {
+        logException($e, "Error rejecting pullsheet $pullsheetId");
+        return false;
+    }
+}
+
+function approveChangeOrder($changeOrderId, $adminId) {
+    $db = getDB();
+    try {
+        $db->query(
+            "UPDATE change_orders SET approval_status = 'approved', approved_by = ?, approved_at = NOW() 
+             WHERE id = ?",
+            [$adminId, $changeOrderId]
+        );
+        
+        // Get change order details for notification
+        $changeOrder = getChangeOrderById($changeOrderId);
+        if ($changeOrder && $changeOrder['created_by_id']) {
+            createNotification(
+                $changeOrder['created_by_id'],
+                'change_order_approved',
+                'Your change order for ' . $changeOrder['show_name'] . ' has been approved',
+                'change_order_view.php?id=' . $changeOrderId
+            );
+        }
+        
+        logMessage("Change order $changeOrderId approved by admin $adminId", 'INFO');
+        return true;
+    } catch (Exception $e) {
+        logException($e, "Error approving change order $changeOrderId");
+        return false;
+    }
+}
+
+function rejectChangeOrder($changeOrderId, $adminId) {
+    $db = getDB();
+    try {
+        $db->query(
+            "UPDATE change_orders SET approval_status = 'rejected', approved_by = ?, approved_at = NOW() 
+             WHERE id = ?",
+            [$adminId, $changeOrderId]
+        );
+        
+        // Get change order details for notification
+        $changeOrder = getChangeOrderById($changeOrderId);
+        if ($changeOrder && $changeOrder['created_by_id']) {
+            createNotification(
+                $changeOrder['created_by_id'],
+                'change_order_rejected',
+                'Your change order for ' . $changeOrder['show_name'] . ' has been rejected',
+                'change_order_edit.php?id=' . $changeOrderId
+            );
+        }
+        
+        logMessage("Change order $changeOrderId rejected by admin $adminId", 'INFO');
+        return true;
+    } catch (Exception $e) {
+        logException($e, "Error rejecting change order $changeOrderId");
+        return false;
+    }
+}
+
+// Signature functions
+function saveSignature($userId, $signatureData, $firstName, $lastName, $pullsheetId = null, $changeOrderId = null) {
+    $db = getDB();
+    try {
+        $db->query(
+            "INSERT INTO signatures (user_id, pullsheet_id, change_order_id, signature_data, first_name, last_name) 
+             VALUES (?, ?, ?, ?, ?, ?)",
+            [$userId, $pullsheetId, $changeOrderId, $signatureData, $firstName, $lastName]
+        );
+        
+        return $db->lastInsertId();
+    } catch (Exception $e) {
+        logException($e, "Error saving signature");
+        return false;
+    }
+}
+
+function getSignature($signatureId) {
+    $db = getDB();
+    return $db->fetchOne("SELECT * FROM signatures WHERE id = ?", [$signatureId]);
+}
+
+function requiresSignature($userId) {
+    $user = getCurrentUser();
+    if (!$user) return false;
+    
+    // Production Audio users need admin signature
+    return $user['role'] === 'production_audio';
 }

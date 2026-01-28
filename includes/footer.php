@@ -45,8 +45,10 @@
             if (themeToggle) themeToggle.innerHTML = '<i class="ti ti-sun icon"></i>';
         }
         
-        // Pink Mode Easter Egg - Single click on logo
+        // Pink Mode Easter Egg - Triple click on logo
         let pinkModeActive = localStorage.getItem('pinkMode') === 'true';
+        let logoClickCount = 0;
+        let logoClickTimer = null;
         
         function togglePinkMode() {
             pinkModeActive = !pinkModeActive;
@@ -55,23 +57,66 @@
             if (pinkModeActive) {
                 document.body.classList.add('pink-mode');
                 
-                // Add floating hearts
-                for (let i = 0; i < 9; i++) {
-                    const heart = document.createElement('div');
-                    heart.className = 'heart';
-                    heart.textContent = '💖';
-                    heart.style.bottom = '-50px';
-                    document.body.appendChild(heart);
+                // Add floating hearts and cats
+                for (let i = 0; i < 15; i++) {
+                    setTimeout(() => {
+                        const emoji = Math.random() > 0.5 ? '💖' : '🐱';
+                        const floater = document.createElement('div');
+                        floater.className = 'heart';
+                        floater.textContent = emoji;
+                        floater.style.left = Math.random() * 100 + '%';
+                        floater.style.bottom = '-50px';
+                        document.body.appendChild(floater);
+                    }, i * 200);
                 }
+                
+                // Play random meow sounds
+                startRandomMeows();
                 
                 console.log('🐱 Pink mode activated! Meow! 🎀');
             } else {
                 document.body.classList.remove('pink-mode');
                 
-                // Remove floating hearts
+                // Remove floating hearts and cats
                 document.querySelectorAll('.heart').forEach(h => h.remove());
                 
+                // Stop meow sounds
+                stopRandomMeows();
+                
                 console.log('Pink mode deactivated.');
+            }
+        }
+        
+        // Random meow sound system for pink mode
+        let meowInterval = null;
+        
+        function playRandomMeow() {
+            try {
+                const audio = new Audio('assets/sounds/meow.mp3');
+                audio.volume = 0.5;
+                audio.play().catch(err => console.log('Meow sound failed:', err));
+            } catch (err) {
+                console.log('Meow Easter egg failed:', err);
+            }
+        }
+        
+        function startRandomMeows() {
+            // Schedule next meow randomly between 5 seconds and 5 minutes
+            function scheduleNextMeow() {
+                if (!pinkModeActive) return;
+                const delay = Math.random() * (300000 - 5000) + 5000; // 5 sec to 5 min
+                meowInterval = setTimeout(() => {
+                    playRandomMeow();
+                    scheduleNextMeow();
+                }, delay);
+            }
+            scheduleNextMeow();
+        }
+        
+        function stopRandomMeows() {
+            if (meowInterval) {
+                clearTimeout(meowInterval);
+                meowInterval = null;
             }
         }
         
@@ -79,25 +124,67 @@
         if (pinkModeActive) {
             document.body.classList.add('pink-mode');
             
-            // Add floating hearts on page load if pink mode is active
+            // Add floating hearts and cats on page load if pink mode is active
             setTimeout(() => {
-                for (let i = 0; i < 9; i++) {
-                    const heart = document.createElement('div');
-                    heart.className = 'heart';
-                    heart.textContent = '💖';
-                    heart.style.bottom = '-50px';
-                    document.body.appendChild(heart);
+                for (let i = 0; i < 15; i++) {
+                    setTimeout(() => {
+                        const emoji = Math.random() > 0.5 ? '💖' : '🐱';
+                        const floater = document.createElement('div');
+                        floater.className = 'heart';
+                        floater.textContent = emoji;
+                        floater.style.left = Math.random() * 100 + '%';
+                        floater.style.bottom = '-50px';
+                        document.body.appendChild(floater);
+                    }, i * 100);
                 }
             }, 100);
+            
+            // Start random meows
+            startRandomMeows();
         }
         
-        // Attach single-click handler to logo
+        // Attach triple-click handler to logo
         const logo = document.querySelector('.navbar-brand');
         if (logo) {
             logo.addEventListener('click', (e) => {
                 e.preventDefault();
+                logoClickCount++;
+                
+                if (logoClickTimer) {
+                    clearTimeout(logoClickTimer);
+                }
+                
+                if (logoClickCount === 3) {
+                    togglePinkMode();
+                    logoClickCount = 0;
+                } else {
+                    logoClickTimer = setTimeout(() => {
+                        logoClickCount = 0;
+                    }, 500); // Reset after 500ms
+                }
+            });
+        }
+        
+        // Add cat icon to exit pink mode
+        if (pinkModeActive && logo) {
+            const catIcon = document.createElement('span');
+            catIcon.innerHTML = ' 🐱';
+            catIcon.style.cursor = 'pointer';
+            catIcon.title = 'Exit pink mode';
+            catIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
                 togglePinkMode();
             });
+            logo.appendChild(catIcon);
+        }
+        
+        // Random Guy Easter Egg - 5% chance on page load
+        if (Math.random() < 0.05) {
+            document.body.style.backgroundImage = 'url(https://preview.tabler.io/static/avatars/000m.jpg)';
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundAttachment = 'fixed';
+            console.log('👨 Random guy appeared!');
         }
         
         function toggleTheme(e) {
