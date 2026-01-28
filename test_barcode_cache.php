@@ -34,13 +34,23 @@
 <body>
     <h1>🏷️ Barcode Caching System Test</h1>
     
+    <?php
+    require_once 'includes/functions.php';
+    
+    // Check permissions
+    if (!hasPermission('paperwork')) {
+        echo '<div class="test-section"><p class="error">❌ Permission denied. You need paperwork permission to access this test page.</p></div>';
+        echo '<p><a href="index.php">Return to Home</a></p>';
+        require_once 'includes/footer.php';
+        exit;
+    }
+    ?>
+    
     <div class="test-section">
         <h2>Test 1: Generate Single Barcode</h2>
         <p>This tests if a barcode can be generated and saved to the server.</p>
         <?php
-        require_once 'includes/functions.php';
-        
-        $testBarcode = 'TEST-' . time();
+        $testBarcode = 'TEST-' . uniqid();
         echo "<p>Testing barcode: <strong>$testBarcode</strong></p>";
         
         // Generate and save

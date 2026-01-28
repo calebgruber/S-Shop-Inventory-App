@@ -94,18 +94,43 @@ function generateUniqueBarcode($prefix = 'ITEM') {
 }
 
 // Barcode caching functions
+function sanitizeBarcodeFilename($barcodeText) {
+    // Use hash to ensure uniqueness and avoid collisions
+    return md5($barcodeText);
+}
+
 function getBarcodeFilePath($barcodeText) {
+    // Validate input
+    if (empty($barcodeText) || strlen($barcodeText) > 255) {
+        logMessage("Invalid barcode text: empty or too long", 'ERROR');
+        return null;
+    }
+    
     $uploadsDir = __DIR__ . '/../uploads/barcodes';
     if (!file_exists($uploadsDir)) {
-        @mkdir($uploadsDir, 0755, true);
+        $result = @mkdir($uploadsDir, 0750, true);
+        if (!$result) {
+            logMessage("Failed to create barcodes directory", 'ERROR');
+            return null;
+        }
     }
-    // Sanitize filename
-    $safeFilename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $barcodeText);
+    
+    $safeFilename = sanitizeBarcodeFilename($barcodeText);
     return $uploadsDir . '/' . $safeFilename . '.png';
 }
 
 function saveBarcodeToFile($barcodeText, $imageData) {
+    // Validate image data
+    if (empty($imageData) || $imageData === false) {
+        logMessage("Invalid image data for barcode: $barcodeText", 'ERROR');
+        return false;
+    }
+    
     $filePath = getBarcodeFilePath($barcodeText);
+    if ($filePath === null) {
+        return false;
+    }
+    
     $success = @file_put_contents($filePath, $imageData);
     if ($success) {
         logMessage("Barcode saved: $barcodeText to $filePath", 'INFO');
@@ -118,8 +143,17 @@ function saveBarcodeToFile($barcodeText, $imageData) {
 
 function getCachedBarcodeImage($barcodeText) {
     $filePath = getBarcodeFilePath($barcodeText);
+    if ($filePath === null) {
+        return null;
+    }
+    
     if (file_exists($filePath)) {
-        return file_get_contents($filePath);
+        $data = @file_get_contents($filePath);
+        if ($data === false) {
+            logMessage("Failed to read cached barcode: $barcodeText", 'ERROR');
+            return null;
+        }
+        return $data;
     }
     return null;
 }
@@ -134,8 +168,14 @@ function getOrGenerateBarcodeImage($barcodeText, $saveToCache = true) {
     // Generate new barcode
     $imageData = generateCode128Barcode($barcodeText);
     
+    // Validate generated image
+    if (!$imageData || empty($imageData)) {
+        logMessage("Failed to generate barcode: $barcodeText", 'ERROR');
+        return false;
+    }
+    
     // Save to cache if requested
-    if ($saveToCache && $imageData) {
+    if ($saveToCache) {
         saveBarcodeToFile($barcodeText, $imageData);
     }
     
@@ -143,10 +183,13 @@ function getOrGenerateBarcodeImage($barcodeText, $saveToCache = true) {
 }
 
 function getBarcodeImageUrl($barcodeText) {
-    $safeFilename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $barcodeText);
-    $filePath = __DIR__ . '/../uploads/barcodes/' . $safeFilename . '.png';
+    $filePath = getBarcodeFilePath($barcodeText);
+    if ($filePath === null) {
+        return null;
+    }
     
     if (file_exists($filePath)) {
+        $safeFilename = sanitizeBarcodeFilename($barcodeText);
         // Return relative URL to the cached file
         return 'uploads/barcodes/' . $safeFilename . '.png';
     }
@@ -163,10 +206,11 @@ function generateAllBarcodes() {
     
     foreach ($items as $item) {
         $imageData = generateCode128Barcode($item['barcode']);
-        if ($imageData && saveBarcodeToFile($item['barcode'], $imageData)) {
+        if ($imageData && !empty($imageData) && saveBarcodeToFile($item['barcode'], $imageData)) {
             $success++;
         } else {
             $failed++;
+            logMessage("Failed to generate/save barcode: {$item['barcode']}", 'ERROR');
         }
     }
     

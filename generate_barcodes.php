@@ -1,10 +1,15 @@
 <?php
 require_once 'includes/functions.php';
 
-// Check permissions
+// Check permissions FIRST
 if (!hasPermission('paperwork')) {
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'error' => 'Permission denied']);
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Permission denied']);
+    } else {
+        setAlert('You do not have permission to generate barcodes', 'danger');
+        redirect('master_barcode_list.php');
+    }
     exit;
 }
 
@@ -14,12 +19,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     try {
         $result = generateAllBarcodes();
-        echo json_encode([
-            'success' => true,
-            'generated' => $result['success'],
-            'failed' => $result['failed'],
-            'total' => $result['total']
-        ]);
+        
+        // Check if at least some barcodes were generated
+        if ($result['success'] > 0) {
+            echo json_encode([
+                'success' => true,
+                'generated' => $result['success'],
+                'failed' => $result['failed'],
+                'total' => $result['total']
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Failed to generate any barcodes. Check logs for details.',
+                'failed' => $result['failed'],
+                'total' => $result['total']
+            ]);
+        }
     } catch (Exception $e) {
         logException($e, 'Error generating barcodes');
         echo json_encode([

@@ -231,19 +231,18 @@ function generateAllBarcodes() {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            alert(`Success! Generated ${data.generated} barcodes out of ${data.total} items.${data.failed > 0 ? '\nFailed: ' + data.failed : ''}`);
+        if (data.success || data.generated > 0) {
+            alert(`Success! Generated ${data.generated} barcodes out of ${data.total} items${data.failed > 0 ? '.\nFailed: ' + data.failed : ''}.`);
             // Reload page to show cached barcodes
             window.location.reload();
         } else {
             alert('Error: ' + (data.error || 'Failed to generate barcodes'));
+            btn.disabled = false;
+            btn.innerHTML = originalText;
         }
     })
     .catch(error => {
         alert('Error: ' + error.message);
-    })
-    .finally(() => {
-        // Re-enable button
         btn.disabled = false;
         btn.innerHTML = originalText;
     });
