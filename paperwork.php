@@ -12,6 +12,9 @@ require_once 'includes/header.php';
 
 $db = getDB();
 
+// Check if there's a master barcode list request
+$showMasterBarcodeLink = true;
+
 // Get selected show
 $selectedShowId = $_GET['show_id'] ?? null;
 $categoryFilter = $_GET['category'] ?? 'all';
@@ -91,6 +94,42 @@ if ($selectedShowId) {
     }
 }
 ?>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Paperwork Tools</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <i class="ti ti-barcode icon mb-2" style="font-size: 2rem;"></i>
+                                <h4 class="card-title">Master Barcode List</h4>
+                                <p class="text-muted">Print all barcodes for every item in inventory</p>
+                                <a href="master_barcode_list.php" class="btn btn-primary">
+                                    <i class="ti ti-printer"></i> View & Print All Barcodes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="alert alert-info mb-0">
+                            <h4 class="alert-title"><i class="ti ti-info-circle"></i> About Paperwork</h4>
+                            <ul class="mb-0">
+                                <li><strong>Master Barcode List:</strong> Generate and print barcode labels for all items in your inventory at once</li>
+                                <li><strong>Pullsheets:</strong> Select a show below to view and print pullsheets and change orders</li>
+                                <li><strong>Individual Item Barcodes:</strong> Print barcodes for specific items from the Items page</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="row mb-4">
     <div class="col-md-12">
