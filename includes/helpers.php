@@ -269,3 +269,192 @@ function generateSimpleBarcodeText($text) {
         '</text>
     </svg>';
 }
+
+/**
+ * =====================================================
+ * SHOWS MANAGEMENT HELPER FUNCTIONS
+ * =====================================================
+ */
+
+/**
+ * Get all theatre spaces from database
+ * @return array
+ */
+function getAllTheatreSpaces() {
+    global $conn;
+    $query = "SELECT * FROM theatre_spaces ORDER BY name ASC";
+    $result = executeQuery($query);
+    
+    $spaces = [];
+    if ($result && numRows($result) > 0) {
+        while ($row = fetchAssoc($result)) {
+            $spaces[] = $row;
+        }
+    }
+    return $spaces;
+}
+
+/**
+ * Get users filtered by role
+ * @param string $role The role to filter by (admin, designer, production_audio, student)
+ * @return array
+ */
+function getUsersByRole($role = null) {
+    global $conn;
+    
+    if ($role) {
+        $query = "SELECT id, username, first_name, last_name, email, role 
+                  FROM users 
+                  WHERE role = ? 
+                  ORDER BY first_name ASC, last_name ASC";
+        $result = executeQuery($query, [$role]);
+    } else {
+        $query = "SELECT id, username, first_name, last_name, email, role 
+                  FROM users 
+                  ORDER BY first_name ASC, last_name ASC";
+        $result = executeQuery($query);
+    }
+    
+    $users = [];
+    if ($result && numRows($result) > 0) {
+        while ($row = fetchAssoc($result)) {
+            $users[] = $row;
+        }
+    }
+    return $users;
+}
+
+/**
+ * Get show by ID with all related information
+ * @param int $showId
+ * @return array|null
+ */
+function getShowById($showId) {
+    global $conn;
+    
+    $query = "SELECT s.*, 
+              ts.name as theatre_space_name,
+              d.username as designer_username, d.first_name as designer_first_name, d.last_name as designer_last_name,
+              pa.username as production_audio_username, pa.first_name as production_audio_first_name, pa.last_name as production_audio_last_name
+              FROM shows s
+              LEFT JOIN theatre_spaces ts ON s.theatre_space_id = ts.id
+              LEFT JOIN users d ON s.designer_id = d.id
+              LEFT JOIN users pa ON s.production_audio_id = pa.id
+              WHERE s.id = ?";
+    
+    $result = executeQuery($query, [$showId]);
+    
+    if ($result && numRows($result) > 0) {
+        return fetchAssoc($result);
+    }
+    return null;
+}
+
+/**
+ * Get all shows with basic information
+ * @param bool $includeArchived Whether to include archived shows
+ * @return array
+ */
+function getAllShows($includeArchived = false) {
+    global $conn;
+    
+    $query = "SELECT s.*, 
+              ts.name as theatre_space_name,
+              d.username as designer_username, d.first_name as designer_first_name, d.last_name as designer_last_name,
+              pa.username as production_audio_username, pa.first_name as production_audio_first_name, pa.last_name as production_audio_last_name
+              FROM shows s
+              LEFT JOIN theatre_spaces ts ON s.theatre_space_id = ts.id
+              LEFT JOIN users d ON s.designer_id = d.id
+              LEFT JOIN users pa ON s.production_audio_id = pa.id";
+    
+    if (!$includeArchived) {
+        $query .= " WHERE s.archived = 0";
+    }
+    
+    $query .= " ORDER BY s.archived ASC, s.created_at DESC";
+    
+    $result = executeQuery($query);
+    
+    $shows = [];
+    if ($result && numRows($result) > 0) {
+        while ($row = fetchAssoc($result)) {
+            $shows[] = $row;
+        }
+    }
+    return $shows;
+}
+
+/**
+ * Check if a show can be safely archived
+ * Always returns true - archiving is always allowed
+ * @param int $showId
+ * @return bool
+ */
+function canArchiveShow($showId) {
+    // Shows can always be archived - this will archive all associated orders
+    return true;
+}
+
+/**
+ * Get show color for calendar
+ * @param int $showId
+ * @return string Hex color code
+ */
+function getShowColor($showId) {
+    global $conn;
+    
+    $query = "SELECT color FROM shows WHERE id = ?";
+    $result = executeQuery($query, [$showId]);
+    
+    if ($result && numRows($result) > 0) {
+        $row = fetchAssoc($result);
+        return $row['color'] ?? '#3b82f6';
+    }
+    return '#3b82f6'; // Default blue
+}
+
+/**
+ * Get calendar events for a show (or all shows)
+ * @param int|null $showId Optional show ID to filter by
+ * @return array
+ */
+function getCalendarEvents($showId = null) {
+    global $conn;
+    
+    $query = "SELECT ce.*, s.name as show_name, s.color as show_color
+              FROM calendar_events ce
+              INNER JOIN shows s ON ce.show_id = s.id
+              WHERE s.archived = 0";
+    
+    $params = [];
+    if ($showId) {
+        $query .= " AND ce.show_id = ?";
+        $params[] = $showId;
+    }
+    
+    $query .= " ORDER BY ce.start_date ASC";
+    
+    $result = executeQuery($query, $params);
+    
+    $events = [];
+    if ($result && numRows($result) > 0) {
+        while ($row = fetchAssoc($result)) {
+            $events[] = $row;
+        }
+    }
+    return $events;
+}
+
+/**
+ * Format user name for display
+ * @param array $user User data array
+ * @return string
+ */
+function formatUserName($user) {
+    if (!$user) return 'N/A';
+    
+    if (!empty($user['first_name']) && !empty($user['last_name'])) {
+        return trim($user['first_name'] . ' ' . $user['last_name']);
+    }
+    return $user['username'] ?? 'N/A';
+}
