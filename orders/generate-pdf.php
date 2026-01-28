@@ -37,9 +37,8 @@ $pdfPath = generatePullSheetPDF($pullsheetId);
 
 if ($pdfPath) {
     // Update database with PDF path
-    $conn = getDbConnection();
     $query = "UPDATE pullsheets SET pdf_path = ? WHERE id = ?";
-    executeQuery($conn, $query, [$pdfPath, $pullsheetId]);
+    executeQuery($query, [$pdfPath, $pullsheetId], 'si');
     
     // Serve PDF
     if (file_exists($pdfPath)) {

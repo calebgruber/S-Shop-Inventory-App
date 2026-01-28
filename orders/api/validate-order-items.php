@@ -13,7 +13,6 @@ if (!isset($input['items']) || !is_array($input['items'])) {
     exit;
 }
 
-$conn = getDbConnection();
 $errors = [];
 
 foreach ($input['items'] as $item) {
@@ -25,7 +24,7 @@ foreach ($input['items'] as $item) {
     $quantityNeeded = (int)$item['quantity'];
     
     $query = "SELECT id, name, barcode, in_stock_quantity FROM items WHERE id = ?";
-    $result = executeQuery($conn, $query, [$itemId]);
+    $result = executeQuery($query, [$itemId], 'i');
     
     if ($result && numRows($result) > 0) {
         $itemData = fetchAssoc($result);

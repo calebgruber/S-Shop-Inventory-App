@@ -487,7 +487,7 @@ function getShowsForUser($userId, $role) {
                   LEFT JOIN theatre_spaces ts ON s.theatre_space_id = ts.id 
                   WHERE s.archived = 0 
                   ORDER BY s.name ASC";
-        $result = executeQuery($query, []);
+        $result = executeQuery($query, [], '');
     } else {
         // Designers and Production Audio see shows they're assigned to
         $query = "SELECT s.*, ts.name as theatre_space_name 

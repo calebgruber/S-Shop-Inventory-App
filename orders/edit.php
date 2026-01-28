@@ -405,12 +405,16 @@ function displaySearchResults(items) {
         const disabledClass = alreadyAdded ? 'disabled' : '';
         
         html += `
-            <a href="#" class="dropdown-item ${disabledClass}" onclick="selectItem(${item.id}, '${escapeHtml(item.name)}', '${item.barcode}', ${item.in_stock}); return false;">
+            <a href="#" class="dropdown-item item-search-result ${disabledClass}" 
+               data-item-id="${item.id}" 
+               data-item-name="${escapeHtml(item.name)}" 
+               data-item-barcode="${escapeHtml(item.barcode)}" 
+               data-item-stock="${item.in_stock}">
                 <div>
                     <strong>${escapeHtml(item.name)}</strong>
                     <br>
                     <small class="text-muted">
-                        ${item.barcode} | In Stock: ${item.in_stock}
+                        ${escapeHtml(item.barcode)} | In Stock: ${item.in_stock}
                         ${alreadyAdded ? ' | <span class="text-primary">Already added</span>' : ''}
                     </small>
                 </div>
@@ -420,6 +424,18 @@ function displaySearchResults(items) {
     
     searchResults.innerHTML = html;
     searchResults.classList.add('show');
+    
+    // Add click handlers
+    searchResults.querySelectorAll('.item-search-result:not(.disabled)').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const itemId = parseInt(this.dataset.itemId);
+            const itemName = this.dataset.itemName;
+            const barcode = this.dataset.itemBarcode;
+            const inStock = parseInt(this.dataset.itemStock);
+            selectItem(itemId, itemName, barcode, inStock);
+        });
+    });
 }
 
 function selectItem(itemId, itemName, barcode, inStock) {
