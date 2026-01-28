@@ -1,0 +1,27 @@
+# Uploads and generated files
+uploads/*
+!uploads/.gitkeep
+assets/barcodes/*
+!assets/barcodes/.gitkeep
+pdfs/*
+!pdfs/.gitkeep
+
+# Config files with sensitive data
+config/database.php
+
+# Temp files
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Composer (not used but just in case)
+/vendor/
+composer.lock
