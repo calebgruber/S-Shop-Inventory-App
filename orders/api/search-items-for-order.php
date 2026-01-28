@@ -13,8 +13,6 @@ if (empty($search)) {
     exit;
 }
 
-$conn = getDbConnection();
-
 // Search by name or barcode
 $searchTerm = '%' . $search . '%';
 $query = "SELECT i.id, i.name, i.barcode, i.in_stock_quantity, i.total_quantity,
@@ -28,7 +26,7 @@ $query = "SELECT i.id, i.name, i.barcode, i.in_stock_quantity, i.total_quantity,
           ORDER BY i.name ASC
           LIMIT 20";
 
-$result = executeQuery($conn, $query, [$searchTerm, $searchTerm]);
+$result = executeQuery($query, [$searchTerm, $searchTerm], 'ss');
 
 $items = [];
 if ($result && numRows($result) > 0) {

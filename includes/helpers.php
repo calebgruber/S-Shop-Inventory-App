@@ -480,8 +480,6 @@ function generatePullSheetBarcode() {
  * @return array
  */
 function getShowsForUser($userId, $role) {
-    $conn = getDbConnection();
-    
     if ($role === 'admin') {
         // Admins see all non-archived shows
         $query = "SELECT s.*, ts.name as theatre_space_name 
@@ -489,7 +487,7 @@ function getShowsForUser($userId, $role) {
                   LEFT JOIN theatre_spaces ts ON s.theatre_space_id = ts.id 
                   WHERE s.archived = 0 
                   ORDER BY s.name ASC";
-        $result = executeQuery($conn, $query, []);
+        $result = executeQuery($query, []);
     } else {
         // Designers and Production Audio see shows they're assigned to
         $query = "SELECT s.*, ts.name as theatre_space_name 
@@ -498,7 +496,7 @@ function getShowsForUser($userId, $role) {
                   WHERE s.archived = 0 
                   AND (s.designer_id = ? OR s.production_audio_id = ?) 
                   ORDER BY s.name ASC";
-        $result = executeQuery($conn, $query, [$userId, $userId]);
+        $result = executeQuery($query, [$userId, $userId], 'ii');
     }
     
     $shows = [];
@@ -516,7 +514,6 @@ function getShowsForUser($userId, $role) {
  * @return array|null
  */
 function getPullSheetById($id) {
-    $conn = getDbConnection();
     $query = "SELECT p.*, 
               s.name as show_name, s.color as show_color,
               ts.name as theatre_space_name,
@@ -530,7 +527,7 @@ function getPullSheetById($id) {
               LEFT JOIN users u2 ON p.approved_by = u2.id
               LEFT JOIN users u3 ON p.picked_by = u3.id
               WHERE p.id = ?";
-    $result = executeQuery($conn, $query, [$id]);
+    $result = executeQuery($query, [$id], 'i');
     
     if ($result && numRows($result) > 0) {
         return fetchAssoc($result);
@@ -544,7 +541,6 @@ function getPullSheetById($id) {
  * @return array
  */
 function getPullSheetItems($pullsheetId) {
-    $conn = getDbConnection();
     $query = "SELECT pi.*, 
               i.name as item_name, i.barcode as item_barcode,
               i.tracking_type, i.in_stock_quantity, i.location,
@@ -557,7 +553,7 @@ function getPullSheetItems($pullsheetId) {
               LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
               WHERE pi.pullsheet_id = ?
               ORDER BY c.name, sc.name, i.name";
-    $result = executeQuery($conn, $query, [$pullsheetId]);
+    $result = executeQuery($query, [$pullsheetId], 'i');
     
     $items = [];
     if ($result && numRows($result) > 0) {
@@ -626,18 +622,17 @@ function getPullSheetStatusBadge($status) {
  * @return bool
  */
 function reserveItemsForPullSheet($pullsheetId) {
-    $conn = getDbConnection();
     $items = getPullSheetItems($pullsheetId);
     
     foreach ($items as $item) {
         $query = "UPDATE items 
                   SET in_stock_quantity = in_stock_quantity - ? 
                   WHERE id = ? AND in_stock_quantity >= ?";
-        $result = executeQuery($conn, $query, [
+        $result = executeQuery($query, [
             $item['quantity_needed'],
             $item['item_id'],
             $item['quantity_needed']
-        ]);
+        ], 'iii');
         
         if (!$result) {
             error_log("Failed to reserve items for pull sheet {$pullsheetId}, item {$item['item_id']}");
@@ -654,17 +649,16 @@ function reserveItemsForPullSheet($pullsheetId) {
  * @return bool
  */
 function releaseItemsForPullSheet($pullsheetId) {
-    $conn = getDbConnection();
     $items = getPullSheetItems($pullsheetId);
     
     foreach ($items as $item) {
         $query = "UPDATE items 
                   SET in_stock_quantity = in_stock_quantity + ? 
                   WHERE id = ?";
-        $result = executeQuery($conn, $query, [
+        $result = executeQuery($query, [
             $item['quantity_needed'],
             $item['item_id']
-        ]);
+        ], 'ii');
         
         if (!$result) {
             error_log("Failed to release items for pull sheet {$pullsheetId}, item {$item['item_id']}");
@@ -706,10 +700,9 @@ function validatePullSheetStock($pullsheetId) {
  * @return array
  */
 function getItemStockInfo($itemId) {
-    $conn = getDbConnection();
     $query = "SELECT id, name, barcode, in_stock_quantity, total_quantity, tracking_type 
               FROM items WHERE id = ?";
-    $result = executeQuery($conn, $query, [$itemId]);
+    $result = executeQuery($query, [$itemId], 'i');
     
     if ($result && numRows($result) > 0) {
         return fetchAssoc($result);

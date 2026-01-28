@@ -79,11 +79,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Update pull sheet
         $query = "UPDATE pullsheets SET show_id = ?, status = ? WHERE id = ?";
-        $result = executeQuery($query, [$showId, $status, $pullsheetId]);
+        $result = executeQuery($query, [$showId, $status, $pullsheetId], 'isi');
         
         if ($result) {
             // Delete existing items
-            executeQuery("DELETE FROM pullsheet_items WHERE pullsheet_id = ?", [$pullsheetId]);
+            executeQuery("DELETE FROM pullsheet_items WHERE pullsheet_id = ?", [$pullsheetId], 'i');
             
             // Insert new items
             $itemsInserted = true;
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pullsheetId,
                     $item['item_id'],
                     $item['quantity']
-                ]);
+                ], 'iii');
                 
                 if (!$itemResult) {
                     $itemsInserted = false;

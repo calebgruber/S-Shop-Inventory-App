@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert pull sheet
         $query = "INSERT INTO pullsheets (barcode, show_id, status, created_by, created_at) 
                   VALUES (?, ?, ?, ?, NOW())";
-        $result = executeQuery($query, [$barcode, $showId, $status, $userId]);
+        $result = executeQuery($query, [$barcode, $showId, $status, $userId], 'sisi');
         
         if ($result) {
             $pullsheetId = getLastInsertId();
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pullsheetId,
                     $item['item_id'],
                     $item['quantity']
-                ]);
+                ], 'iii');
                 
                 if (!$itemResult) {
                     $itemsInserted = false;
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $errors[] = 'Failed to add items to pull sheet.';
                 // Clean up - delete the pull sheet
-                executeQuery("DELETE FROM pullsheets WHERE id = ?", [$pullsheetId]);
+                executeQuery("DELETE FROM pullsheets WHERE id = ?", [$pullsheetId], 'i');
             }
         } else {
             $errors[] = 'Failed to create pull sheet. Please try again.';
