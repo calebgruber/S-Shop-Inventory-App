@@ -210,8 +210,8 @@ include dirname(__DIR__) . '/includes/header.php';
                             <option value="">All Statuses</option>
                             <option value="draft" <?php echo $statusFilter === 'draft' ? 'selected' : ''; ?>>Draft</option>
                             <option value="pending_approval" <?php echo $statusFilter === 'pending_approval' ? 'selected' : ''; ?>>Pending Approval</option>
-                            <option value="approved" <?php echo $statusFilter === 'approved' ? 'selected' : ''; ?>>Approved</option>
-                            <option value="completed" <?php echo $statusFilter === 'completed' ? 'selected' : ''; ?>>Completed</option>
+                            <option value="finalized" <?php echo $statusFilter === 'finalized' ? 'selected' : ''; ?>>Finalized</option>
+                            <option value="cancelled" <?php echo $statusFilter === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -332,10 +332,10 @@ include dirname(__DIR__) . '/includes/header.php';
                                         </a>
                                         <?php endif; ?>
                                         <?php if ($changeOrder['status'] === 'pending_approval' && $userRole === 'admin'): ?>
-                                        <a href="finalize.php?id=<?php echo $changeOrder['id']; ?>&action=approve" 
+                                        <a href="finalize.php?id=<?php echo $changeOrder['id']; ?>&action=finalize" 
                                            class="btn btn-sm btn-success" 
-                                           title="Approve"
-                                           onclick="return confirm('Approve this change order?');">
+                                           title="Finalize"
+                                           onclick="return confirm('Finalize this change order?');">
                                             <i class="ti ti-check icon"></i>
                                         </a>
                                         <?php endif; ?>

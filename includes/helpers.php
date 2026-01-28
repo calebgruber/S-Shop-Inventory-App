@@ -720,7 +720,7 @@ function generateChangeOrderBarcode() {
     $maxAttempts = 10;
     
     do {
-        $number = str_pad(rand(1, 999999), 6, '0', STR_PAD_LEFT);
+        $number = str_pad(random_int(1, 999999), 6, '0', STR_PAD_LEFT);
         $barcode = $prefix . $number;
         
         $query = "SELECT id FROM change_orders WHERE barcode = ?";
@@ -733,7 +733,7 @@ function generateChangeOrderBarcode() {
         $attempts++;
     } while ($attempts < $maxAttempts);
     
-    return $prefix . time();
+    return $prefix . uniqid();
 }
 
 /**
@@ -813,7 +813,7 @@ function canEditChangeOrder($changeOrderId, $userId, $role) {
     }
     
     // Owner can edit their own draft
-    return $changeOrder['created_by'] == $userId;
+    return (int)$changeOrder['created_by'] === (int)$userId;
 }
 
 /**
@@ -862,6 +862,8 @@ function applyChangeOrderStockChanges($changeOrderId) {
             ], 'iii');
         } else {
             // Removing items - decrease both in_stock and total
+            // Note: The WHERE clause ensures removal only succeeds if sufficient stock exists
+            // This function should only be called after validateChangeOrderStock() passes
             $query = "UPDATE items 
                       SET in_stock_quantity = in_stock_quantity - ?,
                           total_quantity = total_quantity - ?

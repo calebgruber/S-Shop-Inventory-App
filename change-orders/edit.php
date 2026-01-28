@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         // Determine status based on action and role
         if ($action === 'submit') {
-            $status = ($userRole === 'admin') ? 'approved' : 'pending_approval';
+            $status = 'pending_approval';
         } else {
             $status = 'draft';
         }
@@ -108,11 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             if ($itemsInserted) {
-                // If approved, apply stock changes
-                if ($status === 'approved') {
-                    applyChangeOrderStockChanges($changeOrderId);
-                }
-                
                 $_SESSION['success_message'] = 'Change order updated successfully!';
                 header('Location: view.php?id=' . $changeOrderId);
                 exit;
@@ -263,11 +258,7 @@ include dirname(__DIR__) . '/includes/header.php';
                         </p>
                         <p class="text-muted small">
                             <strong>Submit:</strong> 
-                            <?php if ($userRole === 'admin'): ?>
-                            As an admin, submitting will automatically approve the change order.
-                            <?php else: ?>
                             Submit for admin approval. Once submitted, you cannot edit the change order.
-                            <?php endif; ?>
                         </p>
                     </div>
                 </div>
@@ -298,17 +289,17 @@ include dirname(__DIR__) . '/includes/header.php';
                         <label class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="itemAction" value="add" checked>
                             <span class="form-check-label text-success">
-                                <i class="ti ti-plus"></i> Add (Pull from inventory)
+                                <i class="ti ti-plus"></i> Add (Increase inventory)
                             </span>
                         </label>
                         <label class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="itemAction" value="remove">
                             <span class="form-check-label text-danger">
-                                <i class="ti ti-minus"></i> Remove (Return to inventory)
+                                <i class="ti ti-minus"></i> Remove (Decrease inventory)
                             </span>
                         </label>
                     </div>
-                    <small class="form-hint">Add decreases stock, Remove increases stock</small>
+                    <small class="form-hint">Add increases stock, Remove decreases stock</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label required">Quantity</label>
@@ -530,7 +521,7 @@ function updateItemsList() {
             ? '<span class="badge bg-success me-2"><i class="ti ti-plus"></i> Add</span>' 
             : '<span class="badge bg-danger me-2"><i class="ti ti-minus"></i> Remove</span>';
         
-        const stockWarning = (item.action === 'add' && item.quantity > item.in_stock) 
+        const stockWarning = (item.action === 'remove' && item.quantity > item.in_stock) 
             ? '<span class="badge bg-warning ms-2">Insufficient Stock</span>' : '';
         
         html += `
