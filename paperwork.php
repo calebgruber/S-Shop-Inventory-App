@@ -12,9 +12,6 @@ require_once 'includes/header.php';
 
 $db = getDB();
 
-// Check if there's a master barcode list request
-$showMasterBarcodeLink = true;
-
 // Get selected show
 $selectedShowId = $_GET['show_id'] ?? null;
 $categoryFilter = $_GET['category'] ?? 'all';

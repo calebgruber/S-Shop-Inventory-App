@@ -25,7 +25,7 @@ The feature is accessible from the **Paperwork** page (`paperwork.php`) under "P
   - Item name (bold, 12pt)
   - Code128 barcode image
   - Barcode number (monospace, 10pt)
-  - Category name (italic, 9pt)
+  - Category name (gray color, 9pt)
 
 ### 3. Print Functionality
 - Browser-based printing using `window.print()`

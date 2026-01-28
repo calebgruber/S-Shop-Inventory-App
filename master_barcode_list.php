@@ -30,8 +30,8 @@ if ($categoryFilter !== 'all') {
 }
 
 // Add sorting
-$allowedSorts = ['name', 'barcode', 'category_name'];
-$sortColumn = in_array($sortBy, $allowedSorts) ? $sortBy : 'name';
+$allowedSorts = ['name' => 'i.name', 'barcode' => 'i.barcode', 'category_name' => 'c.name'];
+$sortColumn = isset($allowedSorts[$sortBy]) ? $allowedSorts[$sortBy] : 'i.name';
 $sortDirection = strtoupper($sortOrder) === 'DESC' ? 'DESC' : 'ASC';
 $query .= " ORDER BY $sortColumn $sortDirection";
 
@@ -168,9 +168,24 @@ $printMode = isset($_GET['print']) && $_GET['print'] === '1';
             <div class="card-body">
 <?php endif; ?>
 
+                <?php if (empty($items)): ?>
+                <div class="text-center text-muted py-5">
+                    <i class="ti ti-barcode-off icon mb-3" style="font-size: 3rem;"></i>
+                    <p>No items found with the selected filters.</p>
+                </div>
+                <?php else: ?>
                 <div class="barcode-grid">
-                    <?php foreach ($items as $item): 
-                        $barcodeData = 'data:image/png;base64,' . base64_encode(generateCode128Barcode($item['barcode']));
+                    <?php 
+                    // Pre-generate all barcodes to avoid per-item API calls in the loop
+                    $barcodeCache = [];
+                    foreach ($items as $item) {
+                        if (!isset($barcodeCache[$item['barcode']])) {
+                            $barcodeCache[$item['barcode']] = 'data:image/png;base64,' . base64_encode(generateCode128Barcode($item['barcode']));
+                        }
+                    }
+                    
+                    foreach ($items as $item): 
+                        $barcodeData = $barcodeCache[$item['barcode']];
                     ?>
                         <div class="barcode-label">
                             <div class="barcode-text" title="<?php echo htmlspecialchars($item['name']); ?>">
@@ -183,14 +198,8 @@ $printMode = isset($_GET['print']) && $_GET['print'] === '1';
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
-                    
-                    <?php if (empty($items)): ?>
-                    <div class="col-12 text-center text-muted py-5">
-                        <i class="ti ti-barcode-off icon mb-3" style="font-size: 3rem;"></i>
-                        <p>No items found with the selected filters.</p>
-                    </div>
-                    <?php endif; ?>
                 </div>
+                <?php endif; ?>
 
 <?php if (!$printMode): ?>
             </div>
