@@ -5,9 +5,9 @@
  */
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'sshop_inventory');
-define('DB_USER', 'your_username');
-define('DB_PASS', 'your_password');
+define('DB_NAME', 'voxelnodes_sshop_dev');
+define('DB_USER', 'voxelnodes_sshop_dev');
+define('DB_PASS', '3[G0{=H;sw04');
 define('DB_CHARSET', 'utf8mb4');
 
 /**
