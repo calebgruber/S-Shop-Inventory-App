@@ -53,7 +53,7 @@ if ($changeOrder['status'] !== 'pending_approval' && $changeOrder['status'] !== 
 
 // If GET request, show confirmation page
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $pageName = 'Finalize Change Order';
+    $pageName = 'Approve Change Order';
     include dirname(__DIR__) . '/includes/header.php';
     ?>
     
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         <div class="container-xl">
             <div class="row g-2 align-items-center">
                 <div class="col">
-                    <h2 class="page-title">Finalize Change Order</h2>
+                    <h2 class="page-title">Approve Change Order</h2>
                 </div>
             </div>
         </div>
@@ -71,8 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         <div class="container-xl">
             <div class="card">
                 <div class="card-body">
-                    <h3>Confirm Finalization</h3>
-                    <p>Are you sure you want to finalize change order <strong><?php echo htmlspecialchars($changeOrder['barcode']); ?></strong> for show <strong><?php echo htmlspecialchars($changeOrder['show_name']); ?></strong>?</p>
+                    <h3>Confirm Approval</h3>
+                    <p>Are you sure you want to approve change order <strong><?php echo htmlspecialchars($changeOrder['barcode']); ?></strong> for show <strong><?php echo htmlspecialchars($changeOrder['show_name']); ?></strong>?</p>
                     <p class="text-muted">This will apply the stock changes and cannot be undone.</p>
                     
                     <?php
@@ -95,10 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     <?php else: ?>
                     <form method="POST">
                         <input type="hidden" name="id" value="<?php echo $changeOrderId; ?>">
-                        <input type="hidden" name="action" value="finalize">
+                        <input type="hidden" name="action" value="approve">
                         <div class="d-flex">
                             <a href="view.php?id=<?php echo $changeOrderId; ?>" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-success ms-auto">Finalize Change Order</button>
+                            <button type="submit" class="btn btn-success ms-auto">Approve Change Order</button>
                         </div>
                     </form>
                     <?php endif; ?>
@@ -135,18 +135,16 @@ if (!applyChangeOrderStockChanges($changeOrderId)) {
 }
 
 // Update change order status
-$finalizedAt = date('Y-m-d H:i:s');
 $query = "UPDATE change_orders 
-          SET status = 'finalized', 
-              finalized_by = ?,
-              finalized_at = ?
+          SET status = 'approved', 
+              approved_by = ?
           WHERE id = ?";
-$result = executeQuery($query, [$userId, $finalizedAt, $changeOrderId], 'isi');
+$result = executeQuery($query, [$userId, $changeOrderId], 'ii');
 
 if ($result) {
-    $_SESSION['success_message'] = 'Change order finalized successfully';
+    $_SESSION['success_message'] = 'Change order approved and stock changes applied successfully';
 } else {
-    $_SESSION['error_message'] = 'Failed to finalize change order';
+    $_SESSION['error_message'] = 'Failed to approve change order';
 }
 header('Location: view.php?id=' . $changeOrderId);
 exit;

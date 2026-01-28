@@ -751,7 +751,7 @@ function getChangeOrderById($id) {
               LEFT JOIN shows s ON co.show_id = s.id
               LEFT JOIN theatre_spaces ts ON s.theatre_space_id = ts.id
               LEFT JOIN users u1 ON co.created_by = u1.id
-              LEFT JOIN users u2 ON co.finalized_by = u2.id
+              LEFT JOIN users u2 ON co.approved_by = u2.id
               WHERE co.id = ?";
     $result = executeQuery($query, [$id], 'i');
     
