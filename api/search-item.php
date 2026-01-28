@@ -29,8 +29,8 @@ $result = executeQuery(
     'ss'
 );
 
-if ($result && $result->num_rows > 0) {
-    $item = $result->fetch_assoc();
+if ($result && numRows($result) > 0) {
+    $item = fetchAssoc($result);
     
     // Add full photo path if exists
     if ($item['photo_path']) {
