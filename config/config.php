@@ -54,6 +54,46 @@ function requireAuth() {
 }
 
 /**
+ * Fetch result as associative array (works with both MySQL and SQLite)
+ * @param mixed $result
+ * @return array|null
+ */
+function fetchAssoc($result) {
+    if (!$result) {
+        return null;
+    }
+    
+    if (defined('DEMO_MODE') && DEMO_MODE && $result instanceof SQLite3Result) {
+        return $result->fetchArray(SQLITE3_ASSOC);
+    }
+    
+    return $result->fetch_assoc();
+}
+
+/**
+ * Get number of rows (works with both MySQL and SQLite)
+ * @param mixed $result
+ * @return int
+ */
+function numRows($result) {
+    if (!$result) {
+        return 0;
+    }
+    
+    if (defined('DEMO_MODE') && DEMO_MODE && $result instanceof SQLite3Result) {
+        // SQLite doesn't have num_rows, so we need to count
+        $count = 0;
+        while ($result->fetchArray(SQLITE3_ASSOC)) {
+            $count++;
+        }
+        $result->reset();
+        return $count;
+    }
+    
+    return $result->num_rows ?? 0;
+}
+
+/**
  * Get current user data
  * @return array|null
  */
@@ -69,8 +109,8 @@ function getCurrentUser() {
         'i'
     );
     
-    if ($result && $result->num_rows > 0) {
-        return $result->fetch_assoc();
+    if ($result && numRows($result) > 0) {
+        return fetchAssoc($result);
     }
     
     return null;
@@ -130,14 +170,25 @@ function sanitize($input) {
  * @return mixed
  */
 function getSetting($key, $default = null) {
+    // For demo mode, just return defaults since we don't have settings table in SQLite
+    if (defined('DEMO_MODE') && DEMO_MODE) {
+        $defaults = [
+            'site_name' => 'S-Shop Inventory System',
+            'site_logo' => null,
+            'login_cover' => null,
+            'default_theme' => 'light'
+        ];
+        return $defaults[$key] ?? $default;
+    }
+    
     $result = executeQuery(
         'SELECT setting_value FROM settings WHERE setting_key = ?',
         [$key],
         's'
     );
     
-    if ($result && $result->num_rows > 0) {
-        $row = $result->fetch_assoc();
+    if ($result && numRows($result) > 0) {
+        $row = fetchAssoc($result);
         return $row['setting_value'];
     }
     
@@ -151,6 +202,11 @@ function getSetting($key, $default = null) {
  * @return bool
  */
 function setSetting($key, $value) {
+    // For demo mode, just return true
+    if (defined('DEMO_MODE') && DEMO_MODE) {
+        return true;
+    }
+    
     $result = executeQuery(
         'INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) 
          ON DUPLICATE KEY UPDATE setting_value = ?',

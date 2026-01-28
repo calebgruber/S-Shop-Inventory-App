@@ -30,8 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'ss'
         );
         
-        if ($result && $result->num_rows > 0) {
-            $user = $result->fetch_assoc();
+        if ($result && numRows($result) > 0) {
+            $user = fetchAssoc($result);
             
             // Verify password
             if (password_verify($password, $user['password'])) {
