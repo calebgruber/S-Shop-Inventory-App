@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             }
             
             // Check if approval is required (Designer or Production Audio)
-            $requiresApproval = requiresApproval($currentUser['id']);
+            $requiresApproval = requiresApproval();
             
             // Mark items as reserved
             foreach ($items as $item) {
@@ -137,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 // Notify admins for approval
                 createNotificationForAdmins(
                     'pullsheet_pending_approval',
-                    "Pullsheet for " . ($pullsheet['show_name'] ?? 'Student Requests') . " needs approval",
+                    "Pullsheet for " . ($pullsheet['show_name'] ?? 'Student Requests') . " from " . htmlspecialchars($currentUser['name']) . " needs approval",
                     "pullsheet_view.php?id=" . $pullsheetId
                 );
                 

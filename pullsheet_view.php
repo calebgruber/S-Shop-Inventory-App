@@ -64,6 +64,13 @@ if (!$pullsheet) {
     redirect('pullsheets.php');
 }
 
+// Get approver name if approved
+$approverName = null;
+if ($pullsheet['approved_by']) {
+    $approver = getDB()->fetchOne("SELECT full_name FROM users WHERE id = ?", [$pullsheet['approved_by']]);
+    $approverName = $approver ? $approver['full_name'] : 'Unknown Admin';
+}
+
 // Handle alert query parameters
 if (isset($_GET['finalized'])) {
     setAlert('Pullsheet finalized successfully', 'success');
@@ -106,8 +113,8 @@ $items = getPullsheetItems($pullsheetId);
                  ($pullsheet['approval_status'] === 'rejected' ? 'danger' : 'warning'); 
         ?>">
             <strong>Approval Status:</strong> <?php echo ucfirst($pullsheet['approval_status']); ?>
-            <?php if ($pullsheet['approved_by']): ?>
-                <br><small>by Admin at <?php echo date('m/d/Y g:i A', strtotime($pullsheet['approved_at'])); ?></small>
+            <?php if ($pullsheet['approved_by'] && $approverName): ?>
+                <br><small>by <?php echo htmlspecialchars($approverName); ?> at <?php echo date('m/d/Y g:i A', strtotime($pullsheet['approved_at'])); ?></small>
             <?php endif; ?>
         </div>
     </div>

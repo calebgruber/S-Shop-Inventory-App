@@ -722,7 +722,7 @@ function canAccessShow($userId, $showId) {
 }
 
 // Approval system functions
-function requiresApproval($userId) {
+function requiresApproval() {
     $user = getCurrentUser();
     if (!$user) return false;
     
@@ -864,7 +864,7 @@ function getSignature($signatureId) {
     return $db->fetchOne("SELECT * FROM signatures WHERE id = ?", [$signatureId]);
 }
 
-function requiresSignature($userId) {
+function requiresSignature() {
     $user = getCurrentUser();
     if (!$user) return false;
     

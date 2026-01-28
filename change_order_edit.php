@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             $items = getChangeOrderItems($coId);
             
             // Check if approval is required
-            $requiresApproval = requiresApproval($currentUser['id']);
+            $requiresApproval = requiresApproval();
             
             // Process item changes
             foreach ($items as $item) {
@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 // Notify admins for approval
                 createNotificationForAdmins(
                     'change_order_pending_approval',
-                    "Change order for " . $changeOrder['show_name'] . " needs approval",
+                    "Change order for " . $changeOrder['show_name'] . " from " . htmlspecialchars($currentUser['name']) . " needs approval",
                     "change_order_view.php?id=" . $coId
                 );
                 
@@ -155,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 echo json_encode(['success' => true, 'message' => 'Change order finalized']);
             }
             
-            // Generate PDF for the change order
+            // Generate PDF for the change order (non-blocking)
             try {
                 $pdfPath = generateChangeOrderPDF($coId);
             } catch (Exception $e) {

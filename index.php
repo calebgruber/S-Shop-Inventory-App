@@ -581,7 +581,7 @@ document.getElementById('quickLookupInput')?.addEventListener('input', function(
     // Easter egg: Play whopper.mp3 at 300% volume if CHZ-BGR barcode is scanned
     if (searchTerm.includes('chz-bgr')) {
         try {
-            const audio = new Audio('sounds/whopper.mp3');
+            const audio = new Audio('assets/sounds/whopper.mp3');
             audio.volume = 1.0; // Max volume (300% would require Web Audio API)
             // Using Web Audio API for 300% volume
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();

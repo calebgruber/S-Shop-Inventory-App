@@ -15,7 +15,20 @@ A complete inventory management application for theatre sound shops built with p
 - **Dark/Light Mode**: User-selectable theme that persists
 - **Barcode Printing**: Print Code128 barcodes on Avery 8195 labels
 
-### Advanced Features (New!)
+### User Roles & Permissions
+- **Admin**: Full access to all features, approves orders, manages users
+- **Designer**: Read-only inventory, create orders (requires approval), assigned to shows
+- **Student**: Read-only inventory, create equipment requests only
+- **Production Audio**: Read-only inventory, create orders (requires approval), can pick/return items
+
+See [PRODUCTION_AUDIO_GUIDE.md](PRODUCTION_AUDIO_GUIDE.md) for complete role details and approval workflow.
+
+### Advanced Features
+- **Approval Workflow**: Pullsheets and change orders from Designers and Production Audio require admin approval
+  - Visual approval status indicators
+  - Email notifications for approval requests
+  - Prevent picking unapproved orders
+  
 - **Hotkey Manager**: Customize keyboard shortcuts for quick access to common actions
   - Configure personal hotkeys for 7+ common operations
   - Access via user settings page
@@ -30,8 +43,14 @@ A complete inventory management application for theatre sound shops built with p
 - **Notifications System**: Real-time alerts for important events
   - Unread notification badge in header
   - Dropdown with recent notifications
-  - Auto-generated for: pullsheet finalization, student requests, repairs needed
+  - Auto-generated for: pullsheet finalization, student requests, repairs needed, approvals
   - Mark as read/mark all read functionality
+
+- **Easter Eggs**: Fun hidden features for entertainment
+  - Pink Mode with floating cats and hearts
+  - Random guy background
+  - Special sound effects for certain actions
+  - See [EASTER_EGGS.md](EASTER_EGGS.md) for details
 
 See [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) for detailed documentation.
 
@@ -62,9 +81,12 @@ Upload all files to your public_html directory (or a subdirectory if desired).
 1. In cPanel, go to phpMyAdmin
 2. Select your newly created database
 3. Click on the "Import" tab
-4. First, import `database/schema.sql`
-5. Then, import `database/advanced_features_migration.sql` (for hotkeys, calendar, notifications)
-6. Click "Go" to import
+4. Import the following SQL files in order:
+   - First: `database/schema.sql` (core schema)
+   - Second: `database/advanced_features_migration.sql` (hotkeys, calendar, notifications)
+   - Third: `database/feature_additions_migration.sql` (repairs, student requests, users)
+   - Fourth: `database/production_audio_migration.sql` (Production Audio role, approval system)
+5. Click "Go" to import each file
 
 ### 4. Configure Database Connection
 
