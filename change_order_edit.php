@@ -81,7 +81,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         
         if ($_POST['action'] === 'finalize') {
             $changeOrder = getChangeOrderById($coId);
+            $currentUser = getCurrentUser();
             $items = getChangeOrderItems($coId);
+            
+            // Check if approval is required
+            $requiresApproval = requiresApproval($currentUser['id']);
             
             // Process item changes
             foreach ($items as $item) {
@@ -121,21 +125,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 }
             }
             
-            getDB()->query("UPDATE change_orders SET status = 'finalized', finalized_at = NOW() WHERE id = ?", [$coId]);
-            
-            // Create notification
-            createNotificationForDesigners(
-                'change_order',
-                "Change order finalized for " . $changeOrder['show_name'],
-                "change_orders.php"
-            );
+            if ($requiresApproval) {
+                // Set to finalized but requires approval
+                getDB()->query(
+                    "UPDATE change_orders SET status = 'finalized', finalized_at = NOW(), 
+                     requires_approval = TRUE, approval_status = 'pending' WHERE id = ?",
+                    [$coId]
+                );
+                
+                // Notify admins for approval
+                createNotificationForAdmins(
+                    'change_order_pending_approval',
+                    "Change order for " . $changeOrder['show_name'] . " needs approval",
+                    "change_order_view.php?id=" . $coId
+                );
+                
+                echo json_encode(['success' => true, 'message' => 'Change order submitted for approval']);
+            } else {
+                // Admin doesn't need approval
+                getDB()->query("UPDATE change_orders SET status = 'finalized', finalized_at = NOW() WHERE id = ?", [$coId]);
+                
+                // Create notification
+                createNotificationForDesigners(
+                    'change_order',
+                    "Change order finalized for " . $changeOrder['show_name'],
+                    "change_orders.php"
+                );
+                
+                echo json_encode(['success' => true, 'message' => 'Change order finalized']);
+            }
             
             // Generate PDF for the change order
             try {
                 $pdfPath = generateChangeOrderPDF($coId);
-                echo json_encode(['success' => true, 'pdf_path' => $pdfPath]);
             } catch (Exception $e) {
-                echo json_encode(['success' => true, 'warning' => 'Change order finalized but PDF generation failed: ' . $e->getMessage()]);
+                // PDF generation failure is not critical
+                logException($e, 'Change order PDF generation failed');
             }
             exit;
         }

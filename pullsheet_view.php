@@ -26,6 +26,30 @@ if (!hasPermission('pullsheets')) {
     redirect('index.php');
 }
 
+// Handle approval actions (Admin only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isAdmin()) {
+    $pullsheetId = $_POST['pullsheet_id'] ?? null;
+    $action = $_POST['approval_action'] ?? null;
+    
+    if ($pullsheetId && $action) {
+        $currentUser = getCurrentUser();
+        if ($action === 'approve') {
+            if (approvePullsheet($pullsheetId, $currentUser['id'])) {
+                setAlert('Pullsheet approved successfully', 'success');
+            } else {
+                setAlert('Error approving pullsheet', 'danger');
+            }
+        } elseif ($action === 'reject') {
+            if (rejectPullsheet($pullsheetId, $currentUser['id'])) {
+                setAlert('Pullsheet rejected', 'warning');
+            } else {
+                setAlert('Error rejecting pullsheet', 'danger');
+            }
+        }
+        redirect('pullsheet_view.php?id=' . $pullsheetId);
+    }
+}
+
 $pageTitle = 'View Pullsheet';
 require_once 'includes/header.php';
 
@@ -58,8 +82,37 @@ $items = getPullsheetItems($pullsheetId);
                 <i class="ti ti-download"></i> Download PDF
             </a>
         <?php endif; ?>
+        
+        <?php if (isAdmin() && $pullsheet['requires_approval'] && $pullsheet['approval_status'] === 'pending'): ?>
+            <form method="POST" class="d-inline ms-2">
+                <input type="hidden" name="pullsheet_id" value="<?php echo $pullsheetId; ?>">
+                <button type="submit" name="approval_action" value="approve" class="btn btn-success">
+                    <i class="ti ti-check"></i> Approve
+                </button>
+                <button type="submit" name="approval_action" value="reject" class="btn btn-danger" 
+                        onclick="return confirm('Are you sure you want to reject this pullsheet?');">
+                    <i class="ti ti-x"></i> Reject
+                </button>
+            </form>
+        <?php endif; ?>
     </div>
 </div>
+
+<?php if ($pullsheet['requires_approval']): ?>
+<div class="row mb-3">
+    <div class="col">
+        <div class="alert alert-<?php 
+            echo $pullsheet['approval_status'] === 'approved' ? 'success' : 
+                 ($pullsheet['approval_status'] === 'rejected' ? 'danger' : 'warning'); 
+        ?>">
+            <strong>Approval Status:</strong> <?php echo ucfirst($pullsheet['approval_status']); ?>
+            <?php if ($pullsheet['approved_by']): ?>
+                <br><small>by Admin at <?php echo date('m/d/Y g:i A', strtotime($pullsheet['approved_at'])); ?></small>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <div class="row">
     <div class="col-md-8">

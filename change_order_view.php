@@ -26,6 +26,30 @@ if (!hasPermission('change_orders')) {
     redirect('index.php');
 }
 
+// Handle approval actions (Admin only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isAdmin()) {
+    $changeOrderId = $_POST['change_order_id'] ?? null;
+    $action = $_POST['approval_action'] ?? null;
+    
+    if ($changeOrderId && $action) {
+        $currentUser = getCurrentUser();
+        if ($action === 'approve') {
+            if (approveChangeOrder($changeOrderId, $currentUser['id'])) {
+                setAlert('Change order approved successfully', 'success');
+            } else {
+                setAlert('Error approving change order', 'danger');
+            }
+        } elseif ($action === 'reject') {
+            if (rejectChangeOrder($changeOrderId, $currentUser['id'])) {
+                setAlert('Change order rejected', 'warning');
+            } else {
+                setAlert('Error rejecting change order', 'danger');
+            }
+        }
+        redirect('change_order_view.php?id=' . $changeOrderId);
+    }
+}
+
 $pageTitle = 'View Change Order';
 require_once 'includes/header.php';
 
@@ -58,6 +82,37 @@ $items = getChangeOrderItems($changeOrderId);
                 <i class="ti ti-download"></i> Download PDF
             </a>
         <?php endif; ?>
+        
+        <?php if (isAdmin() && $changeOrder['requires_approval'] && $changeOrder['approval_status'] === 'pending'): ?>
+            <form method="POST" class="d-inline ms-2">
+                <input type="hidden" name="change_order_id" value="<?php echo $changeOrderId; ?>">
+                <button type="submit" name="approval_action" value="approve" class="btn btn-success">
+                    <i class="ti ti-check"></i> Approve
+                </button>
+                <button type="submit" name="approval_action" value="reject" class="btn btn-danger" 
+                        onclick="return confirm('Are you sure you want to reject this change order?');">
+                    <i class="ti ti-x"></i> Reject
+                </button>
+            </form>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php if ($changeOrder['requires_approval']): ?>
+<div class="row mb-3">
+    <div class="col">
+        <div class="alert alert-<?php 
+            echo $changeOrder['approval_status'] === 'approved' ? 'success' : 
+                 ($changeOrder['approval_status'] === 'rejected' ? 'danger' : 'warning'); 
+        ?>">
+            <strong>Approval Status:</strong> <?php echo ucfirst($changeOrder['approval_status']); ?>
+            <?php if ($changeOrder['approved_by']): ?>
+                <br><small>by Admin at <?php echo date('m/d/Y g:i A', strtotime($changeOrder['approved_at'])); ?></small>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
     </div>
 </div>
 

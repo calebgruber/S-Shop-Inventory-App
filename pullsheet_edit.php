@@ -90,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         
         if ($_POST['action'] === 'finalize') {
             $pullsheet = getPullsheetById($pullsheetId);
+            $currentUser = getCurrentUser();
             
             // Check if all items are available
             $items = getPullsheetItems($pullsheetId);
@@ -111,6 +112,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
+            // Check if approval is required (Designer or Production Audio)
+            $requiresApproval = requiresApproval($currentUser['id']);
+            
             // Mark items as reserved
             foreach ($items as $item) {
                 getDB()->query(
@@ -122,21 +126,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 updateItemStock($item['item_id'], -$item['quantity_needed']);
             }
             
-            getDB()->query(
-                "UPDATE pullsheets SET status = 'finalized', finalized_at = NOW() WHERE id = ?",
-                [$pullsheetId]
-            );
-            
-            // Create notification for users with pick_mode permission
-            $pullsheet = getPullsheetById($pullsheetId);
-            $showName = $pullsheet['show_name'] ?? 'Student Requests';
-            createNotificationForDesigners(
-                'pending_pick',
-                "New pullsheet ready for picking: " . $showName,
-                "pick_mode.php?pullsheet=" . $pullsheet['barcode']
-            );
-            
-            echo json_encode(['success' => true, 'message' => 'Pullsheet finalized']);
+            if ($requiresApproval) {
+                // Set to finalized but requires approval
+                getDB()->query(
+                    "UPDATE pullsheets SET status = 'finalized', finalized_at = NOW(), 
+                     requires_approval = TRUE, approval_status = 'pending' WHERE id = ?",
+                    [$pullsheetId]
+                );
+                
+                // Notify admins for approval
+                createNotificationForAdmins(
+                    'pullsheet_pending_approval',
+                    "Pullsheet for " . ($pullsheet['show_name'] ?? 'Student Requests') . " needs approval",
+                    "pullsheet_view.php?id=" . $pullsheetId
+                );
+                
+                echo json_encode(['success' => true, 'message' => 'Pullsheet submitted for approval']);
+            } else {
+                // Admin doesn't need approval
+                getDB()->query(
+                    "UPDATE pullsheets SET status = 'finalized', finalized_at = NOW() WHERE id = ?",
+                    [$pullsheetId]
+                );
+                
+                // Create notification for users with pick_mode permission
+                $pullsheet = getPullsheetById($pullsheetId);
+                $showName = $pullsheet['show_name'] ?? 'Student Requests';
+                createNotificationForDesigners(
+                    'pending_pick',
+                    "New pullsheet ready for picking: " . $showName,
+                    "pick_mode.php?pullsheet=" . $pullsheet['barcode']
+                );
+                
+                echo json_encode(['success' => true, 'message' => 'Pullsheet finalized']);
+            }
             exit;
         }
         
