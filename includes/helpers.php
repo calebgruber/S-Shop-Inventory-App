@@ -458,3 +458,261 @@ function formatUserName($user) {
     }
     return $user['username'] ?? 'N/A';
 }
+
+/**
+ * ========================================
+ * PULL SHEET HELPER FUNCTIONS
+ * ========================================
+ */
+
+/**
+ * Generate a unique barcode for a pull sheet
+ * @return string
+ */
+function generatePullSheetBarcode() {
+    return generateUniqueBarcode('PUL');
+}
+
+/**
+ * Get shows accessible to a user based on their role
+ * @param int $userId User ID
+ * @param string $role User role
+ * @return array
+ */
+function getShowsForUser($userId, $role) {
+    $conn = getDbConnection();
+    
+    if ($role === 'admin') {
+        // Admins see all non-archived shows
+        $query = "SELECT s.*, ts.name as theatre_space_name 
+                  FROM shows s 
+                  LEFT JOIN theatre_spaces ts ON s.theatre_space_id = ts.id 
+                  WHERE s.archived = 0 
+                  ORDER BY s.name ASC";
+        $result = executeQuery($conn, $query, []);
+    } else {
+        // Designers and Production Audio see shows they're assigned to
+        $query = "SELECT s.*, ts.name as theatre_space_name 
+                  FROM shows s 
+                  LEFT JOIN theatre_spaces ts ON s.theatre_space_id = ts.id 
+                  WHERE s.archived = 0 
+                  AND (s.designer_id = ? OR s.production_audio_id = ?) 
+                  ORDER BY s.name ASC";
+        $result = executeQuery($conn, $query, [$userId, $userId]);
+    }
+    
+    $shows = [];
+    if ($result && numRows($result) > 0) {
+        while ($row = fetchAssoc($result)) {
+            $shows[] = $row;
+        }
+    }
+    return $shows;
+}
+
+/**
+ * Get pull sheet by ID with related data
+ * @param int $id Pull sheet ID
+ * @return array|null
+ */
+function getPullSheetById($id) {
+    $conn = getDbConnection();
+    $query = "SELECT p.*, 
+              s.name as show_name, s.color as show_color,
+              ts.name as theatre_space_name,
+              u1.first_name as creator_first, u1.last_name as creator_last,
+              u2.first_name as approver_first, u2.last_name as approver_last,
+              u3.first_name as picker_first, u3.last_name as picker_last
+              FROM pullsheets p
+              LEFT JOIN shows s ON p.show_id = s.id
+              LEFT JOIN theatre_spaces ts ON s.theatre_space_id = ts.id
+              LEFT JOIN users u1 ON p.created_by = u1.id
+              LEFT JOIN users u2 ON p.approved_by = u2.id
+              LEFT JOIN users u3 ON p.picked_by = u3.id
+              WHERE p.id = ?";
+    $result = executeQuery($conn, $query, [$id]);
+    
+    if ($result && numRows($result) > 0) {
+        return fetchAssoc($result);
+    }
+    return null;
+}
+
+/**
+ * Get items in a pull sheet with full details
+ * @param int $pullsheetId Pull sheet ID
+ * @return array
+ */
+function getPullSheetItems($pullsheetId) {
+    $conn = getDbConnection();
+    $query = "SELECT pi.*, 
+              i.name as item_name, i.barcode as item_barcode,
+              i.tracking_type, i.in_stock_quantity, i.location,
+              i.photo_path,
+              c.name as category_name,
+              sc.name as subcategory_name
+              FROM pullsheet_items pi
+              LEFT JOIN items i ON pi.item_id = i.id
+              LEFT JOIN categories c ON i.category_id = c.id
+              LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
+              WHERE pi.pullsheet_id = ?
+              ORDER BY c.name, sc.name, i.name";
+    $result = executeQuery($conn, $query, [$pullsheetId]);
+    
+    $items = [];
+    if ($result && numRows($result) > 0) {
+        while ($row = fetchAssoc($result)) {
+            $items[] = $row;
+        }
+    }
+    return $items;
+}
+
+/**
+ * Check if user can edit a pull sheet
+ * @param int $pullsheetId Pull sheet ID
+ * @param int $userId User ID
+ * @param string $role User role
+ * @return bool
+ */
+function canEditPullSheet($pullsheetId, $userId, $role) {
+    if ($role === 'admin') {
+        return true;
+    }
+    
+    $pullsheet = getPullSheetById($pullsheetId);
+    if (!$pullsheet) {
+        return false;
+    }
+    
+    // Only drafts can be edited
+    if ($pullsheet['status'] !== 'draft') {
+        return false;
+    }
+    
+    // Owner can edit their own draft
+    return $pullsheet['created_by'] == $userId;
+}
+
+/**
+ * Check if user can approve pull sheets
+ * @param string $role User role
+ * @return bool
+ */
+function canApprovePullSheet($role) {
+    return $role === 'admin';
+}
+
+/**
+ * Get pull sheet status badge HTML
+ * @param string $status Status
+ * @return string
+ */
+function getPullSheetStatusBadge($status) {
+    $badges = [
+        'draft' => '<span class="badge bg-secondary">Draft</span>',
+        'pending_approval' => '<span class="badge bg-warning">Pending Approval</span>',
+        'approved' => '<span class="badge bg-success">Approved</span>',
+        'picked' => '<span class="badge bg-info">Picked</span>',
+        'returned' => '<span class="badge bg-dark">Returned</span>',
+        'cancelled' => '<span class="badge bg-danger">Cancelled</span>',
+    ];
+    return $badges[$status] ?? '<span class="badge bg-secondary">' . htmlspecialchars($status) . '</span>';
+}
+
+/**
+ * Reserve items for a pull sheet (reduce stock)
+ * @param int $pullsheetId Pull sheet ID
+ * @return bool
+ */
+function reserveItemsForPullSheet($pullsheetId) {
+    $conn = getDbConnection();
+    $items = getPullSheetItems($pullsheetId);
+    
+    foreach ($items as $item) {
+        $query = "UPDATE items 
+                  SET in_stock_quantity = in_stock_quantity - ? 
+                  WHERE id = ? AND in_stock_quantity >= ?";
+        $result = executeQuery($conn, $query, [
+            $item['quantity_needed'],
+            $item['item_id'],
+            $item['quantity_needed']
+        ]);
+        
+        if (!$result) {
+            error_log("Failed to reserve items for pull sheet {$pullsheetId}, item {$item['item_id']}");
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+/**
+ * Release items from a pull sheet (return to stock)
+ * @param int $pullsheetId Pull sheet ID
+ * @return bool
+ */
+function releaseItemsForPullSheet($pullsheetId) {
+    $conn = getDbConnection();
+    $items = getPullSheetItems($pullsheetId);
+    
+    foreach ($items as $item) {
+        $query = "UPDATE items 
+                  SET in_stock_quantity = in_stock_quantity + ? 
+                  WHERE id = ?";
+        $result = executeQuery($conn, $query, [
+            $item['quantity_needed'],
+            $item['item_id']
+        ]);
+        
+        if (!$result) {
+            error_log("Failed to release items for pull sheet {$pullsheetId}, item {$item['item_id']}");
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+/**
+ * Validate that all items in pull sheet have sufficient stock
+ * @param int $pullsheetId Pull sheet ID
+ * @return array ['valid' => bool, 'errors' => array]
+ */
+function validatePullSheetStock($pullsheetId) {
+    $items = getPullSheetItems($pullsheetId);
+    $errors = [];
+    
+    foreach ($items as $item) {
+        if ($item['in_stock_quantity'] < $item['quantity_needed']) {
+            $errors[] = [
+                'item_name' => $item['item_name'],
+                'needed' => $item['quantity_needed'],
+                'available' => $item['in_stock_quantity']
+            ];
+        }
+    }
+    
+    return [
+        'valid' => empty($errors),
+        'errors' => $errors
+    ];
+}
+
+/**
+ * Get current stock info for an item
+ * @param int $itemId Item ID
+ * @return array
+ */
+function getItemStockInfo($itemId) {
+    $conn = getDbConnection();
+    $query = "SELECT id, name, barcode, in_stock_quantity, total_quantity, tracking_type 
+              FROM items WHERE id = ?";
+    $result = executeQuery($conn, $query, [$itemId]);
+    
+    if ($result && numRows($result) > 0) {
+        return fetchAssoc($result);
+    }
+    return null;
+}
