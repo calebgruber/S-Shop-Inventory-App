@@ -210,7 +210,9 @@ include dirname(__DIR__) . '/includes/header.php';
                             <option value="">All Statuses</option>
                             <option value="draft" <?php echo $statusFilter === 'draft' ? 'selected' : ''; ?>>Draft</option>
                             <option value="pending_approval" <?php echo $statusFilter === 'pending_approval' ? 'selected' : ''; ?>>Pending Approval</option>
-                            <option value="finalized" <?php echo $statusFilter === 'finalized' ? 'selected' : ''; ?>>Finalized</option>
+                            <option value="approved" <?php echo $statusFilter === 'approved' ? 'selected' : ''; ?>>Approved</option>
+                            <option value="picked" <?php echo $statusFilter === 'picked' ? 'selected' : ''; ?>>Picked</option>
+                            <option value="returned" <?php echo $statusFilter === 'returned' ? 'selected' : ''; ?>>Returned</option>
                             <option value="cancelled" <?php echo $statusFilter === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                         </select>
                     </div>
@@ -332,10 +334,10 @@ include dirname(__DIR__) . '/includes/header.php';
                                         </a>
                                         <?php endif; ?>
                                         <?php if ($changeOrder['status'] === 'pending_approval' && $userRole === 'admin'): ?>
-                                        <a href="finalize.php?id=<?php echo $changeOrder['id']; ?>&action=finalize" 
+                                        <a href="finalize.php?id=<?php echo $changeOrder['id']; ?>&action=approve" 
                                            class="btn btn-sm btn-success" 
-                                           title="Finalize"
-                                           onclick="return confirm('Finalize this change order?');">
+                                           title="Approve"
+                                           onclick="return confirm('Approve this change order?');">
                                             <i class="ti ti-check icon"></i>
                                         </a>
                                         <?php endif; ?>

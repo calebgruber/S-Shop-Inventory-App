@@ -26,9 +26,9 @@ if (!empty($changeOrder['pdf_path']) && file_exists($changeOrder['pdf_path'])) {
     exit;
 }
 
-// Only finalized can generate PDF
-if ($changeOrder['status'] !== 'finalized') {
-    header('Location: view.php?id=' . $changeOrderId . '&error=' . urlencode('Change order must be finalized first'));
+// Only approved or later status can generate PDF
+if (!in_array($changeOrder['status'], ['approved', 'picked', 'returned'])) {
+    header('Location: view.php?id=' . $changeOrderId . '&error=' . urlencode('Change order must be approved first'));
     exit;
 }
 

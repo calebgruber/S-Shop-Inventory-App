@@ -55,7 +55,7 @@ unset($_SESSION['error_message']);
 $canEdit = canEditChangeOrder($changeOrderId, $userId, $userRole);
 $canFinalize = $changeOrder['status'] === 'pending_approval' && canFinalizeChangeOrder($userRole);
 $canDelete = $changeOrder['status'] === 'draft' && ($userRole === 'admin' || $changeOrder['created_by'] == $userId);
-$canDownloadPDF = $changeOrder['status'] === 'finalized';
+$canDownloadPDF = in_array($changeOrder['status'], ['approved', 'picked', 'returned']);
 
 include dirname(__DIR__) . '/includes/header.php';
 ?>
@@ -95,11 +95,11 @@ include dirname(__DIR__) . '/includes/header.php';
                 <?php endif; ?>
                 
                 <?php if ($canFinalize): ?>
-                <a href="finalize.php?id=<?php echo $changeOrderId; ?>&action=finalize" 
+                <a href="finalize.php?id=<?php echo $changeOrderId; ?>&action=approve" 
                    class="btn btn-success"
-                   onclick="return confirm('Finalize this change order? This will apply the stock changes.');">
+                   onclick="return confirm('Approve this change order? This will apply the stock changes.');">
                     <i class="ti ti-check icon"></i>
-                    Finalize
+                    Approve
                 </a>
                 <?php endif; ?>
                 
@@ -344,7 +344,7 @@ include dirname(__DIR__) . '/includes/header.php';
                             </li>
                             
                             <?php if ($changeOrder['status'] !== 'draft'): ?>
-                            <li class="step-item <?php echo in_array($changeOrder['status'], ['pending_approval', 'finalized']) ? 'active' : ''; ?>">
+                            <li class="step-item <?php echo in_array($changeOrder['status'], ['pending_approval', 'approved', 'picked', 'returned']) ? 'active' : ''; ?>">
                                 <div class="h4 m-0">Submitted</div>
                                 <?php if ($changeOrder['created_at']): ?>
                                 <div class="text-muted small">
@@ -354,12 +354,11 @@ include dirname(__DIR__) . '/includes/header.php';
                             </li>
                             <?php endif; ?>
                             
-                            <?php if ($changeOrder['status'] === 'finalized'): ?>
+                            <?php if (in_array($changeOrder['status'], ['approved', 'picked', 'returned'])): ?>
                             <li class="step-item active">
-                                <div class="h4 m-0">Finalized</div>
-                                <?php if ($changeOrder['finalized_at']): ?>
+                                <div class="h4 m-0">Approved</div>
                                 <div class="text-muted small">
-                                    <?php echo date('M d, Y g:i A', strtotime($changeOrder['finalized_at'])); ?>
+                                    <?php echo date('M d, Y g:i A', strtotime($changeOrder['updated_at'])); ?>
                                 </div>
                                 <div class="text-muted small">
                                     by <?php 
@@ -370,7 +369,6 @@ include dirname(__DIR__) . '/includes/header.php';
                                     }
                                     ?>
                                 </div>
-                                <?php endif; ?>
                             </li>
                             <?php endif; ?>
                         </ul>

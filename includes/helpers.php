@@ -834,7 +834,9 @@ function getChangeOrderStatusBadge($status) {
     $badges = [
         'draft' => '<span class="badge bg-secondary">Draft</span>',
         'pending_approval' => '<span class="badge bg-warning">Pending Approval</span>',
-        'finalized' => '<span class="badge bg-success">Finalized</span>',
+        'approved' => '<span class="badge bg-success">Approved</span>',
+        'picked' => '<span class="badge bg-info">Picked</span>',
+        'returned' => '<span class="badge bg-dark">Returned</span>',
         'cancelled' => '<span class="badge bg-danger">Cancelled</span>',
     ];
     return $badges[$status] ?? '<span class="badge bg-secondary">' . htmlspecialchars($status) . '</span>';
