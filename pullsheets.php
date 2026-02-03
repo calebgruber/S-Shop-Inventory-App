@@ -1,4 +1,5 @@
 <?php
+requirePermission('pullsheets');
 require_once 'includes/functions.php';
 
 // Check permissions - designers and admins can access pullsheets

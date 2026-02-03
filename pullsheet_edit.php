@@ -1,4 +1,5 @@
 <?php
+requirePermission('pullsheets');
 require_once 'includes/functions.php';
 
 $pullsheetId = $_GET['id'] ?? null;

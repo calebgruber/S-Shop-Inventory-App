@@ -1,4 +1,5 @@
 <?php
+requirePermission('pullsheets');
 require_once 'includes/functions.php';
 
 // Validate and check permissions BEFORE including header

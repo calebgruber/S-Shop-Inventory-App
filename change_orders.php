@@ -1,4 +1,5 @@
 <?php
+requirePermission('change_orders');
 require_once 'includes/functions.php';
 
 // Check permissions - designers and admins can access change orders

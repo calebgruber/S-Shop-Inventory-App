@@ -1,4 +1,5 @@
 <?php
+requireLogin(); // Dashboard requires user to be logged in
 $pageTitle = 'Dashboard';
 require_once 'includes/header.php';
 

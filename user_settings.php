@@ -1,4 +1,5 @@
 <?php
+requireLogin();
 $pageTitle = 'User Settings';
 require_once 'includes/header.php';
 

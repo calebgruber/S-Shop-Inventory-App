@@ -1,4 +1,5 @@
 <?php
+requirePermission('shows');
 require_once 'includes/functions.php';
 
 // Validate show BEFORE including header

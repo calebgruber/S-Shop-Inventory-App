@@ -1,4 +1,5 @@
 <?php
+requirePermission('items');
 require_once 'includes/functions.php';
 
 // Check permissions - admins, designers, production audio, and students can view inventory (read-only for non-admins)

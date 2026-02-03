@@ -1,4 +1,5 @@
 <?php
+requirePermission('repairs');
 require_once 'includes/functions.php';
 
 // Check permissions BEFORE including header

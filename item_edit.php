@@ -1,4 +1,5 @@
 <?php
+requirePermission('items');
 require_once 'includes/functions.php';
 
 // Designers can view inventory but not edit - check BEFORE including header

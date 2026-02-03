@@ -410,6 +410,20 @@ function requireRole($role) {
     }
 }
 
+function requirePermission($permissionKey) {
+    $user = getCurrentUser();
+    if (!$user) {
+        header('Location: login');
+        exit;
+    }
+    
+    if (!hasPermission($permissionKey)) {
+        setAlert('You do not have permission to access this page.', 'danger');
+        header('Location: index');
+        exit;
+    }
+}
+
 function hasPermission($permissionKey) {
     $user = getCurrentUser();
     if (!$user) {
