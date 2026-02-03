@@ -1,7 +1,6 @@
 <?php
 session_start();
 require_once __DIR__ . '/includes/functions.php';
-requirePermission('operations');
 
 $pickSession = $_SESSION['pick_session'] ?? null;
 
@@ -15,6 +14,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     if (!isset($_SESSION['user_id'])) {
         ob_end_clean(); // Clear any buffered output
         echo json_encode(['success' => false, 'message' => 'Session expired. Please log in again.', 'redirect' => 'login']);
+        exit;
+    }
+    
+    // Check permission for AJAX requests (return JSON instead of redirecting)
+    if (!hasPermission('operations')) {
+        ob_end_clean();
+        echo json_encode(['success' => false, 'message' => 'You do not have permission to access this feature.', 'redirect' => 'index']);
         exit;
     }
     
@@ -268,6 +274,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         exit;
     }
 }
+
+// For non-AJAX requests, check permission normally
+requirePermission('operations');
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
