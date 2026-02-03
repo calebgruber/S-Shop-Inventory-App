@@ -2,6 +2,17 @@
 
 A complete inventory management application for theatre sound shops built with pure PHP, MySQL, and Tabler UI.
 
+## Latest Feature: LightWright-Style Paperwork ✨
+
+**NEW!** Pullsheets and change orders now use professional LightWright 6/7-inspired formatting:
+- Professional bordered tables with gray headers
+- Category-based organization
+- Information boxes with show details
+- Signature lines for authorization
+- Barcode preserved in top right corner
+
+See [LIGHTWRIGHT_PAPERWORK.md](LIGHTWRIGHT_PAPERWORK.md) for details and examples.
+
 ## Features
 
 ### Core Features
