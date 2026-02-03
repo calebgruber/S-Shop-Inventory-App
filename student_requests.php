@@ -287,6 +287,7 @@ foreach ($requests as $request) {
         </form>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="card">
     <div class="card-header">
@@ -370,7 +371,6 @@ foreach ($requests as $request) {
         </table>
     </div>
 </div>
-<?php endif; ?>
 
 <!-- Browse Items Modal (for students, designers, and production audio) -->
 <?php if ($isStudent || $isDesigner || $isProductionAudio): ?>

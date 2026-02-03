@@ -428,7 +428,7 @@ if ($isDesigner || $isProductionAudio) {
     </div>
     <?php endif; ?>
     
-    <?php if (hasPermission('shows') && !isProductionAudio()): ?>
+    <?php if (isAdmin()): ?>
     <!-- Shows -->
     <div class="col-md-6 col-lg-3 mb-3">
         <a href="shows" class="btn btn-purple w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
