@@ -496,7 +496,7 @@ $currentUser = getCurrentUser();
                             </li>
                             <?php endif; ?>
                             
-                            <?php if (hasPermission('inventory')): ?>
+                            <?php if (hasPermission('items')): ?>
                             <li class="nav-item <?php echo $currentPage === 'items' || $currentPage === 'item_edit' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="items">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
