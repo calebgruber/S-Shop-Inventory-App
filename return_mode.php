@@ -17,6 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         exit;
     }
     
+    // Check authentication for AJAX requests
+    $user = getCurrentUser();
+    if (!$user || !isset($user['id'])) {
+        ob_end_clean();
+        echo json_encode(['success' => false, 'message' => 'Session expired. Please log in again.', 'redirect' => 'login']);
+        exit;
+    }
+    
     // Check permission for AJAX requests (return JSON instead of redirecting)
     if (!hasPermission('operations')) {
         ob_end_clean();
