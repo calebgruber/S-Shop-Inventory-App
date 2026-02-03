@@ -5,10 +5,14 @@ require_once __DIR__ . '/includes/functions.php';
 $pickSession = $_SESSION['pick_session'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
+    // Start output buffering to catch any stray output
+    ob_start();
+    
     header('Content-Type: application/json');
     
     // Check authentication for AJAX requests
     if (!isset($_SESSION['user_id'])) {
+        ob_end_clean(); // Clear any buffered output
         echo json_encode(['success' => false, 'message' => 'Session expired. Please log in again.', 'redirect' => 'login']);
         exit;
     }
@@ -23,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             if ($pullsheet && $pullsheet['status'] === 'finalized') {
                 // Check if approval is required and approved
                 if ($pullsheet['requires_approval'] && $pullsheet['approval_status'] !== 'approved') {
+                    ob_end_clean(); // Clear any buffered output
                     echo json_encode(['success' => false, 'message' => 'This pullsheet requires admin approval before it can be picked']);
                     exit;
                 }
@@ -46,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     ];
                 }
                 
+                ob_end_clean(); // Clear any buffered output
                 echo json_encode([
                     'success' => true,
                     'is_resuming_draft' => $pullsheet['is_partial'] ? true : false,
@@ -59,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             if ($changeOrder && $changeOrder['status'] === 'finalized') {
                 // Check if approval is required and approved
                 if ($changeOrder['requires_approval'] && $changeOrder['approval_status'] !== 'approved') {
+                    ob_end_clean(); // Clear any buffered output
                     echo json_encode(['success' => false, 'message' => 'This change order requires admin approval before it can be picked']);
                     exit;
                 }
@@ -70,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 );
                 
                 if (empty($itemsToAdd)) {
+                    ob_end_clean(); // Clear any buffered output
                     echo json_encode(['success' => false, 'message' => 'This change order has no items to pick']);
                     exit;
                 }
@@ -95,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     }
                 }
                 
+                ob_end_clean(); // Clear any buffered output
                 echo json_encode([
                     'success' => true,
                     'is_resuming_draft' => $changeOrder['is_partial'] ? true : false,
@@ -103,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
+            ob_end_clean(); // Clear any buffered output
             echo json_encode(['success' => false, 'message' => 'Pullsheet or change order not found or not finalized']);
             exit;
         }
@@ -113,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             
             if ($item && isset($_SESSION['pick_session']['items'][$item['id']])) {
                 $_SESSION['pick_session']['items'][$item['id']]['scanned']++;
+                ob_end_clean(); // Clear any buffered output
                 echo json_encode([
                     'success' => true,
                     'item' => $_SESSION['pick_session']['items'][$item['id']],
@@ -121,6 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
+            ob_end_clean(); // Clear any buffered output
             echo json_encode(['success' => false, 'message' => 'Item not in this pick list']);
             exit;
         }
@@ -133,6 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 $newCount = $_SESSION['pick_session']['items'][$itemId]['scanned'] + $adjustment;
                 if ($newCount >= 0) {
                     $_SESSION['pick_session']['items'][$itemId]['scanned'] = $newCount;
+                    ob_end_clean(); // Clear any buffered output
                     echo json_encode([
                         'success' => true,
                         'item' => $_SESSION['pick_session']['items'][$itemId]
@@ -141,6 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 }
             }
             
+            ob_end_clean(); // Clear any buffered output
             echo json_encode(['success' => false]);
             exit;
         }
@@ -174,6 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             }
             
             unset($_SESSION['pick_session']);
+            ob_end_clean(); // Clear any buffered output
             echo json_encode(['success' => true]);
             exit;
         }
@@ -211,10 +226,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             }
             
             unset($_SESSION['pick_session']);
+            ob_end_clean(); // Clear any buffered output
             echo json_encode(['success' => true]);
             exit;
         }
     } catch (Exception $e) {
+        ob_end_clean(); // Clear any buffered output
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         exit;
     }
