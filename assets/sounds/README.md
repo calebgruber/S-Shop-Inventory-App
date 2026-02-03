@@ -1,68 +1,34 @@
-# Sound Files Directory
+# Sound Files for S-Shop Inventory App
 
-This directory should contain the following MP3 files for the application:
+This directory contains sound effect files used throughout the application.
 
 ## Required Files
 
-### success.mp3
-- Plays when an item is successfully scanned in Pick Mode or Return Mode
-- Should be a pleasant, short "ding" or "beep" sound (0.5-1 second)
-- Example: a bell sound, success chime, or positive beep
+1. **success.mp3** - Success sound for pick mode when correct item is scanned
+2. **error.mp3** - Error sound for pick mode when wrong item is scanned  
+3. **whopper.mp3** - Easter egg sound for scanning CHZ-BGR barcode
+4. **bonk.mp3** - Easter egg sound for clicking red cable color block
+5. **meow.mp3** - Easter egg sound that plays randomly in pink mode
 
-### error.mp3
-- Plays when there's an error (wrong item, extra item, or scan failure)
-- Should be a distinct error sound (0.5-1 second)
-- Example: a buzzer, error tone, or negative beep
-
-### meow.mp3
-- Plays at random intervals during Pink Mode easter egg
-- Should be a cat meow sound (0.5-2 seconds)
-- Plays randomly for up to 5 minutes
-
-### whopper.mp3
-- Plays when the cheese burger item (CHZ-BGR) is scanned
-- Easter egg sound effect
-- Can be any humorous or related sound effect
-
-### bonk.mp3
-- Plays when the red color block in the Cable Color Key is clicked
-- Should be a short "bonk" or "thud" sound (0.5-1 second)
-
-## Getting Sound Files
-
-You can:
-1. Record your own sounds
-2. Use free sound libraries like:
-   - freesound.org
-   - zapsplat.com
-   - soundbible.com
-3. Convert from other formats using online tools
-
-## File Format
+## File Requirements
 
 - Format: MP3
-- Quality: 128kbps is sufficient
-- Length: 0.5-2 seconds recommended (meow can be longer)
-- Sample rate: 44.1kHz or 48kHz
+- Bitrate: 128 kbps recommended
+- Duration: 0.5-3 seconds for quick feedback
+- Volume: Should be normalized for consistent playback
 
-## Uploading to cPanel
+## Installation
 
-1. Log into cPanel
-2. Open File Manager
-3. Navigate to `assets/sounds/`
-4. Upload all MP3 files
-5. Set permissions to 644 (readable)
+Place the MP3 files in this directory. The application will automatically use them when triggered by the appropriate actions.
 
-## Testing
+## Free Sound Resources
 
-After uploading, test the sounds by:
-1. Going to Pick Mode and scanning items (success.mp3 and error.mp3)
-2. Triple-clicking the logo to enter Pink Mode (meow.mp3)
-3. Scanning the CHZ-BGR barcode (whopper.mp3)
-4. Clicking the red cable color block on dashboard (bonk.mp3)
+You can find free sound effects at:
+- freesound.org
+- zapsplat.com  
+- soundbible.com
+- YouTube Audio Library
 
-If sounds don't play, check:
-- Files are named exactly as listed above (lowercase, .mp3 extension)
-- Files are in assets/sounds/ directory
-- Browser allows audio autoplay
-- File permissions are correct (644)
+## Note
+
+Due to browser autoplay policies, sounds may not play until the user has interacted with the page (clicked anywhere).
