@@ -507,7 +507,7 @@ $currentUser = getCurrentUser();
                             </li>
                             <?php endif; ?>
                             
-                            <?php if (hasPermission('shows')): ?>
+                            <?php if (hasPermission('shows') && !isProductionAudio()): ?>
                             <li class="nav-item <?php echo $currentPage === 'shows' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="shows">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">

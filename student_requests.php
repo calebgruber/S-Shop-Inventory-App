@@ -368,8 +368,8 @@ foreach ($requests as $request) {
 </div>
 <?php endif; ?>
 
-<!-- Browse Items Modal (for students and designers) -->
-<?php if ($isStudent || $isDesigner): ?>
+<!-- Browse Items Modal (for students, designers, and production audio) -->
+<?php if ($isStudent || $isDesigner || $isProductionAudio): ?>
 <div class="modal fade" id="browseItemsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
