@@ -1,9 +1,9 @@
 <?php
 // Database Configuration
 define('DB_HOST', 'localhost');
-define('DB_USER', 'voxelnodes_sshop');
-define('DB_PASS', ').sBi.*B=}rp');
-define('DB_NAME', 'voxelnodes_sshop');
+define('DB_USER', 'voxelnodes_sshop_dev');
+define('DB_PASS', '*#4W=CL&Ni(s');
+define('DB_NAME', 'voxelnodes_sshop_dev');
 
 // Application Configuration
 define('BASE_URL', '/');

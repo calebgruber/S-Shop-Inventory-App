@@ -200,11 +200,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Process based on import type
                         switch ($importType) {
                             case 'categories':
+                                // Map headers to column indices
+                                $headerMap = array_flip(array_map('strtolower', $headers));
+                                
                                 while (($row = fgetcsv($handle)) !== false) {
-                                    if (empty($row[0])) continue;
+                                    // Skip empty rows
+                                    if (empty(array_filter($row))) continue;
                                     
-                                    $name = trim($row[0]);
-                                    $description = isset($row[1]) ? trim($row[1]) : '';
+                                    // Get name from the correct column
+                                    $nameIdx = $headerMap['name'] ?? 0;
+                                    $descIdx = $headerMap['description'] ?? 1;
+                                    
+                                    if (empty($row[$nameIdx])) continue;
+                                    
+                                    $name = trim($row[$nameIdx]);
+                                    $description = isset($row[$descIdx]) ? trim($row[$descIdx]) : '';
                                     
                                     try {
                                         // Check if category exists
@@ -226,12 +236,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 break;
                                 
                             case 'subcategories':
+                                // Map headers to column indices
+                                $headerMap = array_flip(array_map('strtolower', $headers));
+                                
                                 while (($row = fgetcsv($handle)) !== false) {
-                                    if (empty($row[0]) || empty($row[1])) continue;
+                                    // Skip empty rows
+                                    if (empty(array_filter($row))) continue;
                                     
-                                    $categoryName = trim($row[0]);
-                                    $name = trim($row[1]);
-                                    $description = isset($row[2]) ? trim($row[2]) : '';
+                                    // Get values from the correct columns
+                                    $categoryNameIdx = $headerMap['category_name'] ?? 0;
+                                    $nameIdx = $headerMap['name'] ?? 1;
+                                    $descIdx = $headerMap['description'] ?? 2;
+                                    
+                                    if (empty($row[$categoryNameIdx]) || empty($row[$nameIdx])) continue;
+                                    
+                                    $categoryName = trim($row[$categoryNameIdx]);
+                                    $name = trim($row[$nameIdx]);
+                                    $description = isset($row[$descIdx]) ? trim($row[$descIdx]) : '';
                                     
                                     try {
                                         // Find category by name
@@ -263,11 +284,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 break;
                                 
                             case 'theatre_spaces':
+                                // Map headers to column indices
+                                $headerMap = array_flip(array_map('strtolower', $headers));
+                                
                                 while (($row = fgetcsv($handle)) !== false) {
-                                    if (empty($row[0])) continue;
+                                    // Skip empty rows
+                                    if (empty(array_filter($row))) continue;
                                     
-                                    $name = trim($row[0]);
-                                    $description = isset($row[1]) ? trim($row[1]) : '';
+                                    // Get values from the correct columns
+                                    $nameIdx = $headerMap['name'] ?? 0;
+                                    $descIdx = $headerMap['description'] ?? 1;
+                                    
+                                    if (empty($row[$nameIdx])) continue;
+                                    
+                                    $name = trim($row[$nameIdx]);
+                                    $description = isset($row[$descIdx]) ? trim($row[$descIdx]) : '';
                                     
                                     try {
                                         // Check if space exists
