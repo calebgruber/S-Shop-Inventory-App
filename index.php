@@ -7,26 +7,64 @@ $activeShows = getActiveShows();
 $currentUser = getCurrentUser();
 $isStudent = $currentUser['role'] === 'student';
 $isDesigner = $currentUser['role'] === 'designer';
+$isProductionAudio = $currentUser['role'] === 'production_audio';
 
-// Get pending pullsheets (finalized but not picked)
-$pendingPullsheets = getDB()->fetchAll(
-    "SELECT p.*, s.name as show_name 
-     FROM pullsheets p 
-     LEFT JOIN shows s ON p.show_id = s.id 
-     WHERE p.status = 'finalized'
-     ORDER BY p.created_at 
-     LIMIT 5"
-);
+// Get pending pullsheets (finalized but not picked) - filtered by show assignments for designers/production audio
+if ($isDesigner || $isProductionAudio) {
+    $assignedShows = getAssignedShows($currentUser['id']);
+    $assignedShowIds = array_column($assignedShows, 'id');
+    
+    if (empty($assignedShowIds)) {
+        $pendingPullsheets = [];
+    } else {
+        $placeholders = implode(',', array_fill(0, count($assignedShowIds), '?'));
+        $pendingPullsheets = getDB()->fetchAll(
+            "SELECT p.*, s.name as show_name 
+             FROM pullsheets p 
+             LEFT JOIN shows s ON p.show_id = s.id 
+             WHERE p.status = 'finalized' AND p.show_id IN ($placeholders)
+             ORDER BY p.created_at 
+             LIMIT 5",
+            $assignedShowIds
+        );
+    }
+} else {
+    $pendingPullsheets = getDB()->fetchAll(
+        "SELECT p.*, s.name as show_name 
+         FROM pullsheets p 
+         LEFT JOIN shows s ON p.show_id = s.id 
+         WHERE p.status = 'finalized'
+         ORDER BY p.created_at 
+         LIMIT 5"
+    );
+}
 
-// Get pending change orders (finalized but not processed)
-$pendingChangeOrders = getDB()->fetchAll(
-    "SELECT co.*, s.name as show_name 
-     FROM change_orders co 
-     LEFT JOIN shows s ON co.show_id = s.id 
-     WHERE co.status = 'finalized'
-     ORDER BY co.created_at 
-     LIMIT 5"
-);
+// Get pending change orders (finalized but not processed) - filtered by show assignments for designers/production audio
+if ($isDesigner || $isProductionAudio) {
+    if (empty($assignedShowIds)) {
+        $pendingChangeOrders = [];
+    } else {
+        $placeholders = implode(',', array_fill(0, count($assignedShowIds), '?'));
+        $pendingChangeOrders = getDB()->fetchAll(
+            "SELECT co.*, s.name as show_name 
+             FROM change_orders co 
+             LEFT JOIN shows s ON co.show_id = s.id 
+             WHERE co.status = 'finalized' AND co.show_id IN ($placeholders)
+             ORDER BY co.created_at 
+             LIMIT 5",
+            $assignedShowIds
+        );
+    }
+} else {
+    $pendingChangeOrders = getDB()->fetchAll(
+        "SELECT co.*, s.name as show_name 
+         FROM change_orders co 
+         LEFT JOIN shows s ON co.show_id = s.id 
+         WHERE co.status = 'finalized'
+         ORDER BY co.created_at 
+         LIMIT 5"
+    );
+}
 
 // Get student requests based on role
 if ($isStudent) {
@@ -64,31 +102,71 @@ if ($isStudent) {
     );
 }
 
-// Get change orders with items to add (need to be picked)
-$changeOrdersToPick = getDB()->fetchAll(
-    "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_add
-     FROM change_orders co 
-     LEFT JOIN shows s ON co.show_id = s.id 
-     LEFT JOIN change_order_items coi ON co.id = coi.change_order_id 
-     WHERE co.status = 'finalized' AND coi.type = 'add'
-     GROUP BY co.id
-     HAVING items_to_add > 0
-     ORDER BY co.created_at 
-     LIMIT 5"
-);
+// Get change orders with items to add (need to be picked) - filtered by show assignments
+if ($isDesigner || $isProductionAudio) {
+    if (empty($assignedShowIds)) {
+        $changeOrdersToPick = [];
+    } else {
+        $placeholders = implode(',', array_fill(0, count($assignedShowIds), '?'));
+        $changeOrdersToPick = getDB()->fetchAll(
+            "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_add
+             FROM change_orders co 
+             LEFT JOIN shows s ON co.show_id = s.id 
+             LEFT JOIN change_order_items coi ON co.id = coi.change_order_id 
+             WHERE co.status = 'finalized' AND coi.type = 'add' AND co.show_id IN ($placeholders)
+             GROUP BY co.id
+             HAVING items_to_add > 0
+             ORDER BY co.created_at 
+             LIMIT 5",
+            $assignedShowIds
+        );
+    }
+} else {
+    $changeOrdersToPick = getDB()->fetchAll(
+        "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_add
+         FROM change_orders co 
+         LEFT JOIN shows s ON co.show_id = s.id 
+         LEFT JOIN change_order_items coi ON co.id = coi.change_order_id 
+         WHERE co.status = 'finalized' AND coi.type = 'add'
+         GROUP BY co.id
+         HAVING items_to_add > 0
+         ORDER BY co.created_at 
+         LIMIT 5"
+    );
+}
 
-// Get change orders with items to remove (need to be returned)
-$changeOrdersToReturn = getDB()->fetchAll(
-    "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_remove
-     FROM change_orders co 
-     LEFT JOIN shows s ON co.show_id = s.id 
-     LEFT JOIN change_order_items coi ON co.id = coi.change_order_id 
-     WHERE co.status = 'finalized' AND coi.type = 'remove'
-     GROUP BY co.id
-     HAVING items_to_remove > 0
-     ORDER BY co.created_at 
-     LIMIT 5"
-);
+// Get change orders with items to remove (need to be returned) - filtered by show assignments
+if ($isDesigner || $isProductionAudio) {
+    if (empty($assignedShowIds)) {
+        $changeOrdersToReturn = [];
+    } else {
+        $placeholders = implode(',', array_fill(0, count($assignedShowIds), '?'));
+        $changeOrdersToReturn = getDB()->fetchAll(
+            "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_remove
+             FROM change_orders co 
+             LEFT JOIN shows s ON co.show_id = s.id 
+             LEFT JOIN change_order_items coi ON co.id = coi.change_order_id 
+             WHERE co.status = 'finalized' AND coi.type = 'remove' AND co.show_id IN ($placeholders)
+             GROUP BY co.id
+             HAVING items_to_remove > 0
+             ORDER BY co.created_at 
+             LIMIT 5",
+            $assignedShowIds
+        );
+    }
+} else {
+    $changeOrdersToReturn = getDB()->fetchAll(
+        "SELECT co.*, s.name as show_name, COUNT(coi.id) as items_to_remove
+         FROM change_orders co 
+         LEFT JOIN shows s ON co.show_id = s.id 
+         LEFT JOIN change_order_items coi ON co.id = coi.change_order_id 
+         WHERE co.status = 'finalized' AND coi.type = 'remove'
+         GROUP BY co.id
+         HAVING items_to_remove > 0
+         ORDER BY co.created_at 
+         LIMIT 5"
+    );
+}
 ?>
 
 <!-- Quick Lookup Modal -->
@@ -346,7 +424,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     </div>
     <?php endif; ?>
     
-    <?php if (hasPermission('shows')): ?>
+    <?php if (hasPermission('shows') && !isProductionAudio()): ?>
     <!-- Shows -->
     <div class="col-md-6 col-lg-3 mb-3">
         <a href="shows" class="btn btn-purple w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">

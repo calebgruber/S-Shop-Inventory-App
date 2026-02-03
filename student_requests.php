@@ -460,12 +460,50 @@ function selectItemForRequest(itemId, itemName, stockQuantity) {
     document.getElementById('selectedItemStock').value = stockQuantity + ' available';
     
     // Close browse modal and open create modal
-    const browseModal = bootstrap.Modal.getInstance(document.getElementById('browseItemsModal'));
-    browseModal.hide();
+    const browseModalEl = document.getElementById('browseItemsModal');
+    const browseModal = bootstrap.Modal.getInstance(browseModalEl);
+    if (browseModal) {
+        browseModal.hide();
+    }
     
-    const createModal = new bootstrap.Modal(document.getElementById('createRequestModal'));
-    createModal.show();
+    // Wait for browse modal to fully hide before showing create modal
+    setTimeout(() => {
+        const createModal = new bootstrap.Modal(document.getElementById('createRequestModal'));
+        createModal.show();
+    }, 300);
 }
+
+// Fix backdrop issue when modals are closed
+document.addEventListener('DOMContentLoaded', function() {
+    const browseModalEl = document.getElementById('browseItemsModal');
+    const createModalEl = document.getElementById('createRequestModal');
+    
+    if (browseModalEl) {
+        browseModalEl.addEventListener('hidden.bs.modal', function() {
+            // Remove any lingering backdrops
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => {
+                if (!document.querySelector('.modal.show')) {
+                    backdrop.remove();
+                }
+            });
+        });
+    }
+    
+    if (createModalEl) {
+        createModalEl.addEventListener('hidden.bs.modal', function() {
+            // Remove any lingering backdrops
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => {
+                backdrop.remove();
+            });
+            // Reset body overflow in case it's stuck
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+    }
+});
 </script>
 <?php endif; ?>
 

@@ -12,6 +12,7 @@ require_once 'includes/header.php';
 
 $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';
+$isProductionAudio = $currentUser['role'] === 'production_audio';
 
 // Handle delete request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
@@ -25,8 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
             throw new Exception('Change order not found');
         }
         
-        // Check permission for designers
-        if ($isDesigner && !canAccessShow($currentUser['id'], $changeOrder['show_id'])) {
+        // Check permission for designers and production audio
+        if (($isDesigner || $isProductionAudio) && !canAccessShow($currentUser['id'], $changeOrder['show_id'])) {
             throw new Exception('You do not have permission to delete this change order');
         }
         
@@ -72,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_change_order']
     try {
         $showId = !empty($_POST['show_id']) ? (int)$_POST['show_id'] : null;
         
-        // Check permission for designers
-        if ($isDesigner && $showId && !canAccessShow($currentUser['id'], $showId)) {
+        // Check permission for designers and production audio
+        if (($isDesigner || $isProductionAudio) && $showId && !canAccessShow($currentUser['id'], $showId)) {
             throw new Exception('You do not have permission to create change order for this show');
         }
         
@@ -93,8 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_change_order']
     }
 }
 
-// Get change orders filtered by show access for designers
-if ($isDesigner) {
+// Get change orders filtered by show access for designers and production audio
+if ($isDesigner || $isProductionAudio) {
     $assignedShows = getAssignedShows($currentUser['id']);
     $assignedShowIds = array_column($assignedShows, 'id');
     
