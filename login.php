@@ -60,12 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 try {
     $appName = getSetting('app_name', 'CMFT Sound Shop Inventory');
-    $loginIllustration = getSetting('login_illustration_path', '');
+    $loginCoverImage = getSetting('login_cover_image', '');
     $logoPath = getSetting('logo_path', '');
 } catch (Exception $e) {
     logMessage("Error loading settings: " . $e->getMessage(), 'ERROR');
     $appName = 'CMFT Sound Shop Inventory';
-    $loginIllustration = '';
+    $loginCoverImage = '';
     $logoPath = '';
 }
 ?>
@@ -156,8 +156,8 @@ try {
       <div class="col-12 col-lg-6 col-xl-8 d-none d-lg-block">
         <!-- Photo -->
         <div class="bg-cover h-100 min-vh-100" style="background-image: url(<?php 
-          if ($loginIllustration && file_exists(__DIR__ . '/uploads/' . basename($loginIllustration))) {
-            echo 'uploads/' . htmlspecialchars(basename($loginIllustration));
+          if ($loginCoverImage && file_exists(__DIR__ . '/uploads/' . basename($loginCoverImage))) {
+            echo 'uploads/' . htmlspecialchars(basename($loginCoverImage));
           } else {
             echo 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80';
           }
