@@ -453,7 +453,7 @@ function hasPermission($permissionKey) {
             // Production Audio: read-only inventory, create orders, assigned to shows, can pick/return (with signature)
             $productionAudioPermissions = ['dashboard', 'items', 'shows', 'pullsheets', 
                                           'change_orders', 'pick_mode', 'return_mode', 
-                                          'student_requests', 'quick_lookup'];
+                                          'operations', 'student_requests', 'quick_lookup'];
             return in_array($permissionKey, $productionAudioPermissions);
         } else if ($user['role'] === 'student') {
             // Students can only view dashboard, read-only inventory, and make requests

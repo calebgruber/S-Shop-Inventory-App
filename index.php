@@ -310,6 +310,7 @@ if ($isDesigner || $isProductionAudio) {
             </div>
         </div>
     </div>
+    <?php if (isAdmin()): ?>
     <div class="col-sm-6 col-lg-3">
         <div class="card stat-card">
             <div class="card-body">
@@ -323,6 +324,7 @@ if ($isDesigner || $isProductionAudio) {
             </div>
         </div>
     </div>
+    <?php endif; ?>
     <div class="col-sm-6 col-lg-3">
         <div class="card stat-card">
             <div class="card-body">
@@ -449,6 +451,7 @@ if ($isDesigner || $isProductionAudio) {
 </div>
 
 <div class="row">
+    <?php if (isAdmin()): ?>
     <div class="col-lg-6 mb-4">
         <div class="card">
             <div class="card-header">
@@ -490,6 +493,7 @@ if ($isDesigner || $isProductionAudio) {
             </div>
         </div>
     </div>
+    <?php endif; ?>
     
 
 <script>

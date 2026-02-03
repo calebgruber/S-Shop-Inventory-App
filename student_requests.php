@@ -187,12 +187,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $statusFilter = $_GET['status'] ?? 'all';
 $categoryFilter = $_GET['category'] ?? 'all';
 
-// Build query for requests list - only admins can see/manage all requests
+// Build query for requests list
 if (!$canManageRequests) {
-    // Students, designers, and production audio don't see the requests table - only the create form
-    $requests = [];
+    // Non-admins see only their own requests
+    $requests = $db->fetchAll(
+        "SELECT sr.*, i.name as item_name, i.barcode, i.in_stock_quantity, c.name as category_name,
+         u.full_name as student_name, a.full_name as approved_by_name
+         FROM student_requests sr
+         LEFT JOIN items i ON sr.item_id = i.id
+         LEFT JOIN categories c ON i.category_id = c.id
+         LEFT JOIN users u ON sr.student_id = u.id
+         LEFT JOIN users a ON sr.approved_by = a.id
+         WHERE sr.student_id = ?
+         ORDER BY sr.created_at DESC",
+        [$currentUser['id']]
+    );
 } else {
-    // Admins see all requests
+    // Admins see all requests with filters
     $query = "SELECT sr.*, i.name as item_name, i.barcode, i.in_stock_quantity, c.name as category_name,
               u.full_name as student_name, a.full_name as approved_by_name
               FROM student_requests sr
@@ -279,7 +290,7 @@ foreach ($requests as $request) {
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">Student Requests</h3>
+        <h3 class="card-title"><?php echo $canManageRequests ? 'All Student Requests' : 'My Requests'; ?></h3>
     </div>
     <div class="table-responsive">
         <table class="table table-vcenter card-table">
