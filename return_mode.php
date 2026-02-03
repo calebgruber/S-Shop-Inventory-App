@@ -1,21 +1,17 @@
 <?php
+// Start output buffering FIRST to catch any warnings/errors
+ob_start();
+
 session_start();
 require_once __DIR__ . '/includes/functions.php';
 
 $returnSession = $_SESSION['return_session'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
-    // Start output buffering to catch any stray output
-    ob_start();
-    
     header('Content-Type: application/json');
     
-    // Check authentication for AJAX requests
-    if (!isset($_SESSION['user_id'])) {
-        ob_end_clean(); // Clear any buffered output
-        echo json_encode(['success' => false, 'message' => 'Session expired. Please log in again.', 'redirect' => 'login']);
-        exit;
-    }
+    // Suppress error display for AJAX (errors still logged)
+    ini_set('display_errors', '0');
     
     // Check authentication for AJAX requests
     $user = getCurrentUser();
@@ -262,6 +258,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
 // For non-AJAX requests, check permission normally
 requirePermission('operations');
+
+// Flush output buffer for HTML pages
+if (ob_get_level()) {
+    ob_end_flush();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
