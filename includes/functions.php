@@ -465,61 +465,118 @@ function generatePullsheetPDF($pullsheetId) {
     $pdf = new SimplePDF();
     $page = $pdf->addPage(612, 792); // Letter size
     
-    // Logo
+    // Logo in top left
     $logoPath = getSetting('logo_path');
     if ($logoPath && file_exists(__DIR__ . '/../uploads/logos/' . $logoPath)) {
-        // Logo would be added here if image support was complete
-        // For now, add text placeholder
-        $pdf->addText($page, 50, 750, 'CMFT Sound Shop', 14, 'Helvetica');
+        $pdf->addText($page, 40, 760, 'CMFT Sound Shop', 10);
+    } else {
+        $pdf->addText($page, 40, 760, 'CMFT Sound Shop', 10);
     }
     
-    // Barcode (PDF417 for pullsheets)
+    // Barcode in top right (PDF417 for pullsheets)
     $barcodeData = generatePDF417Barcode($pullsheet['barcode']);
-    // Save barcode temporarily and add to PDF
     $barcodeFile = sys_get_temp_dir() . '/barcode_' . bin2hex(random_bytes(16)) . '.png';
     file_put_contents($barcodeFile, $barcodeData);
     if (file_exists($barcodeFile)) {
-        $pdf->addImage($page, file_get_contents($barcodeFile), 450, 720, 100, 50);
+        $pdf->addImage($page, file_get_contents($barcodeFile), 470, 730, 100, 40);
         unlink($barcodeFile);
     }
     
-    // Title
-    $pdf->addText($page, 250, 700, 'PULLSHEET', 18, 'Helvetica');
+    // Title - LightWright style
+    $pdf->addText($page, 40, 735, 'EQUIPMENT PULL SHEET', 16);
     
-    // Show details
-    $y = 670;
-    $pdf->addText($page, 50, $y, 'Show: ' . $pullsheet['show_name'], 12);
-    $y -= 20;
-    $pdf->addText($page, 50, $y, 'Shop Lead: ' . $pullsheet['shop_lead'], 12);
-    $y -= 20;
-    $pdf->addText($page, 50, $y, 'Designer: ' . $pullsheet['designer'], 12);
-    $y -= 20;
-    $pdf->addText($page, 50, $y, 'Created: ' . date('m/d/Y', strtotime($pullsheet['created_at'])), 12);
-    $y -= 20;
-    $pdf->addText($page, 50, $y, 'Barcode: ' . $pullsheet['barcode'], 10);
+    // Show information box - LightWright style
+    $showFields = [
+        ['label' => 'Production', 'value' => $pullsheet['show_name'] ?? 'N/A'],
+        ['label' => 'Designer', 'value' => $pullsheet['designer'] ?? 'N/A'],
+        ['label' => 'Shop Lead', 'value' => $pullsheet['shop_lead'] ?? 'N/A'],
+        ['label' => 'Date Created', 'value' => date('m/d/Y', strtotime($pullsheet['created_at']))],
+        ['label' => 'Status', 'value' => ucfirst($pullsheet['status'])],
+    ];
     
-    // Table headers
-    $y -= 40;
-    $pdf->addText($page, 50, $y, 'Item', 12);
-    $pdf->addText($page, 300, $y, 'Barcode', 12);
-    $pdf->addText($page, 400, $y, 'Qty Needed', 12);
-    $pdf->addText($page, 500, $y, 'Qty Picked', 12);
-    $pdf->addLine($page, 50, $y - 5, 550, $y - 5);
+    $pdf->addInfoBox($page, 40, 700, 250, 110, 'Show Information', $showFields);
     
-    // Items
-    $y -= 25;
+    // Pullsheet barcode reference
+    $pdf->addText($page, 310, 650, 'Pullsheet ID: ' . $pullsheet['barcode'], 8);
+    
+    // Group items by category for LightWright-style organization
+    $itemsByCategory = [];
     foreach ($items as $item) {
-        $pdf->addText($page, 50, $y, substr($item['item_name'], 0, 35), 10);
-        $pdf->addText($page, 300, $y, $item['item_barcode'], 10);
-        $pdf->addText($page, 420, $y, (string)$item['quantity_needed'], 10);
-        $pdf->addText($page, 520, $y, (string)$item['quantity_picked'], 10);
-        $y -= 20;
-        
-        if ($y < 50) {
+        $catName = $item['category_name'] ?? 'Uncategorized';
+        if (!isset($itemsByCategory[$catName])) {
+            $itemsByCategory[$catName] = [];
+        }
+        $itemsByCategory[$catName][] = $item;
+    }
+    
+    // Table columns - LightWright style
+    $columns = [
+        ['field' => 'item_num', 'label' => '#', 'width' => 30, 'align' => 'center', 'maxlen' => 5],
+        ['field' => 'item_name', 'label' => 'Item Description', 'width' => 200, 'align' => 'left', 'maxlen' => 35],
+        ['field' => 'item_barcode', 'label' => 'Barcode', 'width' => 90, 'align' => 'left', 'maxlen' => 15],
+        ['field' => 'quantity_needed', 'label' => 'Qty', 'width' => 40, 'align' => 'center', 'maxlen' => 5],
+        ['field' => 'location', 'label' => 'Location', 'width' => 80, 'align' => 'left', 'maxlen' => 12],
+        ['field' => 'notes', 'label' => 'Notes/Picked', 'width' => 92, 'align' => 'left', 'maxlen' => 15],
+    ];
+    
+    $y = 620;
+    $itemNum = 1;
+    
+    foreach ($itemsByCategory as $categoryName => $categoryItems) {
+        // Check if we need a new page
+        if ($y < 100) {
             $page = $pdf->addPage(612, 792);
             $y = 750;
         }
+        
+        // Category header - LightWright style
+        $pdf->setGray($page, 0.7);
+        $pdf->addRect($page, 40, $y - 18, 532, 18, true);
+        $pdf->setGray($page, 0);
+        $pdf->addText($page, 45, $y - 12, strtoupper($categoryName), 10);
+        $y -= 20;
+        
+        // Table header
+        $y = $pdf->addTableHeader($page, 40, $y, $columns, 18);
+        
+        // Items in this category
+        foreach ($categoryItems as $item) {
+            if ($y < 80) {
+                $page = $pdf->addPage(612, 792);
+                $y = 750;
+                // Re-add header on new page
+                $y = $pdf->addTableHeader($page, 40, $y, $columns, 18);
+            }
+            
+            $rowData = [
+                'item_num' => $itemNum++,
+                'item_name' => $item['item_name'],
+                'item_barcode' => $item['item_barcode'],
+                'quantity_needed' => $item['quantity_needed'],
+                'location' => $item['location'] ?? '',
+                'notes' => ''
+            ];
+            
+            $y = $pdf->addTableRow($page, 40, $y, $columns, $rowData, 18);
+        }
+        
+        $y -= 10; // Space between categories
     }
+    
+    // Signature section - LightWright style
+    if ($y < 120) {
+        $page = $pdf->addPage(612, 792);
+        $y = 750;
+    }
+    
+    $y -= 30;
+    $pdf->addText($page, 40, $y, 'CHECKOUT AUTHORIZATION', 10);
+    $y -= 25;
+    $pdf->addSignatureLine($page, 40, $y, 250, 'Pulled By / Date');
+    $pdf->addSignatureLine($page, 320, $y, 250, 'Authorized By / Date');
+    
+    // Page number
+    $pdf->addPageNumber($page, 1, count($pdf->pages ?? [1]));
     
     return $pdf->output('pullsheet_' . $pullsheetId . '.pdf', 'S');
 }
@@ -531,58 +588,151 @@ function generateChangeOrderPDF($changeOrderId) {
     $pdf = new SimplePDF();
     $page = $pdf->addPage(612, 792); // Letter size
     
-    // Logo
+    // Logo in top left
     $logoPath = getSetting('logo_path');
     if ($logoPath && file_exists(__DIR__ . '/../uploads/logos/' . $logoPath)) {
-        $pdf->addText($page, 50, 750, 'CMFT Sound Shop', 14, 'Helvetica');
+        $pdf->addText($page, 40, 760, 'CMFT Sound Shop', 10);
+    } else {
+        $pdf->addText($page, 40, 760, 'CMFT Sound Shop', 10);
     }
     
-    // Barcode (PDF417 for change orders)
+    // Barcode in top right (PDF417 for change orders)
     $barcodeData = generatePDF417Barcode($changeOrder['barcode']);
     $barcodeFile = sys_get_temp_dir() . '/barcode_' . bin2hex(random_bytes(16)) . '.png';
     file_put_contents($barcodeFile, $barcodeData);
     if (file_exists($barcodeFile)) {
-        $pdf->addImage($page, file_get_contents($barcodeFile), 450, 720, 100, 50);
+        $pdf->addImage($page, file_get_contents($barcodeFile), 470, 730, 100, 40);
         unlink($barcodeFile);
     }
     
-    // Title
-    $pdf->addText($page, 220, 700, 'CHANGE ORDER', 18, 'Helvetica');
+    // Title - LightWright style
+    $pdf->addText($page, 40, 735, 'EQUIPMENT CHANGE ORDER', 16);
     
-    // Show details
-    $y = 670;
-    $pdf->addText($page, 50, $y, 'Show: ' . $changeOrder['show_name'], 12);
-    $y -= 20;
-    $pdf->addText($page, 50, $y, 'Shop Lead: ' . $changeOrder['shop_lead'], 12);
-    $y -= 20;
-    $pdf->addText($page, 50, $y, 'Designer: ' . $changeOrder['designer'], 12);
-    $y -= 20;
-    $pdf->addText($page, 50, $y, 'Created: ' . date('m/d/Y', strtotime($changeOrder['created_at'])), 12);
-    $y -= 20;
-    $pdf->addText($page, 50, $y, 'Barcode: ' . $changeOrder['barcode'], 10);
+    // Show information box - LightWright style
+    $showFields = [
+        ['label' => 'Production', 'value' => $changeOrder['show_name'] ?? 'N/A'],
+        ['label' => 'Designer', 'value' => $changeOrder['designer'] ?? 'N/A'],
+        ['label' => 'Shop Lead', 'value' => $changeOrder['shop_lead'] ?? 'N/A'],
+        ['label' => 'Date Created', 'value' => date('m/d/Y', strtotime($changeOrder['created_at']))],
+        ['label' => 'Status', 'value' => ucfirst($changeOrder['status'])],
+    ];
     
-    // Table headers
-    $y -= 40;
-    $pdf->addText($page, 50, $y, 'Item', 12);
-    $pdf->addText($page, 280, $y, 'Barcode', 12);
-    $pdf->addText($page, 380, $y, 'Type', 12);
-    $pdf->addText($page, 480, $y, 'Quantity', 12);
-    $pdf->addLine($page, 50, $y - 5, 550, $y - 5);
+    $pdf->addInfoBox($page, 40, 700, 250, 110, 'Show Information', $showFields);
     
-    // Items
-    $y -= 25;
+    // Change Order barcode reference
+    $pdf->addText($page, 310, 650, 'Change Order ID: ' . $changeOrder['barcode'], 8);
+    
+    // Group items by type (add/remove) for LightWright-style organization
+    $addItems = [];
+    $removeItems = [];
     foreach ($items as $item) {
-        $pdf->addText($page, 50, $y, substr($item['item_name'], 0, 30), 10);
-        $pdf->addText($page, 280, $y, $item['item_barcode'], 10);
-        $pdf->addText($page, 380, $y, ucfirst($item['type']), 10);
-        $pdf->addText($page, 490, $y, (string)abs($item['quantity_change']), 10);
+        if ($item['type'] === 'add') {
+            $addItems[] = $item;
+        } else {
+            $removeItems[] = $item;
+        }
+    }
+    
+    // Table columns - LightWright style
+    $columns = [
+        ['field' => 'item_num', 'label' => '#', 'width' => 30, 'align' => 'center', 'maxlen' => 5],
+        ['field' => 'item_name', 'label' => 'Item Description', 'width' => 200, 'align' => 'left', 'maxlen' => 35],
+        ['field' => 'item_barcode', 'label' => 'Barcode', 'width' => 90, 'align' => 'left', 'maxlen' => 15],
+        ['field' => 'quantity_change', 'label' => 'Qty', 'width' => 40, 'align' => 'center', 'maxlen' => 5],
+        ['field' => 'category_name', 'label' => 'Category', 'width' => 90, 'align' => 'left', 'maxlen' => 15],
+        ['field' => 'notes', 'label' => 'Notes', 'width' => 82, 'align' => 'left', 'maxlen' => 12],
+    ];
+    
+    $y = 620;
+    $itemNum = 1;
+    
+    // Items to ADD section
+    if (!empty($addItems)) {
+        // Section header - LightWright style
+        $pdf->setGray($page, 0.7);
+        $pdf->addRect($page, 40, $y - 18, 532, 18, true);
+        $pdf->setGray($page, 0);
+        $pdf->addText($page, 45, $y - 12, 'ITEMS TO ADD', 10);
         $y -= 20;
         
-        if ($y < 50) {
+        // Table header
+        $y = $pdf->addTableHeader($page, 40, $y, $columns, 18);
+        
+        // Items
+        foreach ($addItems as $item) {
+            if ($y < 80) {
+                $page = $pdf->addPage(612, 792);
+                $y = 750;
+                $y = $pdf->addTableHeader($page, 40, $y, $columns, 18);
+            }
+            
+            $rowData = [
+                'item_num' => $itemNum++,
+                'item_name' => $item['item_name'],
+                'item_barcode' => $item['item_barcode'],
+                'quantity_change' => '+' . abs($item['quantity_change']),
+                'category_name' => $item['category_name'] ?? '',
+                'notes' => ''
+            ];
+            
+            $y = $pdf->addTableRow($page, 40, $y, $columns, $rowData, 18);
+        }
+        
+        $y -= 10; // Space between sections
+    }
+    
+    // Items to REMOVE section
+    if (!empty($removeItems)) {
+        if ($y < 100) {
             $page = $pdf->addPage(612, 792);
             $y = 750;
         }
+        
+        // Section header - LightWright style
+        $pdf->setGray($page, 0.7);
+        $pdf->addRect($page, 40, $y - 18, 532, 18, true);
+        $pdf->setGray($page, 0);
+        $pdf->addText($page, 45, $y - 12, 'ITEMS TO REMOVE', 10);
+        $y -= 20;
+        
+        // Table header
+        $y = $pdf->addTableHeader($page, 40, $y, $columns, 18);
+        
+        // Items
+        foreach ($removeItems as $item) {
+            if ($y < 80) {
+                $page = $pdf->addPage(612, 792);
+                $y = 750;
+                $y = $pdf->addTableHeader($page, 40, $y, $columns, 18);
+            }
+            
+            $rowData = [
+                'item_num' => $itemNum++,
+                'item_name' => $item['item_name'],
+                'item_barcode' => $item['item_barcode'],
+                'quantity_change' => '-' . abs($item['quantity_change']),
+                'category_name' => $item['category_name'] ?? '',
+                'notes' => ''
+            ];
+            
+            $y = $pdf->addTableRow($page, 40, $y, $columns, $rowData, 18);
+        }
     }
+    
+    // Signature section - LightWright style
+    if ($y < 120) {
+        $page = $pdf->addPage(612, 792);
+        $y = 750;
+    }
+    
+    $y -= 30;
+    $pdf->addText($page, 40, $y, 'CHANGE AUTHORIZATION', 10);
+    $y -= 25;
+    $pdf->addSignatureLine($page, 40, $y, 250, 'Processed By / Date');
+    $pdf->addSignatureLine($page, 320, $y, 250, 'Authorized By / Date');
+    
+    // Page number
+    $pdf->addPageNumber($page, 1, count($pdf->pages ?? [1]));
     
     return $pdf->output('change_order_' . $changeOrderId . '.pdf', 'S');
 }

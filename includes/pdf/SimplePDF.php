@@ -61,6 +61,117 @@ class SimplePDF {
         );
     }
 
+    /**
+     * Add a table cell with border (LightWright style)
+     */
+    public function addTableCell($page, $x, $y, $width, $height, $text, $size = 10, $align = 'left', $border = true) {
+        // Draw cell border
+        if ($border) {
+            $this->addRect($page, $x, $y - $height, $width, $height, false);
+        }
+        
+        // Calculate text position based on alignment
+        $textX = $x + 3; // Default left padding
+        if ($align == 'center') {
+            $textX = $x + ($width / 2) - (strlen($text) * $size * 0.3);
+        } elseif ($align == 'right') {
+            $textX = $x + $width - (strlen($text) * $size * 0.6) - 3;
+        }
+        
+        // Add text centered vertically in cell
+        $textY = $y - ($height / 2) - ($size / 3);
+        $this->addText($page, $textX, $textY, $text, $size);
+    }
+
+    /**
+     * Add a table header row (LightWright style with gray background)
+     */
+    public function addTableHeader($page, $x, $y, $columns, $height = 20) {
+        $currentX = $x;
+        
+        // Draw gray background for header
+        $totalWidth = array_sum(array_column($columns, 'width'));
+        $this->setGray($page, 0.9);
+        $this->addRect($page, $x, $y - $height, $totalWidth, $height, true);
+        $this->setGray($page, 0); // Reset to black
+        
+        // Draw header cells
+        foreach ($columns as $col) {
+            $this->addTableCell($page, $currentX, $y, $col['width'], $height, $col['label'], 10, $col['align'] ?? 'left', true);
+            $currentX += $col['width'];
+        }
+        
+        return $y - $height; // Return new Y position
+    }
+
+    /**
+     * Add a table row (LightWright style)
+     */
+    public function addTableRow($page, $x, $y, $columns, $data, $height = 18) {
+        $currentX = $x;
+        
+        foreach ($columns as $col) {
+            $text = isset($data[$col['field']]) ? (string)$data[$col['field']] : '';
+            // Truncate long text
+            if (strlen($text) > $col['maxlen'] ?? 50) {
+                $text = substr($text, 0, ($col['maxlen'] ?? 50) - 3) . '...';
+            }
+            $this->addTableCell($page, $currentX, $y, $col['width'], $height, $text, 9, $col['align'] ?? 'left', true);
+            $currentX += $col['width'];
+        }
+        
+        return $y - $height; // Return new Y position
+    }
+
+    /**
+     * Set line/text color to gray
+     */
+    public function setGray($page, $level) {
+        $this->pages[$page]['content'] .= sprintf("%s g %s G\n", $level, $level);
+    }
+
+    /**
+     * Add professional header box (LightWright style)
+     */
+    public function addInfoBox($page, $x, $y, $width, $height, $title, $fields) {
+        // Draw outer border
+        $this->addRect($page, $x, $y - $height, $width, $height, false);
+        
+        // Add title bar with gray background
+        $this->setGray($page, 0.9);
+        $this->addRect($page, $x, $y - 20, $width, 20, true);
+        $this->setGray($page, 0);
+        
+        $this->addText($page, $x + 5, $y - 14, $title, 11);
+        $this->addLine($page, $x, $y - 20, $x + $width, $y - 20);
+        
+        // Add fields
+        $currentY = $y - 35;
+        foreach ($fields as $field) {
+            $label = $field['label'] . ':';
+            $value = $field['value'];
+            $this->addText($page, $x + 5, $currentY, $label, 9);
+            $this->addText($page, $x + 100, $currentY, $value, 9);
+            $currentY -= 15;
+        }
+    }
+
+    /**
+     * Add signature line (LightWright style)
+     */
+    public function addSignatureLine($page, $x, $y, $width, $label) {
+        $this->addLine($page, $x, $y, $x + $width, $y);
+        $this->addText($page, $x, $y - 12, $label, 8);
+    }
+
+    /**
+     * Add page number
+     */
+    public function addPageNumber($page, $pageNum, $totalPages) {
+        $text = "Page $pageNum of $totalPages";
+        $this->addText($page, 500, 30, $text, 8);
+    }
+
     private function escapeText($text) {
         $text = str_replace('\\', '\\\\', $text);
         $text = str_replace('(', '\\(', $text);
