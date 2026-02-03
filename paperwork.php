@@ -111,7 +111,7 @@ if ($selectedShowId) {
                         <label class="form-label">Type</label>
                         <select class="form-select" name="type" onchange="this.form.submit()">
                             <option value="all" <?php echo $typeFilter === 'all' ? 'selected' : ''; ?>>All Types</option>
-                            <option value="pullsheets" <?php echo $typeFilter === 'pullsheets' ? 'selected' : ''; ?>>Pullsheets</option>
+                            <option value="pullsheets" <?php echo $typeFilter === 'pullsheets' ? 'selected' : ''; ?>>Shop Orders</option>
                             <option value="change_orders" <?php echo $typeFilter === 'change_orders' ? 'selected' : ''; ?>>Change Orders</option>
                         </select>
                     </div>
@@ -182,13 +182,13 @@ foreach ($shows as $show) {
     </div>
 </div>
 
-<!-- Pullsheets -->
+<!-- Shop Orders -->
 <?php if (($typeFilter === 'all' || $typeFilter === 'pullsheets') && !empty($pullsheets)): ?>
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Pullsheets (<?php echo count($pullsheets); ?>)</h3>
+                <h3 class="card-title">Shop Orders (<?php echo count($pullsheets); ?>)</h3>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">

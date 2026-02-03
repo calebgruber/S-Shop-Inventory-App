@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 }
 
 // Regular page rendering starts here
-$pageTitle = 'Edit Pullsheet';
+$pageTitle = 'Edit Shop Order';
 require_once 'includes/header.php';
 
 $currentUser = getCurrentUser();
@@ -205,7 +205,7 @@ $allItems = getAllItems();
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Edit Pullsheet - <?php echo htmlspecialchars($pullsheet['show_name'] ?? 'Student Requests'); ?></h3>
+                <h3 class="card-title">Edit Shop Order - <?php echo htmlspecialchars($pullsheet['show_name'] ?? 'Student Requests'); ?></h3>
             </div>
             <div class="card-body">
                 <div class="row mb-4">
@@ -231,7 +231,7 @@ $allItems = getAllItems();
                 </div>
                 
                 <div id="itemsList">
-                    <h4>Items in Pullsheet</h4>
+                    <h4>Items in Shop Order</h4>
                     <?php if (empty($items)): ?>
                         <p class="text-muted">No items added yet. Scan or search to add items.</p>
                     <?php else: ?>
@@ -283,7 +283,7 @@ $allItems = getAllItems();
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add Item to Pullsheet</h5>
+                <h5 class="modal-title">Add Item to Shop Order</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">

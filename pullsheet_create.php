@@ -30,7 +30,7 @@ if ($showId) {
     }
 }
 
-$pageTitle = 'Create Pullsheet';
+$pageTitle = 'Create Shop Order';
 require_once 'includes/header.php';
 
 // Get shows filtered by permission
@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="col-md-8 offset-md-2">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Create Pullsheet<?php echo $show ? ' for ' . htmlspecialchars($show['name']) : ''; ?></h3>
+                <h3 class="card-title">Create Shop Order<?php echo $show ? ' for ' . htmlspecialchars($show['name']) : ''; ?></h3>
             </div>
             <div class="card-body">
                 <form method="POST">
@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="ti ti-check"></i> Create Pullsheet
+                            <i class="ti ti-check"></i> Create Shop Order
                         </button>
                         <a href="<?php echo $showId ? 'show_edit.php?id=' . $showId : 'shows.php'; ?>" class="btn btn-secondary">Cancel</a>
                     </div>

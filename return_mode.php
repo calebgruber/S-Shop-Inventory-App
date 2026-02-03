@@ -354,7 +354,7 @@ requirePermission('operations');
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label">Scan Pullsheet or Change Order Barcode</label>
+                                    <label class="form-label">Scan Shop Order or Change Order Barcode</label>
                                     <input type="text" class="form-control scan-input" id="pullsheetBarcode" 
                                            placeholder="Scan barcode...">
                                 </div>

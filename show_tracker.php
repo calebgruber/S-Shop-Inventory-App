@@ -40,14 +40,14 @@ $stages = [
     ],
     [
         'id' => 'pullsheet_created',
-        'title' => 'Pullsheet Created',
+        'title' => 'Shop Order Created',
         'icon' => 'ti-file-text',
         'status' => $pullsheet ? 'complete' : 'pending',
         'date' => $pullsheet['created_at'] ?? null
     ],
     [
         'id' => 'pullsheet_finalized',
-        'title' => 'Pullsheet Finalized',
+        'title' => 'Shop Order Finalized',
         'icon' => 'ti-check',
         'status' => ($pullsheet && $pullsheet['status'] !== 'draft') ? 'complete' : 'pending',
         'date' => $pullsheet['finalized_at'] ?? null

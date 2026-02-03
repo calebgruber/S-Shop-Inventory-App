@@ -127,7 +127,7 @@ $changeOrders = getDB()->fetchAll("SELECT * FROM change_orders WHERE show_id = ?
             <div class="card-body">
                 <div class="d-grid gap-2">
                     <a href="pullsheet_create.php?show_id=<?php echo $showId; ?>" class="btn btn-info">
-                        <i class="ti ti-file-text"></i> Create Pullsheet
+                        <i class="ti ti-file-text"></i> Create Shop Order
                     </a>
                     <a href="change_order_create.php?show_id=<?php echo $showId; ?>" class="btn btn-warning">
                         <i class="ti ti-exchange"></i> Create Change Order
@@ -138,7 +138,7 @@ $changeOrders = getDB()->fetchAll("SELECT * FROM change_orders WHERE show_id = ?
         
         <div class="card mb-4">
             <div class="card-header">
-                <h3 class="card-title">Pullsheets</h3>
+                <h3 class="card-title">Shop Orders</h3>
             </div>
             <div class="card-body">
                 <?php if (empty($pullsheets)): ?>
