@@ -1,5 +1,5 @@
 <?php
-requireLogin();
+// Login check is handled by header.php
 $pageTitle = 'User Settings';
 require_once 'includes/header.php';
 

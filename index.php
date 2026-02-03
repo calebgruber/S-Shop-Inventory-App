@@ -1,5 +1,5 @@
 <?php
-requireLogin(); // Dashboard requires user to be logged in
+// Login check is handled by header.php
 $pageTitle = 'Dashboard';
 require_once 'includes/header.php';
 
