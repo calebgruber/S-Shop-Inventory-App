@@ -140,6 +140,231 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     getDB()->query("DELETE FROM theatre_spaces WHERE id = ?", [$_POST['id']]);
                     setAlert('Theatre space deleted successfully');
                     break;
+                    
+                case 'import_csv':
+                    if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
+                        setAlert('Please select a CSV file to upload', 'danger');
+                        redirect();
+                    }
+                    
+                    $importType = $_POST['import_type'] ?? '';
+                    if (!in_array($importType, ['categories', 'subcategories', 'theatre_spaces', 'items', 'all'])) {
+                        setAlert('Invalid import type selected', 'danger');
+                        redirect();
+                    }
+                    
+                    // Validate file is CSV
+                    $ext = strtolower(pathinfo($_FILES['csv_file']['name'], PATHINFO_EXTENSION));
+                    if ($ext !== 'csv') {
+                        setAlert('Please upload a CSV file', 'danger');
+                        redirect();
+                    }
+                    
+                    // Read CSV file
+                    $csvFile = $_FILES['csv_file']['tmp_name'];
+                    $handle = fopen($csvFile, 'r');
+                    
+                    if ($handle === false) {
+                        setAlert('Failed to read CSV file', 'danger');
+                        redirect();
+                    }
+                    
+                    $db = getDB();
+                    $imported = 0;
+                    $skipped = 0;
+                    $errors = [];
+                    
+                    try {
+                        // Get header row
+                        $headers = fgetcsv($handle);
+                        
+                        if ($importType === 'all') {
+                            // For "all" type, detect based on headers
+                            if (in_array('category_id', $headers) && in_array('barcode', $headers)) {
+                                $importType = 'items';
+                            } elseif (in_array('category_id', $headers) && !in_array('barcode', $headers)) {
+                                $importType = 'subcategories';
+                            } elseif (count($headers) == 2 || count($headers) == 3) {
+                                // Check first data row to determine type
+                                $firstRow = fgetcsv($handle);
+                                if ($firstRow) {
+                                    rewind($handle);
+                                    fgetcsv($handle); // Skip headers again
+                                    if (strpos($headers[0], 'name') !== false) {
+                                        $importType = 'categories';
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Process based on import type
+                        switch ($importType) {
+                            case 'categories':
+                                while (($row = fgetcsv($handle)) !== false) {
+                                    if (empty($row[0])) continue;
+                                    
+                                    $name = trim($row[0]);
+                                    $description = isset($row[1]) ? trim($row[1]) : '';
+                                    
+                                    try {
+                                        // Check if category exists
+                                        $existing = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$name]);
+                                        if ($existing) {
+                                            $skipped++;
+                                            continue;
+                                        }
+                                        
+                                        $db->query(
+                                            "INSERT INTO categories (name, description) VALUES (?, ?)",
+                                            [$name, $description]
+                                        );
+                                        $imported++;
+                                    } catch (Exception $e) {
+                                        $errors[] = "Category '$name': " . $e->getMessage();
+                                    }
+                                }
+                                break;
+                                
+                            case 'subcategories':
+                                while (($row = fgetcsv($handle)) !== false) {
+                                    if (empty($row[0]) || empty($row[1])) continue;
+                                    
+                                    $categoryName = trim($row[0]);
+                                    $name = trim($row[1]);
+                                    $description = isset($row[2]) ? trim($row[2]) : '';
+                                    
+                                    try {
+                                        // Find category by name
+                                        $category = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$categoryName]);
+                                        if (!$category) {
+                                            $errors[] = "Category '$categoryName' not found for subcategory '$name'";
+                                            continue;
+                                        }
+                                        
+                                        // Check if subcategory exists
+                                        $existing = $db->fetchOne(
+                                            "SELECT id FROM subcategories WHERE name = ? AND category_id = ?",
+                                            [$name, $category['id']]
+                                        );
+                                        if ($existing) {
+                                            $skipped++;
+                                            continue;
+                                        }
+                                        
+                                        $db->query(
+                                            "INSERT INTO subcategories (category_id, name, description) VALUES (?, ?, ?)",
+                                            [$category['id'], $name, $description]
+                                        );
+                                        $imported++;
+                                    } catch (Exception $e) {
+                                        $errors[] = "Subcategory '$name': " . $e->getMessage();
+                                    }
+                                }
+                                break;
+                                
+                            case 'theatre_spaces':
+                                while (($row = fgetcsv($handle)) !== false) {
+                                    if (empty($row[0])) continue;
+                                    
+                                    $name = trim($row[0]);
+                                    $description = isset($row[1]) ? trim($row[1]) : '';
+                                    
+                                    try {
+                                        // Check if space exists
+                                        $existing = $db->fetchOne("SELECT id FROM theatre_spaces WHERE name = ?", [$name]);
+                                        if ($existing) {
+                                            $skipped++;
+                                            continue;
+                                        }
+                                        
+                                        $db->query(
+                                            "INSERT INTO theatre_spaces (name, description) VALUES (?, ?)",
+                                            [$name, $description]
+                                        );
+                                        $imported++;
+                                    } catch (Exception $e) {
+                                        $errors[] = "Theatre space '$name': " . $e->getMessage();
+                                    }
+                                }
+                                break;
+                                
+                            case 'items':
+                                // Expected columns: name, description, barcode, category_name, subcategory_name, tracking_type, total_quantity, in_stock_quantity, location
+                                $headerMap = array_flip($headers);
+                                
+                                while (($row = fgetcsv($handle)) !== false) {
+                                    if (empty($row[$headerMap['name'] ?? 0]) || empty($row[$headerMap['barcode'] ?? 2])) continue;
+                                    
+                                    $name = trim($row[$headerMap['name'] ?? 0]);
+                                    $description = isset($headerMap['description']) ? trim($row[$headerMap['description']]) : '';
+                                    $barcode = trim($row[$headerMap['barcode'] ?? 2]);
+                                    $categoryName = isset($headerMap['category_name']) ? trim($row[$headerMap['category_name']]) : '';
+                                    $subcategoryName = isset($headerMap['subcategory_name']) ? trim($row[$headerMap['subcategory_name']]) : '';
+                                    $trackingType = isset($headerMap['tracking_type']) ? trim($row[$headerMap['tracking_type']]) : 'quantity';
+                                    $totalQuantity = isset($headerMap['total_quantity']) ? (int)$row[$headerMap['total_quantity']] : 0;
+                                    $inStockQuantity = isset($headerMap['in_stock_quantity']) ? (int)$row[$headerMap['in_stock_quantity']] : 0;
+                                    $location = isset($headerMap['location']) ? trim($row[$headerMap['location']]) : '';
+                                    
+                                    try {
+                                        // Check if item exists
+                                        $existing = $db->fetchOne("SELECT id FROM items WHERE barcode = ?", [$barcode]);
+                                        if ($existing) {
+                                            $skipped++;
+                                            continue;
+                                        }
+                                        
+                                        // Find category and subcategory IDs
+                                        $categoryId = null;
+                                        $subcategoryId = null;
+                                        
+                                        if ($categoryName) {
+                                            $category = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$categoryName]);
+                                            $categoryId = $category ? $category['id'] : null;
+                                        }
+                                        
+                                        if ($subcategoryName && $categoryId) {
+                                            $subcategory = $db->fetchOne(
+                                                "SELECT id FROM subcategories WHERE name = ? AND category_id = ?",
+                                                [$subcategoryName, $categoryId]
+                                            );
+                                            $subcategoryId = $subcategory ? $subcategory['id'] : null;
+                                        }
+                                        
+                                        $db->query(
+                                            "INSERT INTO items (name, description, barcode, category_id, subcategory_id, tracking_type, total_quantity, in_stock_quantity, location) 
+                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                            [$name, $description, $barcode, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location]
+                                        );
+                                        $imported++;
+                                    } catch (Exception $e) {
+                                        $errors[] = "Item '$name' ($barcode): " . $e->getMessage();
+                                    }
+                                }
+                                break;
+                        }
+                        
+                        fclose($handle);
+                        
+                        // Build success message
+                        $message = "Import completed: $imported records imported";
+                        if ($skipped > 0) {
+                            $message .= ", $skipped skipped (already exist)";
+                        }
+                        if (!empty($errors)) {
+                            $message .= ". Errors: " . implode('; ', array_slice($errors, 0, 5));
+                            if (count($errors) > 5) {
+                                $message .= " (and " . (count($errors) - 5) . " more)";
+                            }
+                            setAlert($message, 'warning');
+                        } else {
+                            setAlert($message, 'success');
+                        }
+                        
+                    } catch (Exception $e) {
+                        fclose($handle);
+                        setAlert('Import failed: ' . $e->getMessage(), 'danger');
+                    }
+                    break;
             }
         }
         redirect();
@@ -338,6 +563,99 @@ $loginIllustrationPath = getSetting('login_illustration_path');
                             </div>
                         </div>
                     <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Import Data from CSV</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h4 class="alert-title">CSV Import Instructions</h4>
+                    <div class="text-muted">
+                        <p>Upload a CSV file to import data into the database. The system will automatically detect the data type or you can specify it.</p>
+                        <p><strong>CSV Format Requirements:</strong></p>
+                        <ul class="mb-0">
+                            <li><strong>Categories:</strong> name, description (optional)</li>
+                            <li><strong>Subcategories:</strong> category_name, name, description (optional)</li>
+                            <li><strong>Theatre Spaces:</strong> name, description (optional)</li>
+                            <li><strong>Items:</strong> name, description, barcode, category_name, subcategory_name, tracking_type, total_quantity, in_stock_quantity, location</li>
+                        </ul>
+                        <p class="mt-2 mb-0"><strong>Note:</strong> The first row should contain column headers. Duplicate entries (based on name or barcode) will be skipped.</p>
+                    </div>
+                </div>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="action" value="import_csv">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required">CSV File</label>
+                            <input type="file" class="form-control" name="csv_file" accept=".csv" required>
+                            <small class="form-hint">Select a CSV file to import (comma-separated values)</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required">Import Type</label>
+                            <select class="form-select" name="import_type" required>
+                                <option value="all">Auto-detect from file</option>
+                                <option value="categories">Categories</option>
+                                <option value="subcategories">Subcategories</option>
+                                <option value="theatre_spaces">Theatre Spaces</option>
+                                <option value="items">Items</option>
+                            </select>
+                            <small class="form-hint">Select what type of data you're importing</small>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">
+                        <i class="ti ti-upload icon"></i>
+                        Import CSV
+                    </button>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="accordion" id="csvExamplesAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingExamples">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExamples">
+                                <i class="ti ti-help icon me-2"></i>
+                                View CSV Format Examples
+                            </button>
+                        </h2>
+                        <div id="collapseExamples" class="accordion-collapse collapse" data-bs-parent="#csvExamplesAccordion">
+                            <div class="accordion-body">
+                                <h5>Categories CSV Example:</h5>
+                                <pre class="bg-light p-2 rounded">name,description
+Microphones,Professional microphones
+Cables,Audio cables and adapters
+Speakers,PA speakers and monitors</pre>
+                                
+                                <h5 class="mt-3">Subcategories CSV Example:</h5>
+                                <pre class="bg-light p-2 rounded">category_name,name,description
+Microphones,Wired Microphones,Standard wired microphones
+Microphones,Wireless Microphones,Wireless microphone systems
+Cables,XLR Cables,3-pin XLR cables</pre>
+                                
+                                <h5 class="mt-3">Theatre Spaces CSV Example:</h5>
+                                <pre class="bg-light p-2 rounded">name,description
+Main Stage,Primary performance space
+Studio Theatre,Intimate black box theatre
+Rehearsal Hall,Large rehearsal space</pre>
+                                
+                                <h5 class="mt-3">Items CSV Example:</h5>
+                                <pre class="bg-light p-2 rounded">name,description,barcode,category_name,subcategory_name,tracking_type,total_quantity,in_stock_quantity,location
+Shure SM58,Dynamic vocal microphone,MIC-SM58-001,Microphones,Wired Microphones,quantity,10,8,Cabinet A1
+Sennheiser EW 100,Wireless handheld system,MIC-EW100-001,Microphones,Wireless Microphones,quantity,5,5,Cabinet A2
+XLR Cable 25ft,25 foot XLR cable,CABLE-XLR25-001,Cables,XLR Cables,quantity,50,45,Cable Rack 1</pre>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
