@@ -23,13 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             $barcode = trim($_POST['barcode']);
             $pickerName = trim($_POST['picker_name']);
             
-            // Try pullsheet first
+            // Try shop order first
             $pullsheet = getPullsheetByBarcode($barcode);
             if ($pullsheet && $pullsheet['status'] === 'finalized') {
                 // Check if approval is required and approved
                 if ($pullsheet['requires_approval'] && $pullsheet['approval_status'] !== 'approved') {
                     ob_end_clean(); // Clear any buffered output
-                    echo json_encode(['success' => false, 'message' => 'This pullsheet requires admin approval before it can be picked']);
+                    echo json_encode(['success' => false, 'message' => 'This shop order requires admin approval before it can be picked']);
                     exit;
                 }
                 
@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             }
             
             ob_end_clean(); // Clear any buffered output
-            echo json_encode(['success' => false, 'message' => 'Pullsheet or change order not found or not finalized']);
+            echo json_encode(['success' => false, 'message' => 'Shop Order or change order not found or not finalized']);
             exit;
         }
         

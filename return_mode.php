@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             $barcode = trim($_POST['barcode']);
             $returnerName = trim($_POST['returner_name']);
             
-            // Try pullsheet first
+            // Try shop order first
             $pullsheet = getPullsheetByBarcode($barcode);
             if ($pullsheet && $pullsheet['status'] === 'picked') {
                 $_SESSION['return_session'] = [
@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             }
             
             ob_end_clean(); // Clear any buffered output
-            echo json_encode(['success' => false, 'message' => 'Pullsheet or change order not found or not ready for return']);
+            echo json_encode(['success' => false, 'message' => 'Shop Order or change order not found or not ready for return']);
             exit;
         }
         

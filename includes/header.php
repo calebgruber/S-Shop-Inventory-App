@@ -533,7 +533,7 @@ $currentUser = getCurrentUser();
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-file-text"></i>
                                     </span>
-                                    <span class="nav-link-title">Pullsheets</span>
+                                    <span class="nav-link-title">Shop Orders</span>
                                 </a>
                             </li>
                             <?php endif; ?>

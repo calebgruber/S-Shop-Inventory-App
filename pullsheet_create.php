@@ -18,14 +18,14 @@ if ($showId) {
     
     // Check permission for designers
     if ($isDesigner && !canAccessShow($currentUser['id'], $showId)) {
-        setAlert('You do not have permission to create pullsheet for this show', 'danger');
+        setAlert('You do not have permission to create shop order for this show', 'danger');
         redirect('pullsheets');
     }
     
-    // Check if pullsheet already exists
+    // Check if shop order already exists
     $existing = getDB()->fetchOne("SELECT id FROM pullsheets WHERE show_id = ?", [$showId]);
     if ($existing) {
-        setAlert('A pullsheet already exists for this show', 'warning');
+        setAlert('A shop order already exists for this show', 'warning');
         redirect('pullsheet_edit.php?id=' . $existing['id']);
     }
 }
@@ -49,16 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Check permission for designers
         if ($isDesigner && !canAccessShow($currentUser['id'], $postShowId)) {
-            throw new Exception('You do not have permission to create pullsheet for this show');
+            throw new Exception('You do not have permission to create shop order for this show');
         }
         
         $barcode = generateUniqueBarcode('PS');
         $createdBy = $_POST['created_by'] ?? 'Unknown';
         
-        // Check if pullsheet already exists
+        // Check if shop order already exists
         $existing = getDB()->fetchOne("SELECT id FROM pullsheets WHERE show_id = ?", [$postShowId]);
         if ($existing) {
-            setAlert('A pullsheet already exists for this show', 'warning');
+            setAlert('A shop order already exists for this show', 'warning');
             redirect('pullsheet_edit.php?id=' . $existing['id']);
         }
         
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $pullsheetId = getDB()->lastInsertId();
         
-        setAlert('Pullsheet created successfully');
+        setAlert('Shop Order created successfully');
         redirect('pullsheet_edit.php?id=' . $pullsheetId);
     } catch (Exception $e) {
         setAlert($e->getMessage(), 'danger');
@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     <div class="alert alert-info">
                         <i class="ti ti-info-circle"></i>
-                        You'll be able to add items to the pullsheet on the next screen.
+                        You'll be able to add items to the shop order on the next screen.
                     </div>
                     
                     <div class="d-flex gap-2">

@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Pullsheets';
+$pageTitle = 'Shop Orders';
 require_once 'includes/header.php';
 requirePermission('pullsheets');
 
@@ -13,10 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         $db = getDB();
         $deleteId = (int)$_POST['delete_id'];
         
-        // Get pullsheet details
+        // Get shop order details
         $pullsheet = getPullsheetById($deleteId);
         if (!$pullsheet) {
-            throw new Exception('Pullsheet not found');
+            throw new Exception('Shop Order not found');
         }
         
         // Check permission for designers and production audio
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         // Start transaction
         $db->query("START TRANSACTION");
         
-        // If pullsheet was finalized, unreserve the items
+        // If shop order was finalized, unreserve the items
         if ($pullsheet['status'] === 'finalized' || $pullsheet['status'] === 'picked') {
             $items = getPullsheetItems($deleteId);
             foreach ($items as $item) {
@@ -36,18 +36,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
                     "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
                     [$item['quantity'], $item['item_id']]
                 );
-                logMessage("Unreserved {$item['quantity']} of item ID {$item['item_id']} from pullsheet ID $deleteId", 'INFO');
+                logMessage("Unreserved {$item['quantity']} of item ID {$item['item_id']} from shop order ID $deleteId", 'INFO');
             }
         }
         
-        // Delete pullsheet items and pullsheet
+        // Delete shop order items and pullsheet
         $db->query("DELETE FROM pullsheet_items WHERE pullsheet_id = ?", [$deleteId]);
         $db->query("DELETE FROM pullsheets WHERE id = ?", [$deleteId]);
         
         $db->query("COMMIT");
         
         logMessage("Pullsheet ID $deleteId deleted by user ID {$currentUser['id']}", 'INFO');
-        setAlert('Pullsheet deleted successfully and items returned to stock');
+        setAlert('Shop Order deleted successfully and items returned to stock');
         redirect();
     } catch (Exception $e) {
         if (isset($db)) {
@@ -58,14 +58,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
     }
 }
 
-// Handle create pullsheet request
+// Handle create shop order request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_pullsheet'])) {
     try {
         $showId = !empty($_POST['show_id']) ? (int)$_POST['show_id'] : null;
         
         // Check permission for designers and production audio
         if (($isDesigner || $isProductionAudio) && $showId && !canAccessShow($currentUser['id'], $showId)) {
-            throw new Exception('You do not have permission to create pullsheet for this show');
+            throw new Exception('You do not have permission to create shop order for this show');
         }
         
         $createdBy = $_POST['created_by'] ?? 'Unknown';
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_pullsheet'])) 
         );
         
         $pullsheetId = getDB()->lastInsertId();
-        setAlert('Pullsheet created successfully');
+        setAlert('Shop Order created successfully');
         redirect('pullsheet_edit.php?id=' . $pullsheetId);
     } catch (Exception $e) {
         setAlert('Error: ' . $e->getMessage(), 'danger');
@@ -161,7 +161,7 @@ foreach ($pullsheets as $pullsheet) {
                                 <option value="<?php echo $show['id']; ?>"><?php echo htmlspecialchars($show['name']); ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <small class="form-hint">You can create a pullsheet without a show if needed</small>
+                        <small class="form-hint">You can create a shop order without a show if needed</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label required">Your Name</label>
@@ -214,7 +214,7 @@ foreach ($pullsheets as $pullsheet) {
                                         <div class="col-md-6 col-lg-4 mb-3">
                                             <div class="card">
                                                 <div class="card-header">
-                                                    <h3 class="card-title">Pullsheet</h3>
+                                                    <h3 class="card-title">Shop Order</h3>
                                                     <div class="card-actions">
                                                         <?php
                                                         $badgeClass = [
@@ -294,7 +294,7 @@ foreach ($pullsheets as $pullsheet) {
                                         <div class="col-md-6 col-lg-4 mb-3">
                                             <div class="card">
                                                 <div class="card-header">
-                                                    <h3 class="card-title">Pullsheet</h3>
+                                                    <h3 class="card-title">Shop Order</h3>
                                                     <div class="card-actions">
                                                         <?php
                                                         $badgeClass = [

@@ -511,7 +511,7 @@ function generatePullsheetPDF($pullsheetId) {
     $pdf->addInfoBox($page, 40, 700, 250, 110, 'Show Information', $showFields);
     
     // Pullsheet barcode reference
-    $pdf->addText($page, 310, 650, 'Pullsheet ID: ' . $pullsheet['barcode'], 8);
+    $pdf->addText($page, 310, 650, 'Shop Order ID: ' . $pullsheet['barcode'], 8);
     
     // Group items by category for LightWright-style organization
     $itemsByCategory = [];
@@ -970,13 +970,13 @@ function approvePullsheet($pullsheetId, $adminId) {
             [$adminId, $pullsheetId]
         );
         
-        // Get pullsheet details for notification
+        // Get shop order details for notification
         $pullsheet = getPullsheetById($pullsheetId);
         if ($pullsheet && $pullsheet['created_by_id']) {
             createNotification(
                 $pullsheet['created_by_id'],
                 'pullsheet_approved',
-                'Your pullsheet for ' . $pullsheet['show_name'] . ' has been approved',
+                'Your shop order for ' . $pullsheet['show_name'] . ' has been approved',
                 'pullsheet_view.php?id=' . $pullsheetId
             );
         }
@@ -984,7 +984,7 @@ function approvePullsheet($pullsheetId, $adminId) {
         logMessage("Pullsheet $pullsheetId approved by admin $adminId", 'INFO');
         return true;
     } catch (Exception $e) {
-        logException($e, "Error approving pullsheet $pullsheetId");
+        logException($e, "Error approving shop order $pullsheetId");
         return false;
     }
 }
@@ -998,13 +998,13 @@ function rejectPullsheet($pullsheetId, $adminId) {
             [$adminId, $pullsheetId]
         );
         
-        // Get pullsheet details for notification
+        // Get shop order details for notification
         $pullsheet = getPullsheetById($pullsheetId);
         if ($pullsheet && $pullsheet['created_by_id']) {
             createNotification(
                 $pullsheet['created_by_id'],
                 'pullsheet_rejected',
-                'Your pullsheet for ' . $pullsheet['show_name'] . ' has been rejected',
+                'Your shop order for ' . $pullsheet['show_name'] . ' has been rejected',
                 'pullsheet_edit.php?id=' . $pullsheetId
             );
         }
@@ -1012,7 +1012,7 @@ function rejectPullsheet($pullsheetId, $adminId) {
         logMessage("Pullsheet $pullsheetId rejected by admin $adminId", 'INFO');
         return true;
     } catch (Exception $e) {
-        logException($e, "Error rejecting pullsheet $pullsheetId");
+        logException($e, "Error rejecting shop order $pullsheetId");
         return false;
     }
 }

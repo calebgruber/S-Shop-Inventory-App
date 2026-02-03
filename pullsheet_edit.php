@@ -142,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     "pullsheet_view.php?id=" . $pullsheetId
                 );
                 
-                echo json_encode(['success' => true, 'message' => 'Pullsheet submitted for approval']);
+                echo json_encode(['success' => true, 'message' => 'Shop Order submitted for approval']);
             } else {
                 // Admin doesn't need approval
                 getDB()->query(
@@ -155,11 +155,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 $showName = $pullsheet['show_name'] ?? 'Student Requests';
                 createNotificationForDesigners(
                     'pending_pick',
-                    "New pullsheet ready for picking: " . $showName,
+                    "New shop order ready for picking: " . $showName,
                     "pick_mode.php?pullsheet=" . $pullsheet['barcode']
                 );
                 
-                echo json_encode(['success' => true, 'message' => 'Pullsheet finalized']);
+                echo json_encode(['success' => true, 'message' => 'Shop Order finalized']);
             }
             exit;
         }
@@ -183,7 +183,7 @@ if (!$pullsheetId) {
 
 $pullsheet = getPullsheetById($pullsheetId);
 if (!$pullsheet) {
-    setAlert('Pullsheet not found', 'danger');
+    setAlert('Shop Order not found', 'danger');
     redirect('pullsheets');
 }
 
@@ -304,7 +304,7 @@ $allItems = getAllItems();
 <script>
 // Wrap everything in DOMContentLoaded to ensure elements exist
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Pullsheet edit page loaded');
+    console.log('Shop Order edit page loaded');
     
     let selectedItem = null;
     const modalEl = document.getElementById('addItemModal');

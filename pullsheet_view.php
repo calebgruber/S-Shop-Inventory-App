@@ -36,13 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isAdmin()) {
         $currentUser = getCurrentUser();
         if ($action === 'approve') {
             if (approvePullsheet($pullsheetId, $currentUser['id'])) {
-                setAlert('Pullsheet approved successfully', 'success');
+                setAlert('Shop Order approved successfully', 'success');
             } else {
                 setAlert('Error approving pullsheet', 'danger');
             }
         } elseif ($action === 'reject') {
             if (rejectPullsheet($pullsheetId, $currentUser['id'])) {
-                setAlert('Pullsheet rejected', 'warning');
+                setAlert('Shop Order rejected', 'warning');
             } else {
                 setAlert('Error rejecting pullsheet', 'danger');
             }
@@ -61,7 +61,7 @@ if (!$pullsheetId) {
 
 $pullsheet = getPullsheetById($pullsheetId);
 if (!$pullsheet) {
-    setAlert('Pullsheet not found', 'danger');
+    setAlert('Shop Order not found', 'danger');
     redirect('pullsheets');
 }
 
@@ -74,7 +74,7 @@ if ($pullsheet['approved_by']) {
 
 // Handle alert query parameters
 if (isset($_GET['finalized'])) {
-    setAlert('Pullsheet finalized successfully', 'success');
+    setAlert('Shop Order finalized successfully', 'success');
 }
 
 $items = getPullsheetItems($pullsheetId);
@@ -126,7 +126,7 @@ $items = getPullsheetItems($pullsheetId);
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Pullsheet for <?php echo htmlspecialchars($pullsheet['show_name'] ?? 'Student Requests'); ?></h3>
+                <h3 class="card-title">Shop Order for <?php echo htmlspecialchars($pullsheet['show_name'] ?? 'Student Requests'); ?></h3>
             </div>
             <div class="card-body">
                 <?php if ($pullsheet['status'] === 'finalized' || $pullsheet['status'] === 'picked'): ?>
