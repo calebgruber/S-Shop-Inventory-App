@@ -198,9 +198,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 );
             }
             
-            unset($_SESSION['pick_session']);
+            // Don't clear session for draft - keep it alive for continued picking
+            // unset($_SESSION['pick_session']); // REMOVED - draft should keep session
             ob_end_clean(); // Clear any buffered output
-            echo json_encode(['success' => true]);
+            echo json_encode(['success' => true, 'message' => 'Draft saved successfully']);
             exit;
         }
         
