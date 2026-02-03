@@ -3,6 +3,19 @@
 ## Overview
 This document summarizes the complete rewrite of the S-Shop Inventory Management System, implementing all requirements from the problem statement using the existing codebase as a template.
 
+## Latest Update: LightWright-Style Paperwork (February 2026)
+
+The paperwork generation system has been redesigned to match the professional look of LightWright 6/7 theatrical software:
+- ✅ Professional bordered tables with gray headers
+- ✅ Category-based organization for pullsheets
+- ✅ Separate "Add" and "Remove" sections for change orders
+- ✅ Information boxes with show details
+- ✅ Signature lines for authorization
+- ✅ Barcodes preserved in top right corner
+- ✅ Page numbers and professional spacing
+
+See [LIGHTWRIGHT_PAPERWORK.md](LIGHTWRIGHT_PAPERWORK.md) for detailed documentation.
+
 ## Major Changes Implemented
 
 ### 1. Clean URLs ✅

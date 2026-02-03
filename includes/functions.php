@@ -576,7 +576,7 @@ function generatePullsheetPDF($pullsheetId) {
     $pdf->addSignatureLine($page, 320, $y, 250, 'Authorized By / Date');
     
     // Page number
-    $pdf->addPageNumber($page, 1, count($pdf->pages ?? [1]));
+    $pdf->addPageNumber($page, 1, $pdf->getPageCount());
     
     return $pdf->output('pullsheet_' . $pullsheetId . '.pdf', 'S');
 }
@@ -732,7 +732,7 @@ function generateChangeOrderPDF($changeOrderId) {
     $pdf->addSignatureLine($page, 320, $y, 250, 'Authorized By / Date');
     
     // Page number
-    $pdf->addPageNumber($page, 1, count($pdf->pages ?? [1]));
+    $pdf->addPageNumber($page, 1, $pdf->getPageCount());
     
     return $pdf->output('change_order_' . $changeOrderId . '.pdf', 'S');
 }

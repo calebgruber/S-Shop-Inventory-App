@@ -26,6 +26,10 @@ class SimplePDF {
         return $pageNum;
     }
 
+    public function getPageCount() {
+        return count($this->pages);
+    }
+
     public function addText($page, $x, $y, $text, $size = 12, $font = 'Helvetica') {
         $this->pages[$page]['content'] .= sprintf(
             "BT /F1 %d Tf %d %d Td (%s) Tj ET\n",
