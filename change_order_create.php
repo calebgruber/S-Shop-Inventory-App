@@ -1,8 +1,8 @@
 <?php
-requirePermission('change_orders');
 require_once 'includes/functions.php';
+requirePermission('change_orders');
 
-// Validate show and permissions BEFORE including header
+// Validate show and permissions
 $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';
 

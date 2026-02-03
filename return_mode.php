@@ -1,7 +1,7 @@
 <?php
-requirePermission('operations');
 session_start();
 require_once __DIR__ . '/includes/functions.php';
+requirePermission('operations');
 
 $returnSession = $_SESSION['return_session'] ?? null;
 

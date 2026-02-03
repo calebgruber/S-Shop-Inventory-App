@@ -1,15 +1,7 @@
 <?php
-requirePermission('student_requests');
-require_once 'includes/functions.php';
-
-// Check permissions BEFORE including header
-if (!hasPermission('student_requests')) {
-    setAlert('You do not have permission to access student requests', 'danger');
-    redirect('index');
-}
-
 $pageTitle = 'Student Requests';
 require_once 'includes/header.php';
+requirePermission('student_requests');
 
 $db = getDB();
 $currentUser = getCurrentUser();

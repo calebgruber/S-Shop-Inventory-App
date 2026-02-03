@@ -1,8 +1,8 @@
 <?php
-requirePermission('shows');
 require_once 'includes/functions.php';
+requirePermission('shows');
 
-// Validate show BEFORE including header
+// Validate show
 $showId = $_GET['id'] ?? null;
 if (!$showId) {
     redirect('shows');

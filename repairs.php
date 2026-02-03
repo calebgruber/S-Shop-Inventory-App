@@ -1,15 +1,7 @@
 <?php
-requirePermission('repairs');
-require_once 'includes/functions.php';
-
-// Check permissions BEFORE including header
-if (!hasPermission('repairs')) {
-    setAlert('You do not have permission to access repairs', 'danger');
-    redirect('index');
-}
-
 $pageTitle = 'Repairs';
 require_once 'includes/header.php';
+requirePermission('repairs');
 
 $db = getDB();
 $currentUser = getCurrentUser();

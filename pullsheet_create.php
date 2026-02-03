@@ -1,8 +1,8 @@
 <?php
-requirePermission('pullsheets');
 require_once 'includes/functions.php';
+requirePermission('pullsheets');
 
-// Validate and check permissions BEFORE including header
+// Validate and check permissions
 $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';
 

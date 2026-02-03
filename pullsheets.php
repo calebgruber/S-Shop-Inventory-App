@@ -1,15 +1,7 @@
 <?php
-requirePermission('pullsheets');
-require_once 'includes/functions.php';
-
-// Check permissions - designers and admins can access pullsheets
-if (!hasPermission('pullsheets')) {
-    setAlert('You do not have permission to access pullsheets', 'danger');
-    redirect('index');
-}
-
 $pageTitle = 'Pullsheets';
 require_once 'includes/header.php';
+requirePermission('pullsheets');
 
 $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';

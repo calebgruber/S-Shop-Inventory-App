@@ -1,8 +1,8 @@
 <?php
-requirePermission('change_orders');
 // Handle PDF download BEFORE any output
 if (isset($_GET['download_pdf']) && isset($_GET['id'])) {
     require_once __DIR__ . '/includes/functions.php';
+    requirePermission('change_orders');
     require_once __DIR__ . '/includes/config.php';
     
     $changeOrderId = $_GET['id'];

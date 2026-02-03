@@ -1,15 +1,7 @@
 <?php
-requirePermission('items');
-require_once 'includes/functions.php';
-
-// Check permissions - admins, designers, production audio, and students can view inventory (read-only for non-admins)
-if (!hasPermission('items')) {
-    setAlert('You do not have permission to access inventory', 'danger');
-    redirect('index');
-}
-
 $pageTitle = 'Items';
 require_once 'includes/header.php';
+requirePermission('items');
 
 $currentUser = getCurrentUser();
 $canEdit = isAdmin(); // Only admins can edit items

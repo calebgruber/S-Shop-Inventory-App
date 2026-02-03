@@ -1,6 +1,6 @@
 <?php
-requirePermission('change_orders');
 require_once 'includes/functions.php';
+requirePermission('change_orders');
 
 $coId = $_GET['id'] ?? null;
 

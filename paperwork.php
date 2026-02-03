@@ -1,15 +1,7 @@
 <?php
-requirePermission('paperwork');
-require_once 'includes/functions.php';
-
-// Check permissions BEFORE including header
-if (!hasPermission('paperwork')) {
-    setAlert('You do not have permission to access paperwork', 'danger');
-    redirect('index');
-}
-
 $pageTitle = 'Paperwork';
 require_once 'includes/header.php';
+requirePermission('paperwork');
 
 $db = getDB();
 

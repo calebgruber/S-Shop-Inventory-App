@@ -1,16 +1,14 @@
 <?php
-requirePermission('items');
-require_once 'includes/functions.php';
-
-// Designers can view inventory but not edit - check BEFORE including header
-$currentUser = getCurrentUser();
-if ($currentUser['role'] === 'designer') {
-    setAlert('You do not have permission to edit items', 'danger');
-    redirect('index');
-}
-
 $pageTitle = 'Edit Item';
 require_once 'includes/header.php';
+requirePermission('items');
+
+// Only admins can edit items
+if (!isAdmin()) {
+    setAlert('You do not have permission to edit items', 'danger');
+    redirect('items');
+    exit;
+}
 
 $itemId = $_GET['id'] ?? null;
 $item = $itemId ? getItemById($itemId) : null;
