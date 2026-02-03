@@ -1,8 +1,8 @@
 <?php
 require_once 'includes/functions.php';
 
-// Check permissions - only admins and designers can view inventory
-if (!hasPermission('inventory') && !hasPermission('dashboard')) {
+// Check permissions - admins, designers, production audio, and students can view inventory (read-only for non-admins)
+if (!hasPermission('items')) {
     setAlert('You do not have permission to access inventory', 'danger');
     redirect('index');
 }

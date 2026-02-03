@@ -38,7 +38,7 @@ $shows = getDB()->fetchAll("SELECT s.*, t.name as theatre_space_name
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title"><?php echo $showArchived ? 'Archived Shows' : 'Active Shows'; ?></h3>
+                <h3 class="card-title"><?php echo ($showArchived ?? false) ? 'Archived Shows' : 'Active Shows'; ?></h3>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">

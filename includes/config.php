@@ -93,6 +93,7 @@ set_exception_handler(function($exception) {
     if (!headers_sent()) {
         http_response_code(500);
     }
+    $isDevelopment = defined('IS_DEVELOPMENT') && IS_DEVELOPMENT;
     if ($isDevelopment) {
         echo "<h1>An error occurred</h1>";
         echo "<pre>" . htmlspecialchars($message) . "</pre>";

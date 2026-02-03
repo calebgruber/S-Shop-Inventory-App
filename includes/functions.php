@@ -123,7 +123,7 @@ function getAllItems() {
          FROM items i 
          LEFT JOIN categories c ON i.category_id = c.id 
          LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
-         ORDER BY i.name"
+         ORDER BY c.name, sc.name, i.name"
     );
 }
 

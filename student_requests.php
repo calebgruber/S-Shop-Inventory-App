@@ -14,13 +14,15 @@ $db = getDB();
 $currentUser = getCurrentUser();
 $isStudent = $currentUser['role'] === 'student';
 $isDesigner = $currentUser['role'] === 'designer';
-$canManageRequests = hasPermission('inventory') && !$isStudent && !$isDesigner;
+$isProductionAudio = $currentUser['role'] === 'production_audio';
+$canManageRequests = isAdmin(); // Only admins can manage/approve requests
 
 // Handle request operations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
-    if ($action === 'create' && ($isStudent || $isDesigner)) {
+    if ($action === 'create' && !$canManageRequests) {
+        // Students, designers, and production audio can create requests
         $itemId = $_POST['item_id'] ?? 0;
         $quantity = (int)($_POST['quantity'] ?? 1);
         $reason = trim($_POST['reason'] ?? '');
@@ -192,12 +194,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $statusFilter = $_GET['status'] ?? 'all';
 $categoryFilter = $_GET['category'] ?? 'all';
 
-// Build query for requests list - but not for students or designers viewing the page
-if ($isStudent) {
-    // Students don't see the requests table at all - only the create form
-    $requests = [];
-} elseif ($isDesigner) {
-    // Designers don't see the requests table - only the create form
+// Build query for requests list - only admins can see/manage all requests
+if (!$canManageRequests) {
+    // Students, designers, and production audio don't see the requests table - only the create form
     $requests = [];
 } else {
     // Admins see all requests
@@ -239,7 +238,7 @@ foreach ($requests as $request) {
 
 <div class="row mb-4">
     <div class="col-12">
-        <?php if ($isStudent || $isDesigner): ?>
+        <?php if (!$canManageRequests): ?>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#browseItemsModal">
             <i class="ti ti-plus icon"></i> New Request
         </button>
@@ -251,7 +250,7 @@ foreach ($requests as $request) {
     </div>
 </div>
 
-<?php if (!$isStudent && !$isDesigner): ?>
+<?php if ($canManageRequests): ?>
 <!-- Filters -->
 <div class="card mb-4">
     <div class="card-body">
