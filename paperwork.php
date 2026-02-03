@@ -4,7 +4,7 @@ require_once 'includes/functions.php';
 // Check permissions BEFORE including header
 if (!hasPermission('paperwork')) {
     setAlert('You do not have permission to access paperwork', 'danger');
-    redirect('index.php');
+    redirect('index');
 }
 
 $pageTitle = 'Paperwork';
@@ -233,13 +233,13 @@ foreach ($shows as $show) {
                             <td><?php echo $ps['finalized_at'] ? date('m/d/Y', strtotime($ps['finalized_at'])) : 'N/A'; ?></td>
                             <td>
                                 <div class="btn-group">
-                                    <a href="pullsheet_view.php?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-primary" target="_blank">
+                                    <a href="pullsheet_view?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-primary" target="_blank">
                                         <i class="ti ti-eye icon"></i> View
                                     </a>
                                     <button onclick="printPullsheet(<?php echo $ps['id']; ?>)" class="btn btn-sm btn-info">
                                         <i class="ti ti-printer icon"></i> Print
                                     </button>
-                                    <a href="pullsheet_edit.php?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-secondary">
+                                    <a href="pullsheet_edit?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-secondary">
                                         <i class="ti ti-edit icon"></i> Edit
                                     </a>
                                 </div>
@@ -298,13 +298,13 @@ foreach ($shows as $show) {
                             <td><?php echo $co['finalized_at'] ? date('m/d/Y', strtotime($co['finalized_at'])) : 'N/A'; ?></td>
                             <td>
                                 <div class="btn-group">
-                                    <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
+                                    <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
                                         <i class="ti ti-eye icon"></i> View
                                     </a>
                                     <button onclick="printChangeOrder(<?php echo $co['id']; ?>)" class="btn btn-sm btn-info">
                                         <i class="ti ti-printer icon"></i> Print
                                     </button>
-                                    <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-secondary">
+                                    <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-secondary">
                                         <i class="ti ti-edit icon"></i> Edit
                                     </a>
                                 </div>

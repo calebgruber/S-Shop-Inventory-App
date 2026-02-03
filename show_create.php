@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-check"></i> Create Show
                         </button>
-                        <a href="shows.php" class="btn btn-secondary">Cancel</a>
+                        <a href="shows" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
             </div>

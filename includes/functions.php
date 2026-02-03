@@ -353,7 +353,7 @@ function requireLogin() {
     }
     
     if (!isset($_SESSION['user_id'])) {
-        header('Location: login.php');
+        header('Location: login');
         exit;
     }
 }
@@ -398,14 +398,14 @@ function isProductionAudio() {
 function requireRole($role) {
     $user = getCurrentUser();
     if (!$user) {
-        header('Location: login.php');
+        header('Location: login');
         exit;
     }
     
     $allowedRoles = is_array($role) ? $role : [$role];
     if (!in_array($user['role'], $allowedRoles)) {
         setAlert('You do not have permission to access this page.', 'danger');
-        header('Location: index.php');
+        header('Location: index');
         exit;
     }
 }

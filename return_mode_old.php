@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 </head><body style="padding:2rem">
 <audio id="successSound"><source src="assets/sounds/success.mp3" type="audio/mpeg"></audio>
 <audio id="errorSound"><source src="assets/sounds/error.mp3" type="audio/mpeg"></audio>
-<div class="container-xl"><div class="d-flex justify-content-between mb-4"><h1>Return Mode</h1><a href="index.php" class="btn btn-secondary">Exit</a></div>
+<div class="container-xl"><div class="d-flex justify-content-between mb-4"><h1>Return Mode</h1><a href="index" class="btn btn-secondary">Exit</a></div>
 <?php if (!$returnSession): ?>
 <div class="row justify-content-center"><div class="col-md-6"><div class="card"><div class="card-body">
 <div class="mb-3"><label>Your Name</label><input type="text" class="form-control large-input" id="returnerName" autofocus></div>
@@ -102,7 +102,7 @@ c.className='card item-card-'+(d.item.scanned==d.item.needed?'complete':'incompl
 });
 document.getElementById('completeBtn').addEventListener('click',()=>{
 if(!confirm('Complete return?'))return;
-post('ajax=1&action=complete_return',d=>{if(d.success){alert('Returned!');location.href='index.php'}});
+post('ajax=1&action=complete_return',d=>{if(d.success){alert('Returned!');location.href='index'}});
 });
 <?php endif; ?>
 </script>

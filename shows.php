@@ -28,7 +28,7 @@ $shows = getDB()->fetchAll("SELECT s.*, t.name as theatre_space_name
 
 <div class="row mb-3">
     <div class="col">
-        <a href="show_create.php" class="btn btn-primary">
+        <a href="show_create" class="btn btn-primary">
             <i class="ti ti-plus"></i> Create New Show
         </a>
     </div>
@@ -78,7 +78,7 @@ $shows = getDB()->fetchAll("SELECT s.*, t.name as theatre_space_name
                                         <a href="show_tracker.php?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-success" title="View Workflow Tracker">
                                             <i class="ti ti-timeline"></i>
                                         </a>
-                                        <a href="show_edit.php?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-primary">
+                                        <a href="show_edit?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-primary">
                                             <i class="ti ti-edit"></i>
                                         </a>
                                         <a href="pullsheet_create.php?show_id=<?php echo $show['id']; ?>" class="btn btn-sm btn-info" title="Create Pullsheet">

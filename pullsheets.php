@@ -4,7 +4,7 @@ require_once 'includes/functions.php';
 // Check permissions - designers and admins can access pullsheets
 if (!hasPermission('pullsheets')) {
     setAlert('You do not have permission to access pullsheets', 'danger');
-    redirect('index.php');
+    redirect('index');
 }
 
 $pageTitle = 'Pullsheets';
@@ -253,11 +253,11 @@ foreach ($pullsheets as $pullsheet) {
                                                 </div>
                                                 <div class="card-footer">
                                                     <div class="d-flex gap-2">
-                                                        <a href="pullsheet_view.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-primary">
+                                                        <a href="pullsheet_view?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-primary">
                                                             <i class="ti ti-eye"></i> View
                                                         </a>
                                                         <?php if ($pullsheet['status'] === 'draft'): ?>
-                                                            <a href="pullsheet_edit.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
+                                                            <a href="pullsheet_edit?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
                                                                 <i class="ti ti-edit"></i> Edit
                                                             </a>
                                                         <?php endif; ?>
@@ -333,11 +333,11 @@ foreach ($pullsheets as $pullsheet) {
                                                 </div>
                                                 <div class="card-footer">
                                                     <div class="d-flex gap-2">
-                                                        <a href="pullsheet_view.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-primary">
+                                                        <a href="pullsheet_view?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-primary">
                                                             <i class="ti ti-eye"></i> View
                                                         </a>
                                                         <?php if ($pullsheet['status'] === 'draft'): ?>
-                                                            <a href="pullsheet_edit.php?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
+                                                            <a href="pullsheet_edit?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
                                                                 <i class="ti ti-edit"></i> Edit
                                                             </a>
                                                         <?php endif; ?>

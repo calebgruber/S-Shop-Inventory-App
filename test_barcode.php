@@ -63,6 +63,6 @@ header('Content-Type: text/html; charset=utf-8');
         </ul>
     </div>
     
-    <p><a href="index.php">← Back to Dashboard</a></p>
+    <p><a href="index">← Back to Dashboard</a></p>
 </body>
 </html>

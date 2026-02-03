@@ -5,7 +5,7 @@ require_once 'includes/functions.php';
 $currentUser = getCurrentUser();
 if ($currentUser['role'] === 'designer') {
     setAlert('You do not have permission to edit items', 'danger');
-    redirect('index.php');
+    redirect('index');
 }
 
 $pageTitle = 'Edit Item';
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-check"></i> Save Item
                         </button>
-                        <a href="items.php" class="btn btn-secondary">Cancel</a>
+                        <a href="items" class="btn btn-secondary">Cancel</a>
                         
                         <?php if ($item): ?>
                             <a href="item_barcodes.php?id=<?php echo $item['id']; ?>" class="btn btn-info ms-auto">

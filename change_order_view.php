@@ -23,7 +23,7 @@ require_once 'includes/functions.php';
 // Check permissions
 if (!hasPermission('change_orders')) {
     setAlert('You do not have permission to access change orders', 'danger');
-    redirect('index.php');
+    redirect('index');
 }
 
 // Handle approval actions (Admin only)
@@ -55,13 +55,13 @@ require_once 'includes/header.php';
 
 $changeOrderId = $_GET['id'] ?? null;
 if (!$changeOrderId) {
-    redirect('change_orders.php');
+    redirect('change_orders');
 }
 
 $changeOrder = getChangeOrderById($changeOrderId);
 if (!$changeOrder) {
     setAlert('Change order not found', 'danger');
-    redirect('change_orders.php');
+    redirect('change_orders');
 }
 
 // Get approver name if approved
@@ -81,7 +81,7 @@ $items = getChangeOrderItems($changeOrderId);
 
 <div class="row mb-3">
     <div class="col">
-        <a href="change_orders.php" class="btn btn-secondary">
+        <a href="change_orders" class="btn btn-secondary">
             <i class="ti ti-arrow-left"></i> Back to Change Orders
         </a>
         <?php if ($changeOrder['status'] === 'finalized' || $changeOrder['status'] === 'processed' || $changeOrder['status'] === 'completed'): ?>

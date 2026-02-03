@@ -4,7 +4,7 @@ require_once 'includes/functions.php';
 // Check permissions - only admins and designers can view inventory
 if (!hasPermission('inventory') && !hasPermission('dashboard')) {
     setAlert('You do not have permission to access inventory', 'danger');
-    redirect('index.php');
+    redirect('index');
 }
 
 $pageTitle = 'Items';
@@ -31,7 +31,7 @@ $items = getAllItems();
 <?php if ($canEdit): ?>
 <div class="row mb-3">
     <div class="col">
-        <a href="item_edit.php" class="btn btn-primary">
+        <a href="item_edit" class="btn btn-primary">
             <i class="ti ti-plus"></i> Add New Item
         </a>
     </div>
@@ -74,7 +74,7 @@ $items = getAllItems();
                                 <?php if ($canEdit): ?>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="item_edit.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-primary">
+                                        <a href="item_edit?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-primary">
                                             <i class="ti ti-edit"></i>
                                         </a>
                                         <a href="item_barcodes.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-info">

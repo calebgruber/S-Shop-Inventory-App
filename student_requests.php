@@ -4,7 +4,7 @@ require_once 'includes/functions.php';
 // Check permissions BEFORE including header
 if (!hasPermission('student_requests')) {
     setAlert('You do not have permission to access student requests', 'danger');
-    redirect('index.php');
+    redirect('index');
 }
 
 $pageTitle = 'Student Requests';
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             setAlert('Pullsheet created successfully: ' . $barcode, 'success');
-            header('Location: pullsheet_edit.php?id=' . $pullsheetId);
+            header('Location: pullsheet_edit?id=' . $pullsheetId);
             exit;
         }
     }
@@ -279,7 +279,7 @@ foreach ($requests as $request) {
             </div>
             <div class="col-md-4">
                 <label class="form-label">&nbsp;</label>
-                <a href="student_requests.php" class="btn btn-secondary w-100">Clear Filters</a>
+                <a href="student_requests" class="btn btn-secondary w-100">Clear Filters</a>
             </div>
         </form>
     </div>
@@ -579,7 +579,7 @@ function selectItemForRequest(itemId, itemName, stockQuantity) {
                     <?php if ($request['pullsheet_id']): ?>
                     <dt class="col-sm-4">Pullsheet:</dt>
                     <dd class="col-sm-8">
-                        <a href="pullsheet_view.php?id=<?php echo $request['pullsheet_id']; ?>" class="btn btn-sm btn-primary">
+                        <a href="pullsheet_view?id=<?php echo $request['pullsheet_id']; ?>" class="btn btn-sm btn-primary">
                             View Pullsheet
                         </a>
                     </dd>

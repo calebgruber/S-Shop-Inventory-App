@@ -283,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                         <small class="text-muted">- <?php echo htmlspecialchars($pickSession['show_name']); ?></small>
                     <?php endif; ?>
                 </h1>
-                <a href="index.php" class="btn btn-secondary">
+                <a href="index" class="btn btn-secondary">
                     <i class="ti ti-x"></i> Exit
                 </a>
             </div>

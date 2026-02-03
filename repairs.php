@@ -4,7 +4,7 @@ require_once 'includes/functions.php';
 // Check permissions BEFORE including header
 if (!hasPermission('repairs')) {
     setAlert('You do not have permission to access repairs', 'danger');
-    redirect('index.php');
+    redirect('index');
 }
 
 $pageTitle = 'Repairs';
@@ -150,7 +150,7 @@ $allItems = getAllItems();
             </div>
             <div class="col-md-4">
                 <label class="form-label">&nbsp;</label>
-                <a href="repairs.php" class="btn btn-secondary w-100">Clear Filters</a>
+                <a href="repairs" class="btn btn-secondary w-100">Clear Filters</a>
             </div>
         </form>
     </div>

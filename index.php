@@ -126,7 +126,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
                         </div>
                     </div>
                     <?php else: ?>
-                    <a href="item_edit.php?id=<?php echo $item['id']; ?>" class="list-group-item list-group-item-action quick-lookup-item">
+                    <a href="item_edit?id=<?php echo $item['id']; ?>" class="list-group-item list-group-item-action quick-lookup-item">
                         <div class="d-flex w-100 align-items-center gap-2">
                             <div class="flex-grow-1">
                                 <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
@@ -288,7 +288,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     <!-- Student Requests (visible for students and designers, not admins) -->
     <?php if (hasPermission('student_requests') && !isAdmin()): ?>
     <div class="col-md-6 col-lg-3 mb-3">
-        <a href="student_requests.php" class="btn btn-primary w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
+        <a href="student_requests" class="btn btn-primary w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
             <i class="ti ti-clipboard-list icon mb-2" style="font-size: 2rem;"></i>
             <span>Requests</span>
         </a>
@@ -299,7 +299,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     <?php if (hasPermission('inventory')): ?>
     <!-- Inventory -->
     <div class="col-md-6 col-lg-3 mb-3">
-        <a href="items.php" class="btn btn-secondary w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
+        <a href="items" class="btn btn-secondary w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
             <i class="ti ti-package icon mb-2" style="font-size: 2rem;"></i>
             <span>Inventory</span>
         </a>
@@ -309,7 +309,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     <?php if (hasPermission('reports')): ?>
     <!-- Show Reports -->
     <div class="col-md-6 col-lg-3 mb-3">
-        <a href="reports.php" class="btn btn-info w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
+        <a href="reports" class="btn btn-info w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
             <i class="ti ti-report icon mb-2" style="font-size: 2rem;"></i>
             <span>Show Reports</span>
         </a>
@@ -319,7 +319,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     <?php if (hasPermission('pullsheets')): ?>
     <!-- Create Pullsheet -->
     <div class="col-md-6 col-lg-3 mb-3">
-        <a href="pullsheet_create.php" class="btn btn-success w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
+        <a href="pullsheet_create" class="btn btn-success w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
             <i class="ti ti-file-plus icon mb-2" style="font-size: 2rem;"></i>
             <span>Create Pullsheet</span>
         </a>
@@ -329,7 +329,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     <?php if (hasPermission('pick_mode')): ?>
     <!-- Pick Mode -->
     <div class="col-md-6 col-lg-3 mb-3">
-        <a href="pick_mode.php" class="btn btn-primary w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
+        <a href="pick_mode" class="btn btn-primary w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
             <i class="ti ti-scan icon mb-2" style="font-size: 2rem;"></i>
             <span>Pick Mode</span>
         </a>
@@ -339,7 +339,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     <?php if (hasPermission('return_mode')): ?>
     <!-- Return Mode -->
     <div class="col-md-6 col-lg-3 mb-3">
-        <a href="return_mode.php" class="btn btn-warning w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
+        <a href="return_mode" class="btn btn-warning w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
             <i class="ti ti-arrow-back icon mb-2" style="font-size: 2rem;"></i>
             <span>Return Mode</span>
         </a>
@@ -349,7 +349,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     <?php if (hasPermission('shows')): ?>
     <!-- Shows -->
     <div class="col-md-6 col-lg-3 mb-3">
-        <a href="shows.php" class="btn btn-purple w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
+        <a href="shows" class="btn btn-purple w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
             <i class="ti ti-theater icon mb-2" style="font-size: 2rem;"></i>
             <span>Shows</span>
         </a>
@@ -359,7 +359,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
     <?php if (hasPermission('change_orders')): ?>
     <!-- Change Orders -->
     <div class="col-md-6 col-lg-3 mb-3">
-        <a href="change_orders.php" class="btn btn-orange w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
+        <a href="change_orders" class="btn btn-orange w-100 quick-action-btn d-flex flex-column justify-content-center align-items-center">
             <i class="ti ti-exchange icon mb-2" style="font-size: 2rem;"></i>
             <span>Change Orders</span>
         </a>
@@ -430,14 +430,14 @@ $changeOrdersToReturn = getDB()->fetchAll(
                                     <div class="text-muted small">By: <?php echo htmlspecialchars($request['student_name'] ?? 'Unknown'); ?> - <?php echo date('m/d/Y', strtotime($request['created_at'])); ?></div>
                                 </div>
                                 <div class="col-auto">
-                                    <a href="student_requests.php" class="btn btn-sm btn-primary">View</a>
+                                    <a href="student_requests" class="btn btn-sm btn-primary">View</a>
                                 </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
                 <div class="text-center mt-3">
-                    <a href="student_requests.php" class="btn btn-link">View All Requests</a>
+                    <a href="student_requests" class="btn btn-link">View All Requests</a>
                 </div>
             </div>
         </div>
@@ -497,7 +497,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
                                         </div>
                                     </div>
                                     <div class="col-auto">
-                                        <a href="show_edit.php?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-primary">
+                                        <a href="show_edit?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-primary">
                                             View
                                         </a>
                                     </div>
@@ -564,7 +564,7 @@ $changeOrdersToReturn = getDB()->fetchAll(
                     </div>
                 <?php endif; ?>
                 <div class="text-center mt-3">
-                    <a href="student_requests.php" class="btn btn-primary"><?php echo $isStudent ? 'View All My Requests' : 'View All Requests'; ?></a>
+                    <a href="student_requests" class="btn btn-primary"><?php echo $isStudent ? 'View All My Requests' : 'View All Requests'; ?></a>
                 </div>
             </div>
         </div>

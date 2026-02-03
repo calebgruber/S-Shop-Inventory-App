@@ -177,19 +177,19 @@ $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';
 
 if (!$pullsheetId) {
-    redirect('pullsheets.php');
+    redirect('pullsheets');
 }
 
 $pullsheet = getPullsheetById($pullsheetId);
 if (!$pullsheet) {
     setAlert('Pullsheet not found', 'danger');
-    redirect('pullsheets.php');
+    redirect('pullsheets');
 }
 
 // Check permission for designers
 if ($isDesigner && !canAccessShow($currentUser['id'], $pullsheet['show_id'])) {
     setAlert('You do not have permission to edit this pullsheet', 'danger');
-    redirect('pullsheets.php');
+    redirect('pullsheets');
 }
 
 if ($pullsheet['status'] !== 'draft') {

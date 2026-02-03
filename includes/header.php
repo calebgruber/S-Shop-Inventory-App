@@ -356,7 +356,7 @@ $currentUser = getCurrentUser();
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
-                    <a href="index.php">
+                    <a href="index">
                         <?php 
                         $logoPath = getSetting('logo_path');
                         $showLogo = false;
@@ -447,7 +447,7 @@ $currentUser = getCurrentUser();
                             </div>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="user_settings.php">
+                            <li><a class="dropdown-item" href="user_settings">
                                 <i class="ti ti-settings icon me-2"></i>
                                 Settings
                             </a></li>
@@ -456,13 +456,13 @@ $currentUser = getCurrentUser();
                                 Toggle Dark Mode
                             </a></li>
                             <?php if (isAdmin()): ?>
-                            <li><a class="dropdown-item" href="user_management.php">
+                            <li><a class="dropdown-item" href="user_management">
                                 <i class="ti ti-users icon me-2"></i>
                                 User Management
                             </a></li>
                             <?php endif; ?>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="logout.php">
+                            <li><a class="dropdown-item" href="logout">
                                 <i class="ti ti-logout icon me-2"></i>
                                 Logout
                             </a></li>
@@ -487,7 +487,7 @@ $currentUser = getCurrentUser();
                         <ul class="navbar-nav">
                             <?php if (hasPermission('dashboard')): ?>
                             <li class="nav-item <?php echo $currentPage === 'index' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="index.php">
+                                <a class="nav-link" href="index">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-home"></i>
                                     </span>
@@ -498,7 +498,7 @@ $currentUser = getCurrentUser();
                             
                             <?php if (hasPermission('inventory')): ?>
                             <li class="nav-item <?php echo $currentPage === 'items' || $currentPage === 'item_edit' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="items.php">
+                                <a class="nav-link" href="items">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-package"></i>
                                     </span>
@@ -509,7 +509,7 @@ $currentUser = getCurrentUser();
                             
                             <?php if (hasPermission('shows')): ?>
                             <li class="nav-item <?php echo $currentPage === 'shows' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="shows.php">
+                                <a class="nav-link" href="shows">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-theater"></i>
                                     </span>
@@ -518,7 +518,7 @@ $currentUser = getCurrentUser();
                             </li>
                             
                             <li class="nav-item <?php echo $currentPage === 'production_calendar' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="production_calendar.php">
+                                <a class="nav-link" href="production_calendar">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-calendar-event"></i>
                                     </span>
@@ -529,7 +529,7 @@ $currentUser = getCurrentUser();
                             
                             <?php if (hasPermission('pullsheets')): ?>
                             <li class="nav-item <?php echo $currentPage === 'pullsheets' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="pullsheets.php">
+                                <a class="nav-link" href="pullsheets">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-file-text"></i>
                                     </span>
@@ -540,7 +540,7 @@ $currentUser = getCurrentUser();
                             
                             <?php if (hasPermission('change_orders')): ?>
                             <li class="nav-item <?php echo $currentPage === 'change_orders' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="change_orders.php">
+                                <a class="nav-link" href="change_orders">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-exchange"></i>
                                     </span>
@@ -560,10 +560,10 @@ $currentUser = getCurrentUser();
                                 </a>
                                 <ul class="dropdown-menu">
                                     <?php if (hasPermission('pick_mode')): ?>
-                                    <li><a class="dropdown-item" href="pick_mode.php">Pick Mode</a></li>
+                                    <li><a class="dropdown-item" href="pick_mode">Pick Mode</a></li>
                                     <?php endif; ?>
                                     <?php if (hasPermission('return_mode')): ?>
-                                    <li><a class="dropdown-item" href="return_mode.php">Return Mode</a></li>
+                                    <li><a class="dropdown-item" href="return_mode">Return Mode</a></li>
                                     <?php endif; ?>
                                 </ul>
                             </li>
@@ -571,7 +571,7 @@ $currentUser = getCurrentUser();
                             
                             <?php if (hasPermission('reports')): ?>
                             <li class="nav-item <?php echo $currentPage === 'reports' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="reports.php">
+                                <a class="nav-link" href="reports">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-report"></i>
                                     </span>
@@ -582,7 +582,7 @@ $currentUser = getCurrentUser();
                             
                             <?php if (hasPermission('paperwork')): ?>
                             <li class="nav-item <?php echo $currentPage === 'paperwork' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="paperwork.php">
+                                <a class="nav-link" href="paperwork">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-files"></i>
                                     </span>
@@ -593,7 +593,7 @@ $currentUser = getCurrentUser();
                             
                             <?php if (hasPermission('repairs')): ?>
                             <li class="nav-item <?php echo $currentPage === 'repairs' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="repairs.php">
+                                <a class="nav-link" href="repairs">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-tool"></i>
                                     </span>
@@ -604,7 +604,7 @@ $currentUser = getCurrentUser();
                             
                             <?php if (hasPermission('student_requests')): ?>
                             <li class="nav-item <?php echo $currentPage === 'student_requests' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="student_requests.php">
+                                <a class="nav-link" href="student_requests">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-clipboard-list"></i>
                                     </span>
@@ -615,7 +615,7 @@ $currentUser = getCurrentUser();
                             
                             <?php if (isAdmin()): ?>
                             <li class="nav-item <?php echo $currentPage === 'settings' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="settings.php">
+                                <a class="nav-link" href="settings">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-settings"></i>
                                     </span>

@@ -23,7 +23,7 @@ require_once 'includes/functions.php';
 // Check permissions
 if (!hasPermission('pullsheets')) {
     setAlert('You do not have permission to access pullsheets', 'danger');
-    redirect('index.php');
+    redirect('index');
 }
 
 // Handle approval actions (Admin only)
@@ -55,13 +55,13 @@ require_once 'includes/header.php';
 
 $pullsheetId = $_GET['id'] ?? null;
 if (!$pullsheetId) {
-    redirect('pullsheets.php');
+    redirect('pullsheets');
 }
 
 $pullsheet = getPullsheetById($pullsheetId);
 if (!$pullsheet) {
     setAlert('Pullsheet not found', 'danger');
-    redirect('pullsheets.php');
+    redirect('pullsheets');
 }
 
 // Get approver name if approved
@@ -81,7 +81,7 @@ $items = getPullsheetItems($pullsheetId);
 
 <div class="row mb-3">
     <div class="col">
-        <a href="pullsheets.php" class="btn btn-secondary">
+        <a href="pullsheets" class="btn btn-secondary">
             <i class="ti ti-arrow-left"></i> Back to Pullsheets
         </a>
         <?php if ($pullsheet['status'] === 'finalized'): ?>

@@ -6,18 +6,18 @@ $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';
 
 $showId = $_GET['show_id'] ?? null;
-if (!$showId) redirect('shows.php');
+if (!$showId) redirect('shows');
 
 $show = getShowById($showId);
 if (!$show) {
     setAlert('Show not found', 'danger');
-    redirect('shows.php');
+    redirect('shows');
 }
 
 // Check permission for designers
 if ($isDesigner && !canAccessShow($currentUser['id'], $showId)) {
     setAlert('You do not have permission to create change order for this show', 'danger');
-    redirect('change_orders.php');
+    redirect('change_orders');
 }
 
 $pageTitle = 'Create Change Order';
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="text" class="form-control" name="created_by" autofocus>
                     </div>
                     <button type="submit" class="btn btn-primary">Create</button>
-                    <a href="show_edit.php?id=<?php echo $showId; ?>" class="btn btn-secondary">Cancel</a>
+                    <a href="show_edit?id=<?php echo $showId; ?>" class="btn btn-secondary">Cancel</a>
                 </form>
             </div>
         </div>

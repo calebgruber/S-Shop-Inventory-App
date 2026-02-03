@@ -12,13 +12,13 @@ if ($showId) {
     $show = getShowById($showId);
     if (!$show) {
         setAlert('Show not found', 'danger');
-        redirect('shows.php');
+        redirect('shows');
     }
     
     // Check permission for designers
     if ($isDesigner && !canAccessShow($currentUser['id'], $showId)) {
         setAlert('You do not have permission to create pullsheet for this show', 'danger');
-        redirect('pullsheets.php');
+        redirect('pullsheets');
     }
     
     // Check if pullsheet already exists

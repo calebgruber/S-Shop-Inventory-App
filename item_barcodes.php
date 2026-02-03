@@ -4,13 +4,13 @@ require_once 'includes/functions.php';
 // Validate item BEFORE including header
 $itemId = $_GET['id'] ?? null;
 if (!$itemId) {
-    redirect('items.php');
+    redirect('items');
 }
 
 $item = getItemById($itemId);
 if (!$item) {
     setAlert('Item not found', 'danger');
-    redirect('items.php');
+    redirect('items');
 }
 
 $pageTitle = 'Print Barcodes';
@@ -21,7 +21,7 @@ $quantity = $_GET['quantity'] ?? 30;
 
 <div class="row">
     <div class="col-12 mb-3">
-        <a href="items.php" class="btn btn-secondary">
+        <a href="items" class="btn btn-secondary">
             <i class="ti ti-arrow-left"></i> Back to Items
         </a>
         <button onclick="window.print()" class="btn btn-primary">

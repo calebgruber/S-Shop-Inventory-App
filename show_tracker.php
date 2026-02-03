@@ -4,13 +4,13 @@ require_once 'includes/functions.php';
 // Validate show BEFORE including header
 $showId = $_GET['id'] ?? null;
 if (!$showId) {
-    redirect('shows.php');
+    redirect('shows');
 }
 
 $show = getShowById($showId);
 if (!$show) {
     setAlert('Show not found', 'danger');
-    redirect('shows.php');
+    redirect('shows');
 }
 
 $pageTitle = 'Show Tracker';
@@ -211,7 +211,7 @@ $stages = [
                     Show Workflow Tracker - <?php echo htmlspecialchars($show['name']); ?>
                 </h3>
                 <div class="card-actions">
-                    <a href="shows.php" class="btn btn-secondary">
+                    <a href="shows" class="btn btn-secondary">
                         <i class="ti ti-arrow-left"></i> Back to Shows
                     </a>
                 </div>
@@ -274,7 +274,7 @@ $stages = [
                                         ?>">
                                             <?php echo ucfirst($co['status']); ?>
                                         </span>
-                                        <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-outline-primary ms-2">
+                                        <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-outline-primary ms-2">
                                             <i class="ti ti-eye"></i> View
                                         </a>
                                     </div>

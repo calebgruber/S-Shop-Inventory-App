@@ -4,7 +4,7 @@ require_once 'includes/functions.php';
 // Check permissions - designers and admins can access change orders
 if (!hasPermission('change_orders')) {
     setAlert('You do not have permission to access change orders', 'danger');
-    redirect('index.php');
+    redirect('index');
 }
 
 $pageTitle = 'Change Orders';
@@ -243,11 +243,11 @@ foreach ($changeOrders as $changeOrder) {
                                                 <div class="card-footer">
                                                     <div class="d-flex gap-2">
                                                         <?php if ($co['status'] === 'draft'): ?>
-                                                            <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
+                                                            <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
                                                                 <i class="ti ti-edit"></i> Edit
                                                             </a>
                                                         <?php else: ?>
-                                                            <a href="change_order_view.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info">
+                                                            <a href="change_order_view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info">
                                                                 <i class="ti ti-eye"></i> View
                                                             </a>
                                                         <?php endif; ?>
@@ -310,11 +310,11 @@ foreach ($changeOrders as $changeOrder) {
                                                 <div class="card-footer">
                                                     <div class="d-flex gap-2">
                                                         <?php if ($co['status'] === 'draft'): ?>
-                                                            <a href="change_order_edit.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
+                                                            <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
                                                                 <i class="ti ti-edit"></i> Edit
                                                             </a>
                                                         <?php else: ?>
-                                                            <a href="change_order_view.php?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info">
+                                                            <a href="change_order_view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info">
                                                                 <i class="ti ti-eye"></i> View
                                                             </a>
                                                         <?php endif; ?>

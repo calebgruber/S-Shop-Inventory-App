@@ -10,7 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // If already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
-    header('Location: index.php');
+    header('Location: index');
     exit;
 }
 
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 logMessage("User logged in: " . $email, 'INFO');
                 
-                header('Location: index.php');
+                header('Location: index');
                 exit;
             } else {
                 $error = 'Invalid email or password.';
@@ -132,7 +132,7 @@ try {
           </div>
           <?php endif; ?>
           
-          <form action="login.php" method="post" autocomplete="off" novalidate>
+          <form action="login" method="post" autocomplete="off" novalidate>
             <div class="mb-3">
               <label class="form-label">Email address</label>
               <input type="email" name="email" class="form-control" placeholder="your@email.com" autocomplete="off" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>

@@ -4,13 +4,13 @@ require_once 'includes/functions.php';
 // Validate show BEFORE including header
 $showId = $_GET['id'] ?? null;
 if (!$showId) {
-    redirect('shows.php');
+    redirect('shows');
 }
 
 $show = getShowById($showId);
 if (!$show) {
     setAlert('Show not found', 'danger');
-    redirect('shows.php');
+    redirect('shows');
 }
 
 $pageTitle = 'Edit Show';
@@ -102,7 +102,7 @@ $changeOrders = getDB()->fetchAll("SELECT * FROM change_orders WHERE show_id = ?
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-check"></i> Save Changes
                         </button>
-                        <a href="shows.php" class="btn btn-secondary">Back to Shows</a>
+                        <a href="shows" class="btn btn-secondary">Back to Shows</a>
                     </div>
                 </form>
                 
@@ -145,7 +145,7 @@ $changeOrders = getDB()->fetchAll("SELECT * FROM change_orders WHERE show_id = ?
                 <?php else: ?>
                     <div class="list-group list-group-flush">
                         <?php foreach ($pullsheets as $pullsheet): ?>
-                            <a href="pullsheet_view.php?id=<?php echo $pullsheet['id']; ?>" class="list-group-item list-group-item-action">
+                            <a href="pullsheet_view?id=<?php echo $pullsheet['id']; ?>" class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>Pullsheet #<?php echo $pullsheet['id']; ?></span>
                                     <span class="badge bg-<?php echo $pullsheet['status'] === 'draft' ? 'secondary' : ($pullsheet['status'] === 'finalized' ? 'warning' : 'success'); ?>">
@@ -169,7 +169,7 @@ $changeOrders = getDB()->fetchAll("SELECT * FROM change_orders WHERE show_id = ?
                 <?php else: ?>
                     <div class="list-group list-group-flush">
                         <?php foreach ($changeOrders as $changeOrder): ?>
-                            <a href="change_order_edit.php?id=<?php echo $changeOrder['id']; ?>" class="list-group-item list-group-item-action">
+                            <a href="change_order_edit?id=<?php echo $changeOrder['id']; ?>" class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>Change Order #<?php echo $changeOrder['id']; ?></span>
                                     <span class="badge bg-<?php echo $changeOrder['status'] === 'draft' ? 'secondary' : 'success'; ?>">
