@@ -93,8 +93,9 @@ if ($isStudent) {
 } else {
     // Admins see pending requests (existing behavior)
     $pendingStudentRequests = getDB()->fetchAll(
-        "SELECT sr.*, u.full_name as student_name
+        "SELECT sr.*, i.name as item_name, u.full_name as student_name
          FROM student_requests sr
+         LEFT JOIN items i ON sr.item_id = i.id
          LEFT JOIN users u ON sr.student_id = u.id
          WHERE sr.status = 'pending'
          ORDER BY sr.created_at DESC
@@ -504,7 +505,7 @@ if ($isDesigner || $isProductionAudio) {
                         <div class="list-group-item">
                             <div class="row align-items-center">
                                 <div class="col">
-                                    <strong><?php echo htmlspecialchars($request['item_name']); ?></strong>
+                                    <strong><?php echo htmlspecialchars($request['item_name'] ?? 'Unknown Item'); ?></strong>
                                     <div class="text-muted small">By: <?php echo htmlspecialchars($request['student_name'] ?? 'Unknown'); ?> - <?php echo date('m/d/Y', strtotime($request['created_at'])); ?></div>
                                 </div>
                                 <div class="col-auto">

@@ -316,7 +316,7 @@ foreach ($requests as $request) {
                     <?php if (!$isStudent): ?>
                     <td><?php echo htmlspecialchars($request['student_name']); ?></td>
                     <?php endif; ?>
-                    <td><?php echo htmlspecialchars($request['item_name']); ?></td>
+                    <td><?php echo htmlspecialchars($request['item_name'] ?? 'Unknown Item'); ?></td>
                     <td><?php echo htmlspecialchars($request['category_name'] ?? 'N/A'); ?></td>
                     <td><?php echo $request['quantity']; ?></td>
                     <td>
@@ -574,10 +574,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <?php endif; ?>
                     
                     <dt class="col-sm-4">Item:</dt>
-                    <dd class="col-sm-8"><?php echo htmlspecialchars($request['item_name']); ?></dd>
+                    <dd class="col-sm-8"><?php echo htmlspecialchars($request['item_name'] ?? 'Unknown Item'); ?></dd>
                     
                     <dt class="col-sm-4">Barcode:</dt>
-                    <dd class="col-sm-8"><?php echo htmlspecialchars($request['barcode']); ?></dd>
+                    <dd class="col-sm-8"><?php echo htmlspecialchars($request['barcode'] ?? 'N/A'); ?></dd>
                     
                     <dt class="col-sm-4">Category:</dt>
                     <dd class="col-sm-8"><?php echo htmlspecialchars($request['category_name'] ?? 'N/A'); ?></dd>
