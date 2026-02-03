@@ -13,22 +13,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     // Suppress error display for AJAX (errors still logged)
     ini_set('display_errors', '0');
     
-    // Check authentication for AJAX requests
-    $user = getCurrentUser();
-    if (!$user || !isset($user['id'])) {
-        ob_end_clean();
-        echo json_encode(['success' => false, 'message' => 'Session expired. Please log in again.', 'redirect' => 'login']);
-        exit;
-    }
-    
-    // Check permission for AJAX requests (return JSON instead of redirecting)
-    if (!hasPermission('operations')) {
-        ob_end_clean();
-        echo json_encode(['success' => false, 'message' => 'You do not have permission to access this feature.', 'redirect' => 'index']);
-        exit;
-    }
-    
     try {
+        // Check authentication for AJAX requests
+        $user = getCurrentUser();
+        if (!$user || !isset($user['id'])) {
+            ob_end_clean();
+            echo json_encode(['success' => false, 'message' => 'Session expired. Please log in again.', 'redirect' => 'login']);
+            exit;
+        }
+        
+        // Check permission for AJAX requests (return JSON instead of redirecting)
+        if (!hasPermission('operations')) {
+            ob_end_clean();
+            echo json_encode(['success' => false, 'message' => 'You do not have permission to access this feature.', 'redirect' => 'index']);
+            exit;
+        }
+        
         if ($_POST['action'] === 'start_pick') {
             $barcode = trim($_POST['barcode']);
             $pickerName = trim($_POST['picker_name']);
@@ -274,8 +274,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             exit;
         }
     } catch (Exception $e) {
+        // Log the error for debugging
+        error_log("Pick mode error in action handler: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
         ob_end_clean(); // Clear any buffered output
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+        exit;
+    } catch (Throwable $t) {
+        // Catch any other errors (PHP 7+)
+        error_log("Pick mode fatal error: " . $t->getMessage() . " in " . $t->getFile() . " on line " . $t->getLine());
+        ob_end_clean();
+        echo json_encode(['success' => false, 'message' => 'A system error occurred. Please contact support.']);
         exit;
     }
 }
