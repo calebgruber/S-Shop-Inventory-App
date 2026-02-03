@@ -511,11 +511,25 @@ if (ob_get_level()) {
             })
             .then(r => {
                 if (!r.ok) {
-                    throw new Error('Network response was not ok');
+                    throw new Error('Network response was not ok: ' + r.status);
                 }
-                return r.json();
+                // Get response as text first for debugging
+                return r.text();
             })
-            .then(data => {
+            .then(text => {
+                // Log raw response for debugging
+                console.log('Raw response:', text.substring(0, 200));
+                
+                // Try to parse as JSON
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    console.error('Response was:', text);
+                    throw new Error('Server returned invalid JSON. Response: ' + text.substring(0, 100));
+                }
+                
                 // Check for session expiration redirect
                 if (data.redirect) {
                     alert(data.message || 'Session expired. Please log in again.');
@@ -527,7 +541,7 @@ if (ob_get_level()) {
             .catch(err => {
                 console.error('Request failed:', err);
                 playError();
-                alert('Request failed. Please check your connection and try again.');
+                alert('Request failed: ' + err.message);
             });
         };
         
