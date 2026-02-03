@@ -239,29 +239,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 // Map headers to column indices
                                 $headerMap = array_flip(array_map('strtolower', $headers));
                                 
+                                // Detect if we have category_id or category_name
+                                $hasCategoryId = isset($headerMap['category_id']);
+                                $hasCategoryName = isset($headerMap['category_name']);
+                                
                                 while (($row = fgetcsv($handle)) !== false) {
                                     // Skip empty rows
                                     if (empty(array_filter($row))) continue;
                                     
                                     // Get values from the correct columns
-                                    $categoryNameIdx = $headerMap['category_name'] ?? 0;
                                     $nameIdx = $headerMap['name'] ?? 1;
                                     $descIdx = $headerMap['description'] ?? 2;
                                     
-                                    if (empty($row[$categoryNameIdx]) || empty($row[$nameIdx])) continue;
+                                    if (empty($row[$nameIdx])) continue;
                                     
-                                    $categoryName = trim($row[$categoryNameIdx]);
                                     $name = trim($row[$nameIdx]);
                                     $description = isset($row[$descIdx]) ? trim($row[$descIdx]) : '';
                                     
-                                    try {
-                                        // Find category by name
-                                        $category = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$categoryName]);
-                                        if (!$category) {
-                                            $errors[] = "Category '$categoryName' not found for subcategory '$name'";
+                                    // Determine category lookup method
+                                    $category = null;
+                                    $categoryIdentifier = null;
+                                    
+                                    if ($hasCategoryId) {
+                                        // Use category_id column
+                                        $categoryIdIdx = $headerMap['category_id'];
+                                        if (empty($row[$categoryIdIdx])) continue;
+                                        
+                                        $categoryId = trim($row[$categoryIdIdx]);
+                                        $categoryIdentifier = "ID '$categoryId'";
+                                        
+                                        try {
+                                            // Look up by ID
+                                            if (is_numeric($categoryId)) {
+                                                $category = $db->fetchOne("SELECT id FROM categories WHERE id = ?", [(int)$categoryId]);
+                                            }
+                                        } catch (Exception $e) {
+                                            $errors[] = "Subcategory '$name': Error looking up category by ID: " . $e->getMessage();
                                             continue;
                                         }
+                                    } elseif ($hasCategoryName) {
+                                        // Use category_name column
+                                        $categoryNameIdx = $headerMap['category_name'];
+                                        if (empty($row[$categoryNameIdx])) continue;
                                         
+                                        $categoryName = trim($row[$categoryNameIdx]);
+                                        $categoryIdentifier = "name '$categoryName'";
+                                        
+                                        try {
+                                            // Look up by name
+                                            $category = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$categoryName]);
+                                        } catch (Exception $e) {
+                                            $errors[] = "Subcategory '$name': Error looking up category by name: " . $e->getMessage();
+                                            continue;
+                                        }
+                                    } else {
+                                        // Fallback: try first column, detect if numeric (ID) or string (name)
+                                        $firstColIdx = 0;
+                                        if (empty($row[$firstColIdx])) continue;
+                                        
+                                        $firstColValue = trim($row[$firstColIdx]);
+                                        
+                                        try {
+                                            if (is_numeric($firstColValue)) {
+                                                // Treat as category ID
+                                                $categoryIdentifier = "ID '$firstColValue'";
+                                                $category = $db->fetchOne("SELECT id FROM categories WHERE id = ?", [(int)$firstColValue]);
+                                            } else {
+                                                // Treat as category name
+                                                $categoryIdentifier = "name '$firstColValue'";
+                                                $category = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$firstColValue]);
+                                            }
+                                        } catch (Exception $e) {
+                                            $errors[] = "Subcategory '$name': Error looking up category: " . $e->getMessage();
+                                            continue;
+                                        }
+                                    }
+                                    
+                                    if (!$category) {
+                                        $errors[] = "Category with $categoryIdentifier not found for subcategory '$name'";
+                                        continue;
+                                    }
+                                    
+                                    try {
                                         // Check if subcategory exists
                                         $existing = $db->fetchOne(
                                             "SELECT id FROM subcategories WHERE name = ? AND category_id = ?",
@@ -612,7 +671,7 @@ $loginIllustrationPath = getSetting('login_illustration_path');
                         <p><strong>CSV Format Requirements:</strong></p>
                         <ul class="mb-0">
                             <li><strong>Categories:</strong> name, description (optional)</li>
-                            <li><strong>Subcategories:</strong> category_name, name, description (optional)</li>
+                            <li><strong>Subcategories:</strong> category_id OR category_name, name, description (optional)</li>
                             <li><strong>Theatre Spaces:</strong> name, description (optional)</li>
                             <li><strong>Items:</strong> name, description, barcode, category_name, subcategory_name, tracking_type, total_quantity, in_stock_quantity, location</li>
                         </ul>
@@ -668,10 +727,16 @@ Cables,Audio cables and adapters
 Speakers,PA speakers and monitors</pre>
                                 
                                 <h5 class="mt-3">Subcategories CSV Example:</h5>
+                                <p class="small text-muted">Option 1: Using category names</p>
                                 <pre class="bg-light p-2 rounded">category_name,name,description
 Microphones,Wired Microphones,Standard wired microphones
 Microphones,Wireless Microphones,Wireless microphone systems
 Cables,XLR Cables,3-pin XLR cables</pre>
+                                <p class="small text-muted">Option 2: Using category IDs (for database exports)</p>
+                                <pre class="bg-light p-2 rounded">category_id,name,description
+1,Wired Microphones,Standard wired microphones
+1,Wireless Microphones,Wireless microphone systems
+2,XLR Cables,3-pin XLR cables</pre>
                                 
                                 <h5 class="mt-3">Theatre Spaces CSV Example:</h5>
                                 <pre class="bg-light p-2 rounded">name,description

@@ -34,12 +34,27 @@ Speakers,PA speakers and monitors
 ```
 
 ### Subcategories CSV
-**Required Columns:**
+**Supported Column Headers:**
+
+**Option 1 - Using category_id (recommended for database exports):**
+- `category_id` - Parent category ID (required, must exist in categories table)
+- `name` - Subcategory name (required)
+- `description` - Subcategory description (optional)
+
+**Option 2 - Using category_name:**
 - `category_name` - Parent category name (required, must exist in categories table)
 - `name` - Subcategory name (required)
 - `description` - Subcategory description (optional)
 
-**Example:**
+**Example with category_id:**
+```csv
+category_id,name,description
+1,Wired Microphones,Standard wired microphones
+1,Wireless Microphones,Wireless microphone systems
+2,XLR Cables,3-pin XLR cables
+```
+
+**Example with category_name:**
 ```csv
 category_name,name,description
 Microphones,Wired Microphones,Standard wired microphones
@@ -47,7 +62,7 @@ Microphones,Wireless Microphones,Wireless microphone systems
 Cables,XLR Cables,3-pin XLR cables
 ```
 
-**Note:** Categories must be imported before subcategories.
+**Note:** The import will automatically detect whether you're using category_id or category_name. If neither header is present, it will check if the first column values are numeric (treated as IDs) or text (treated as names). Categories must be imported before subcategories.
 
 ### Theatre Spaces CSV
 **Required Columns:**
