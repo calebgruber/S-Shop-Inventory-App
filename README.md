@@ -2,9 +2,20 @@
 
 A complete inventory management application for theatre sound shops built with pure PHP, MySQL, and Tabler UI.
 
-## Latest Feature: LightWright-Style Paperwork ✨
+## Latest Features
 
-**NEW!** Pullsheets and change orders now use professional LightWright 6/7-inspired formatting:
+### 🆕 CSV Import for Database Migration ✨
+**NEW!** Bulk import your inventory data from CSV files:
+- Import categories, subcategories, theatre spaces, and items
+- Perfect for migrating data from production to development
+- Auto-detect data types or manual selection
+- Duplicate detection and error reporting
+- Sample CSV templates included
+
+See [CSV_IMPORT_QUICKSTART.md](CSV_IMPORT_QUICKSTART.md) for quick start guide and [CSV_IMPORT_GUIDE.md](CSV_IMPORT_GUIDE.md) for complete documentation.
+
+### LightWright-Style Paperwork
+Pullsheets and change orders now use professional LightWright 6/7-inspired formatting:
 - Professional bordered tables with gray headers
 - Category-based organization
 - Information boxes with show details
@@ -56,6 +67,15 @@ See [PRODUCTION_AUDIO_GUIDE.md](PRODUCTION_AUDIO_GUIDE.md) for complete role det
   - Dropdown with recent notifications
   - Auto-generated for: pullsheet finalization, student requests, repairs needed, approvals
   - Mark as read/mark all read functionality
+
+- **CSV Import**: Bulk import data from CSV files
+  - Import categories, subcategories, theatre spaces, and items
+  - Auto-detect data types from CSV headers
+  - Duplicate detection and skip existing entries
+  - Detailed import results with error reporting
+  - Perfect for database migrations and backups
+  - Sample CSV templates included
+  - See [CSV_IMPORT_QUICKSTART.md](CSV_IMPORT_QUICKSTART.md) for guide
 
 - **Easter Eggs**: Fun hidden features for entertainment
   - Pink Mode with floating cats and hearts
