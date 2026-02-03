@@ -175,6 +175,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             $sessionType = $_SESSION['return_session']['type'];
             $sessionId = $_SESSION['return_session']['id'];
             
+            // Get signature data if production audio is completing
+            $signatureData = $_POST['signature_data'] ?? null;
+            $adminFirstName = $_POST['admin_first_name'] ?? null;
+            $adminLastName = $_POST['admin_last_name'] ?? null;
+            
+            // Check if signature is required
+            $currentUser = getCurrentUser();
+            $requiresSignature = requiresSignature($currentUser['id']);
+            
+            if ($requiresSignature && (!$signatureData || !$adminFirstName || !$adminLastName)) {
+                ob_end_clean();
+                echo json_encode(['success' => false, 'message' => 'Admin signature is required to complete this operation']);
+                exit;
+            }
+            
             if ($sessionType === 'pullsheet') {
                 foreach ($_SESSION['return_session']['items'] as $itemId => $data) {
                     // Return items to stock
@@ -191,6 +206,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     "UPDATE pullsheets SET status = 'completed', is_partial = 0, partial_saved_at = NULL WHERE id = ?",
                     [$sessionId]
                 );
+                
+                // Store signature if provided
+                if ($signatureData && $adminFirstName && $adminLastName) {
+                    getDB()->query(
+                        "INSERT INTO signatures (user_id, pullsheet_id, signature_data, first_name, last_name) VALUES (?, ?, ?, ?, ?)",
+                        [$currentUser['id'], $sessionId, $signatureData, $adminFirstName, $adminLastName]
+                    );
+                }
             } elseif ($sessionType === 'change_order') {
                 foreach ($_SESSION['return_session']['items'] as $itemId => $data) {
                     // Return items to stock
@@ -201,6 +224,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     "UPDATE change_orders SET status = 'completed', is_partial = 0, partial_saved_at = NULL WHERE id = ?",
                     [$sessionId]
                 );
+                
+                // Store signature if provided
+                if ($signatureData && $adminFirstName && $adminLastName) {
+                    getDB()->query(
+                        "INSERT INTO signatures (user_id, change_order_id, signature_data, first_name, last_name) VALUES (?, ?, ?, ?, ?)",
+                        [$currentUser['id'], $sessionId, $signatureData, $adminFirstName, $adminLastName]
+                    );
+                }
             }
             
             unset($_SESSION['return_session']);
@@ -223,6 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     <title>Return Mode - Sound Shop Inventory</title>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
+<?php $currentUser = getCurrentUser(); ?>
     <script>
         // Apply saved theme immediately to prevent flash
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -389,6 +421,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" id="confirmRemovalBtn">
                         <i class="ti ti-check"></i> I've Removed the Extras
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Signature Modal -->
+    <div class="modal fade" id="signatureModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Admin Signature Required</h5>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">An administrator must sign to authorize this return operation.</p>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Admin First Name</label>
+                            <input type="text" class="form-control" id="adminFirstName" placeholder="First Name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Admin Last Name</label>
+                            <input type="text" class="form-control" id="adminLastName" placeholder="Last Name" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Signature</label>
+                        <div class="signature-pad-container">
+                            <canvas id="signatureCanvas" width="400" height="150" style="border: 1px solid #ccc; background: white; width: 100%; cursor: crosshair;"></canvas>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-secondary" id="clearSignature">
+                                <i class="ti ti-eraser"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="location.reload()">Cancel</button>
+                    <button type="button" class="btn btn-success" id="completeWithSignature">
+                        <i class="ti ti-check"></i> Complete with Signature
                     </button>
                 </div>
             </div>
@@ -574,18 +649,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             }
             
             document.getElementById('completeBtn').addEventListener('click', () => {
-                if (!confirm('Complete this return? All items will be returned to shop stock.')) return;
+                // Check if signature is required for this user
+                const requiresSignature = <?php echo requiresSignature($currentUser['id']) ? 'true' : 'false'; ?>;
                 
-                post('ajax=1&action=complete_return', data => {
-                    if (data.success) {
-                        playSuccess();
-                        alert('Return completed successfully!');
-                        location.href = 'index.php';
-                    } else {
-                        playError();
-                        alert(data.message || 'Failed to complete');
-                    }
-                });
+                if (requiresSignature) {
+                    // Show signature modal
+                    const signatureModal = new bootstrap.Modal(document.getElementById('signatureModal'));
+                    signatureModal.show();
+                } else {
+                    // Complete without signature
+                    if (!confirm('Complete this return? All items will be returned to shop stock.')) return;
+                    
+                    post('ajax=1&action=complete_return', data => {
+                        if (data.success) {
+                            playSuccess();
+                            alert('Return completed successfully!');
+                            location.href = 'index.php';
+                        } else {
+                            playError();
+                            alert(data.message || 'Failed to complete');
+                        }
+                    });
+                }
             });
             
             document.getElementById('saveDraftBtn').addEventListener('click', () => {
@@ -605,6 +690,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             
             checkAllComplete();
         <?php endif; ?>
+        
+        // Signature Pad Implementation
+        const canvas = document.getElementById('signatureCanvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+            
+            // Get canvas position for accurate drawing
+            function getCanvasPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            }
+            
+            function startDrawing(e) {
+                e.preventDefault();
+                isDrawing = true;
+                const pos = getCanvasPos(e);
+                lastX = pos.x;
+                lastY = pos.y;
+            }
+            
+            function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                
+                const pos = getCanvasPos(e);
+                
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+                
+                lastX = pos.x;
+                lastY = pos.y;
+            }
+            
+            function stopDrawing() {
+                isDrawing = false;
+            }
+            
+            // Mouse events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', startDrawing);
+            canvas.addEventListener('touchmove', draw);
+            canvas.addEventListener('touchend', stopDrawing);
+            
+            // Clear button
+            document.getElementById('clearSignature')?.addEventListener('click', () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Fill with white background
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            });
+            
+            // Initialize with white background
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Complete with signature button
+            document.getElementById('completeWithSignature')?.addEventListener('click', () => {
+                const firstName = document.getElementById('adminFirstName').value.trim();
+                const lastName = document.getElementById('adminLastName').value.trim();
+                
+                if (!firstName || !lastName) {
+                    alert('Please enter admin first and last name');
+                    return;
+                }
+                
+                // Check if signature is drawn (canvas is not blank)
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                let isBlank = true;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    // Check if pixel is not white
+                    if (data[i] !== 255 || data[i+1] !== 255 || data[i+2] !== 255) {
+                        isBlank = false;
+                        break;
+                    }
+                }
+                
+                if (isBlank) {
+                    alert('Please draw your signature');
+                    return;
+                }
+                
+                // Get signature as base64 PNG
+                const signatureData = canvas.toDataURL('image/png');
+                
+                // Send completion with signature
+                post('ajax=1&action=complete_return&signature_data=' + encodeURIComponent(signatureData) + 
+                     '&admin_first_name=' + encodeURIComponent(firstName) +
+                     '&admin_last_name=' + encodeURIComponent(lastName), data => {
+                    if (data.success) {
+                        playSuccess();
+                        alert('Return completed successfully with signature!');
+                        location.href = 'index.php';
+                    } else {
+                        playError();
+                        alert(data.message || 'Failed to complete');
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>

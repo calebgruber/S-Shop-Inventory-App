@@ -586,8 +586,39 @@ function generatePullsheetPDF($pullsheetId) {
     $y -= 30;
     $pdf->addText($page, 40, $y, 'CHECKOUT AUTHORIZATION', 10);
     $y -= 25;
+    
+    // Check if there's a signature in database
+    $signature = getDB()->fetchOne(
+        "SELECT signature_data, first_name, last_name, created_at FROM signatures WHERE pullsheet_id = ? ORDER BY created_at DESC LIMIT 1",
+        [$pullsheetId]
+    );
+    
+    if ($signature && $signature['signature_data']) {
+        // Display the actual signature
+        $signatureImage = $signature['signature_data'];
+        
+        // Decode base64 if it contains the data URI prefix
+        if (strpos($signatureImage, 'data:image/png;base64,') === 0) {
+            $signatureImage = substr($signatureImage, strlen('data:image/png;base64,'));
+        }
+        $signatureImage = base64_decode($signatureImage);
+        
+        // Save temporarily and add to PDF
+        $sigFile = sys_get_temp_dir() . '/sig_' . bin2hex(random_bytes(16)) . '.png';
+        file_put_contents($sigFile, $signatureImage);
+        if (file_exists($sigFile)) {
+            $pdf->addImage($page, file_get_contents($sigFile), 320, $y - 30, 150, 50);
+            unlink($sigFile);
+        }
+        
+        $pdf->addLine($page, 320, $y, 570, $y);
+        $pdf->addText($page, 320, $y - 15, 'Signed by: ' . $signature['first_name'] . ' ' . $signature['last_name'], 8);
+        $pdf->addText($page, 320, $y - 25, 'Date: ' . date('m/d/Y H:i', strtotime($signature['created_at'])), 8);
+    } else {
+        $pdf->addSignatureLine($page, 320, $y, 250, 'Authorized By / Date');
+    }
+    
     $pdf->addSignatureLine($page, 40, $y, 250, 'Pulled By / Date');
-    $pdf->addSignatureLine($page, 320, $y, 250, 'Authorized By / Date');
     
     // Page number
     $pdf->addPageNumber($page, 1, $pdf->getPageCount());
@@ -742,8 +773,39 @@ function generateChangeOrderPDF($changeOrderId) {
     $y -= 30;
     $pdf->addText($page, 40, $y, 'CHANGE AUTHORIZATION', 10);
     $y -= 25;
+    
+    // Check if there's a signature in database
+    $signature = getDB()->fetchOne(
+        "SELECT signature_data, first_name, last_name, created_at FROM signatures WHERE change_order_id = ? ORDER BY created_at DESC LIMIT 1",
+        [$changeOrderId]
+    );
+    
+    if ($signature && $signature['signature_data']) {
+        // Display the actual signature
+        $signatureImage = $signature['signature_data'];
+        
+        // Decode base64 if it contains the data URI prefix
+        if (strpos($signatureImage, 'data:image/png;base64,') === 0) {
+            $signatureImage = substr($signatureImage, strlen('data:image/png;base64,'));
+        }
+        $signatureImage = base64_decode($signatureImage);
+        
+        // Save temporarily and add to PDF
+        $sigFile = sys_get_temp_dir() . '/sig_' . bin2hex(random_bytes(16)) . '.png';
+        file_put_contents($sigFile, $signatureImage);
+        if (file_exists($sigFile)) {
+            $pdf->addImage($page, file_get_contents($sigFile), 320, $y - 30, 150, 50);
+            unlink($sigFile);
+        }
+        
+        $pdf->addLine($page, 320, $y, 570, $y);
+        $pdf->addText($page, 320, $y - 15, 'Signed by: ' . $signature['first_name'] . ' ' . $signature['last_name'], 8);
+        $pdf->addText($page, 320, $y - 25, 'Date: ' . date('m/d/Y H:i', strtotime($signature['created_at'])), 8);
+    } else {
+        $pdf->addSignatureLine($page, 320, $y, 250, 'Authorized By / Date');
+    }
+    
     $pdf->addSignatureLine($page, 40, $y, 250, 'Processed By / Date');
-    $pdf->addSignatureLine($page, 320, $y, 250, 'Authorized By / Date');
     
     // Page number
     $pdf->addPageNumber($page, 1, $pdf->getPageCount());
