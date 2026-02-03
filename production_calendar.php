@@ -1,7 +1,8 @@
 <?php
 require_once 'includes/functions.php';
 
-requireRole(['admin', 'designer']);
+// Only admins can view production calendar
+requireRole('admin');
 
 $db = getDB();
 $currentUser = getCurrentUser();
