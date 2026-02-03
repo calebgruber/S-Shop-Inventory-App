@@ -6,6 +6,13 @@ $pickSession = $_SESSION['pick_session'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
+    
+    // Check authentication for AJAX requests
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Session expired. Please log in again.', 'redirect' => 'login']);
+        exit;
+    }
+    
     try {
         if ($_POST['action'] === 'start_pick') {
             $barcode = trim($_POST['barcode']);
@@ -405,12 +412,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: data
             })
-            .then(r => r.json())
-            .then(callback)
+            .then(r => {
+                if (!r.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return r.json();
+            })
+            .then(data => {
+                // Check for session expiration redirect
+                if (data.redirect) {
+                    alert(data.message || 'Session expired. Please log in again.');
+                    window.location.href = data.redirect;
+                    return;
+                }
+                callback(data);
+            })
             .catch(err => {
                 console.error('Request failed:', err);
                 playError();
-                alert('Request failed');
+                alert('Request failed. Please check your connection and try again.');
             });
         };
         
