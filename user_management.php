@@ -156,7 +156,13 @@ $allPermissions = [
                         </div>
                     </td>
                     <td><?php echo htmlspecialchars($user['email']); ?></td>
-                    <td><span class="badge bg-<?php echo $user['role'] === 'admin' ? 'red' : ($user['role'] === 'designer' ? 'blue' : 'green'); ?>"><?php echo ucfirst($user['role']); ?></span></td>
+                    <td><span class="badge bg-<?php 
+                        echo $user['role'] === 'admin' ? 'red' : 
+                            ($user['role'] === 'designer' ? 'blue' : 
+                            ($user['role'] === 'production_audio' ? 'purple' : 'green')); 
+                    ?>"><?php 
+                        echo $user['role'] === 'production_audio' ? 'Production Audio' : ucfirst($user['role']); 
+                    ?></span></td>
                     <td>
                         <?php if ($user['is_active']): ?>
                             <span class="badge bg-success">Active</span>
@@ -173,7 +179,7 @@ $allPermissions = [
                             <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#permissionsModal<?php echo $user['id']; ?>">
                                 <i class="ti ti-lock icon"></i>
                             </button>
-                            <?php if ($user['role'] === 'designer'): ?>
+                            <?php if ($user['role'] === 'designer' || $user['role'] === 'production_audio'): ?>
                             <button class="btn btn-sm btn-cyan" data-bs-toggle="modal" data-bs-target="#showAssignmentsModal<?php echo $user['id']; ?>" title="Show Assignments">
                                 <i class="ti ti-calendar icon"></i>
                             </button>
@@ -221,6 +227,7 @@ $allPermissions = [
                         <select class="form-select" name="role" required>
                             <option value="student">Student</option>
                             <option value="designer">Designer</option>
+                            <option value="production_audio">Production Audio</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
@@ -262,6 +269,7 @@ $allPermissions = [
                         <select class="form-select" name="role" required>
                             <option value="student" <?php echo $user['role'] === 'student' ? 'selected' : ''; ?>>Student</option>
                             <option value="designer" <?php echo $user['role'] === 'designer' ? 'selected' : ''; ?>>Designer</option>
+                            <option value="production_audio" <?php echo $user['role'] === 'production_audio' ? 'selected' : ''; ?>>Production Audio</option>
                             <option value="admin" <?php echo $user['role'] === 'admin' ? 'selected' : ''; ?>>Admin</option>
                         </select>
                     </div>
@@ -387,7 +395,7 @@ $allPermissions = [
                 <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                 <div class="modal-body">
                     <p>Show assignments for <strong><?php echo htmlspecialchars($user['full_name']); ?></strong></p>
-                    <?php if ($user['role'] === 'designer' || $user['role'] === 'student'): ?>
+                    <?php if ($user['role'] === 'designer' || $user['role'] === 'production_audio' || $user['role'] === 'student'): ?>
                     <?php 
                     $allShows = getAllShows();
                     $assignedShows = $db->fetchAll("SELECT show_id FROM user_show_assignments WHERE user_id = ?", [$user['id']]);
@@ -410,12 +418,12 @@ $allPermissions = [
                         <?php endif; ?>
                     </div>
                     <?php else: ?>
-                    <div class="alert alert-info">Show assignments are only available for designers and students</div>
+                    <div class="alert alert-info">Show assignments are only available for designers, production audio, and students</div>
                     <?php endif; ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <?php if ($user['role'] === 'designer' || $user['role'] === 'student'): ?>
+                    <?php if ($user['role'] === 'designer' || $user['role'] === 'production_audio' || $user['role'] === 'student'): ?>
                     <button type="submit" class="btn btn-primary">Update Assignments</button>
                     <?php endif; ?>
                 </div>
