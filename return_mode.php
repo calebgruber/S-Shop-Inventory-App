@@ -7,7 +7,11 @@ require_once __DIR__ . '/includes/functions.php';
 
 $returnSession = $_SESSION['return_session'] ?? null;
 
+// Log for debugging
+error_log("Return mode: REQUEST_METHOD=" . $_SERVER['REQUEST_METHOD'] . ", POST keys=" . implode(',', array_keys($_POST ?? [])));
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
+    error_log("Return mode: AJAX request detected, action=" . ($_POST['action'] ?? 'none'));
     header('Content-Type: application/json');
     
     // Suppress error display for AJAX (errors still logged)
