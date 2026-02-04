@@ -293,7 +293,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 }
 
 // For non-AJAX requests, check permission normally
-requirePermission('operations');
+// Only check permission for non-AJAX page loads (AJAX has its own check inside)
+if (!($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax']))) {
+    requirePermission('operations');
+}
 
 // Flush output buffer for HTML pages
 if (ob_get_level()) {
