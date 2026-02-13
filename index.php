@@ -206,7 +206,8 @@ if ($isDesigner || $isProductionAudio) {
                         </div>
                     </div>
                     <?php else: ?>
-                    <a href="item_edit?id=<?php echo $item['id']; ?>" class="list-group-item list-group-item-action quick-lookup-item">
+                    <div class="list-group-item list-group-item-action quick-lookup-item" style="cursor: pointer;" 
+                         onclick="showItemDetailsFromQuickLookup(<?php echo $item['id']; ?>, '<?php echo addslashes($item['name']); ?>', '<?php echo addslashes($item['barcode']); ?>', '<?php echo addslashes($item['description'] ?? ''); ?>', '<?php echo addslashes($item['category_name'] ?? 'Uncategorized'); ?>', '<?php echo addslashes($item['subcategory_name'] ?? ''); ?>', '<?php echo addslashes($item['tracking_type']); ?>', '<?php echo $item['total_quantity']; ?>', '<?php echo $item['in_stock_quantity']; ?>', '<?php echo addslashes($item['location'] ?? ''); ?>', '<?php echo addslashes($item['photo_path'] ?? ''); ?>')">
                         <div class="d-flex w-100 align-items-center gap-2">
                             <div class="flex-grow-1">
                                 <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
@@ -221,10 +222,64 @@ if ($isDesigner || $isProductionAudio) {
                             <img src="uploads/items/<?php echo htmlspecialchars($item['photo_path']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
                             <?php endif; ?>
                         </div>
-                    </a>
+                    </div>
                     <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Item Details Modal -->
+<div class="modal fade" id="itemDetailsModal" tabindex="-1" aria-labelledby="itemDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="itemDetailsModalLabel">Item Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="text-center mb-3" id="itemPhotoContainer">
+                            <!-- Photo will be inserted here -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Name:</dt>
+                            <dd class="col-sm-8" id="detailName"></dd>
+                            
+                            <dt class="col-sm-4">Barcode:</dt>
+                            <dd class="col-sm-8" id="detailBarcode"></dd>
+                            
+                            <dt class="col-sm-4">Description:</dt>
+                            <dd class="col-sm-8" id="detailDescription"></dd>
+                            
+                            <dt class="col-sm-4">Category:</dt>
+                            <dd class="col-sm-8" id="detailCategory"></dd>
+                            
+                            <dt class="col-sm-4">Subcategory:</dt>
+                            <dd class="col-sm-8" id="detailSubcategory"></dd>
+                            
+                            <dt class="col-sm-4">Tracking Type:</dt>
+                            <dd class="col-sm-8" id="detailTrackingType"></dd>
+                            
+                            <dt class="col-sm-4">Total Quantity:</dt>
+                            <dd class="col-sm-8" id="detailTotalQty"></dd>
+                            
+                            <dt class="col-sm-4">In Stock:</dt>
+                            <dd class="col-sm-8" id="detailInStockQty"></dd>
+                            
+                            <dt class="col-sm-4">Location:</dt>
+                            <dd class="col-sm-8" id="detailLocation"></dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -452,6 +507,43 @@ if ($isDesigner || $isProductionAudio) {
 
 <div class="row">
 <script>
+// Function to show item details modal
+function showItemDetailsFromQuickLookup(id, name, barcode, description, category, subcategory, trackingType, totalQty, inStockQty, location, photoPath) {
+    // Close the quick lookup modal first
+    const quickLookupModal = bootstrap.Modal.getInstance(document.getElementById('quickLookupModal'));
+    if (quickLookupModal) {
+        quickLookupModal.hide();
+    }
+    
+    // Populate item details
+    document.getElementById('detailName').textContent = name;
+    document.getElementById('detailBarcode').textContent = barcode;
+    document.getElementById('detailDescription').textContent = description || 'N/A';
+    document.getElementById('detailCategory').textContent = category;
+    document.getElementById('detailSubcategory').textContent = subcategory || 'N/A';
+    document.getElementById('detailTrackingType').textContent = trackingType;
+    document.getElementById('detailTotalQty').textContent = totalQty;
+    document.getElementById('detailInStockQty').textContent = inStockQty;
+    document.getElementById('detailLocation').textContent = location || 'N/A';
+    
+    // Handle photo display
+    const photoContainer = document.getElementById('itemPhotoContainer');
+    if (photoPath) {
+        photoContainer.innerHTML = `<img src="uploads/items/${photoPath}" alt="${name}" class="img-fluid" style="max-width: 400px; max-height: 400px; object-fit: contain; border: 2px solid #dee2e6; border-radius: 8px; background: #f8f9fa;">`;
+    } else {
+        photoContainer.innerHTML = `
+            <div style="width: 300px; height: 300px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
+                <i class="ti ti-photo-off" style="font-size: 4rem; color: #adb5bd;"></i>
+                <p class="text-muted mt-2 mb-0">No Linked Photo</p>
+            </div>
+        `;
+    }
+    
+    // Show the item details modal
+    const itemDetailsModal = new bootstrap.Modal(document.getElementById('itemDetailsModal'));
+    itemDetailsModal.show();
+}
+
 // Quick Lookup functionality - filter list
 document.getElementById('quickLookupInput')?.addEventListener('input', function(e) {
     const searchTerm = e.target.value.toLowerCase();
