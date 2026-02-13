@@ -141,6 +141,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     setAlert('Theatre space deleted successfully');
                     break;
                     
+                case 'clear_all_data':
+                    // Confirm action
+                    $db = getDB();
+                    try {
+                        // Disable foreign key checks
+                        $db->query("SET FOREIGN_KEY_CHECKS = 0");
+                        
+                        // Delete in proper order (items first, then subcategories, then categories)
+                        $db->query("DELETE FROM items");
+                        $db->query("DELETE FROM subcategories");
+                        $db->query("DELETE FROM categories");
+                        
+                        // Reset auto increment
+                        $db->query("ALTER TABLE items AUTO_INCREMENT = 1");
+                        $db->query("ALTER TABLE subcategories AUTO_INCREMENT = 1");
+                        $db->query("ALTER TABLE categories AUTO_INCREMENT = 1");
+                        
+                        // Re-enable foreign key checks
+                        $db->query("SET FOREIGN_KEY_CHECKS = 1");
+                        
+                        setAlert('All categories, subcategories, and items have been cleared successfully', 'success');
+                    } catch (Exception $e) {
+                        setAlert('Error clearing data: ' . $e->getMessage(), 'danger');
+                    }
+                    redirect();
+                    break;
+                    
                 case 'import_json':
                     if (!isset($_FILES['json_file']) || $_FILES['json_file']['error'] !== UPLOAD_ERR_OK) {
                         setAlert('Please select a JSON file to upload', 'danger');
@@ -316,6 +343,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 continue;
                                             }
                                             
+                                            // Validate category_id exists if provided
+                                            if ($categoryId) {
+                                                $catExists = $db->fetchOne("SELECT id FROM categories WHERE id = ?", [$categoryId]);
+                                                if (!$catExists) {
+                                                    $errors[] = "Item '$name' ($barcode): category_id $categoryId does not exist. Setting to NULL.";
+                                                    $categoryId = null;
+                                                }
+                                            }
+                                            
+                                            // Validate subcategory_id exists if provided
+                                            if ($subcategoryId) {
+                                                $subExists = $db->fetchOne("SELECT id FROM subcategories WHERE id = ?", [$subcategoryId]);
+                                                if (!$subExists) {
+                                                    $errors[] = "Item '$name' ($barcode): subcategory_id $subcategoryId does not exist. Setting to NULL.";
+                                                    $subcategoryId = null;
+                                                }
+                                            }
+                                            
                                             // Try to insert with specified ID if available
                                             if ($id) {
                                                 $idExists = $db->fetchOne("SELECT id FROM items WHERE id = ?", [$id]);
@@ -434,140 +479,178 @@ $loginIllustrationPath = getSetting('login_illustration_path');
         </div>
     </div>
     
-    <div class="col-md-6 mb-4">
+    <!-- Collapsible Inventory Management Section -->
+    <div class="col-12 mb-4">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Categories</h3>
+                <h3 class="card-title">Inventory Management</h3>
             </div>
             <div class="card-body">
-                <form method="POST" class="mb-3">
-                    <input type="hidden" name="action" value="add_category">
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" name="name" placeholder="Category name" required>
-                        <button type="submit" class="btn btn-primary">Add</button>
-                    </div>
-                    <textarea class="form-control" name="description" placeholder="Description (optional)" rows="2"></textarea>
-                </form>
-                
-                <div class="list-group">
-                    <?php foreach ($categories as $category): ?>
-                        <div class="list-group-item">
-                            <div class="row align-items-center">
-                                <div class="col">
-                                    <strong><?php echo htmlspecialchars($category['name']); ?></strong>
-                                    <?php if ($category['description']): ?>
-                                        <div class="text-muted small"><?php echo htmlspecialchars($category['description']); ?></div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="col-auto">
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="action" value="delete_category">
-                                        <input type="hidden" name="id" value="<?php echo $category['id']; ?>">
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this category?')">
-                                            <i class="ti ti-trash"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Subcategories</h3>
-            </div>
-            <div class="card-body">
-                <form method="POST" class="mb-3">
-                    <input type="hidden" name="action" value="add_subcategory">
-                    <div class="mb-2">
-                        <select class="form-select" name="category_id" required>
-                            <option value="">-- Select Category --</option>
-                            <?php foreach ($categories as $category): ?>
-                                <option value="<?php echo $category['id']; ?>">
-                                    <?php echo htmlspecialchars($category['name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" name="name" placeholder="Subcategory name" required>
-                        <button type="submit" class="btn btn-primary">Add</button>
-                    </div>
-                    <textarea class="form-control" name="description" placeholder="Description (optional)" rows="2"></textarea>
-                </form>
-                
-                <div class="list-group">
-                    <?php foreach ($subcategories as $subcategory): ?>
-                        <div class="list-group-item">
-                            <div class="row align-items-center">
-                                <div class="col">
-                                    <strong><?php echo htmlspecialchars($subcategory['name']); ?></strong>
-                                    <div class="text-muted small">
-                                        Category: <?php echo htmlspecialchars($subcategory['category_name'] ?? 'N/A'); ?>
+                <div class="accordion" id="inventoryAccordion">
+                    <!-- Categories Accordion Item -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingCategories">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCategories">
+                                <i class="ti ti-category icon me-2"></i>
+                                Categories (<?php echo count($categories); ?>)
+                            </button>
+                        </h2>
+                        <div id="collapseCategories" class="accordion-collapse collapse" data-bs-parent="#inventoryAccordion">
+                            <div class="accordion-body">
+                                <form method="POST" class="mb-3">
+                                    <input type="hidden" name="action" value="add_category">
+                                    <div class="input-group mb-2">
+                                        <input type="text" class="form-control" name="name" placeholder="Category name" required>
+                                        <button type="submit" class="btn btn-primary">Add</button>
                                     </div>
-                                    <?php if ($subcategory['description']): ?>
-                                        <div class="text-muted small"><?php echo htmlspecialchars($subcategory['description']); ?></div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="col-auto">
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="action" value="delete_subcategory">
-                                        <input type="hidden" name="id" value="<?php echo $subcategory['id']; ?>">
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this subcategory?')">
-                                            <i class="ti ti-trash"></i>
-                                        </button>
-                                    </form>
+                                    <textarea class="form-control" name="description" placeholder="Description (optional)" rows="2"></textarea>
+                                </form>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-sm card-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Description</th>
+                                                <th width="80">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($categories as $category): ?>
+                                                <tr>
+                                                    <td><strong><?php echo htmlspecialchars($category['name']); ?></strong></td>
+                                                    <td class="text-muted"><?php echo htmlspecialchars($category['description'] ?? ''); ?></td>
+                                                    <td>
+                                                        <form method="POST" style="display: inline;">
+                                                            <input type="hidden" name="action" value="delete_category">
+                                                            <input type="hidden" name="id" value="<?php echo $category['id']; ?>">
+                                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this category?')">
+                                                                <i class="ti ti-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Theatre Spaces</h3>
-            </div>
-            <div class="card-body">
-                <form method="POST" class="mb-3">
-                    <input type="hidden" name="action" value="add_theatre_space">
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" name="name" placeholder="Space name" required>
-                        <button type="submit" class="btn btn-primary">Add</button>
                     </div>
-                    <textarea class="form-control" name="description" placeholder="Description (optional)" rows="2"></textarea>
-                </form>
-                
-                <div class="list-group">
-                    <?php foreach ($theatreSpaces as $space): ?>
-                        <div class="list-group-item">
-                            <div class="row align-items-center">
-                                <div class="col">
-                                    <strong><?php echo htmlspecialchars($space['name']); ?></strong>
-                                    <?php if ($space['description']): ?>
-                                        <div class="text-muted small"><?php echo htmlspecialchars($space['description']); ?></div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="col-auto">
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="action" value="delete_theatre_space">
-                                        <input type="hidden" name="id" value="<?php echo $space['id']; ?>">
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this theatre space?')">
-                                            <i class="ti ti-trash"></i>
-                                        </button>
-                                    </form>
+                    
+                    <!-- Subcategories Accordion Item -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingSubcategories">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSubcategories">
+                                <i class="ti ti-list icon me-2"></i>
+                                Subcategories (<?php echo count($subcategories); ?>)
+                            </button>
+                        </h2>
+                        <div id="collapseSubcategories" class="accordion-collapse collapse" data-bs-parent="#inventoryAccordion">
+                            <div class="accordion-body">
+                                <form method="POST" class="mb-3">
+                                    <input type="hidden" name="action" value="add_subcategory">
+                                    <div class="mb-2">
+                                        <select class="form-select" name="category_id" required>
+                                            <option value="">-- Select Category --</option>
+                                            <?php foreach ($categories as $category): ?>
+                                                <option value="<?php echo $category['id']; ?>">
+                                                    <?php echo htmlspecialchars($category['name']); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="input-group mb-2">
+                                        <input type="text" class="form-control" name="name" placeholder="Subcategory name" required>
+                                        <button type="submit" class="btn btn-primary">Add</button>
+                                    </div>
+                                    <textarea class="form-control" name="description" placeholder="Description (optional)" rows="2"></textarea>
+                                </form>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-sm card-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Category</th>
+                                                <th>Name</th>
+                                                <th>Description</th>
+                                                <th width="80">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($subcategories as $subcategory): ?>
+                                                <tr>
+                                                    <td><span class="badge bg-blue-lt"><?php echo htmlspecialchars($subcategory['category_name']); ?></span></td>
+                                                    <td><strong><?php echo htmlspecialchars($subcategory['name']); ?></strong></td>
+                                                    <td class="text-muted"><?php echo htmlspecialchars($subcategory['description'] ?? ''); ?></td>
+                                                    <td>
+                                                        <form method="POST" style="display: inline;">
+                                                            <input type="hidden" name="action" value="delete_subcategory">
+                                                            <input type="hidden" name="id" value="<?php echo $subcategory['id']; ?>">
+                                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this subcategory?')">
+                                                                <i class="ti ti-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
+                    </div>
+                    
+                    <!-- Theatre Spaces Accordion Item -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTheatreSpaces">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTheatreSpaces">
+                                <i class="ti ti-building-theater icon me-2"></i>
+                                Theatre Spaces (<?php echo count($theatreSpaces); ?>)
+                            </button>
+                        </h2>
+                        <div id="collapseTheatreSpaces" class="accordion-collapse collapse" data-bs-parent="#inventoryAccordion">
+                            <div class="accordion-body">
+                                <form method="POST" class="mb-3">
+                                    <input type="hidden" name="action" value="add_theatre_space">
+                                    <div class="input-group mb-2">
+                                        <input type="text" class="form-control" name="name" placeholder="Space name" required>
+                                        <button type="submit" class="btn btn-primary">Add</button>
+                                    </div>
+                                    <textarea class="form-control" name="description" placeholder="Description (optional)" rows="2"></textarea>
+                                </form>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-sm card-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Description</th>
+                                                <th width="80">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($theatreSpaces as $space): ?>
+                                                <tr>
+                                                    <td><strong><?php echo htmlspecialchars($space['name']); ?></strong></td>
+                                                    <td class="text-muted"><?php echo htmlspecialchars($space['description'] ?? ''); ?></td>
+                                                    <td>
+                                                        <form method="POST" style="display: inline;">
+                                                            <input type="hidden" name="action" value="delete_theatre_space">
+                                                            <input type="hidden" name="id" value="<?php echo $space['id']; ?>">
+                                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this theatre space?')">
+                                                                <i class="ti ti-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -608,6 +691,20 @@ $loginIllustrationPath = getSetting('login_illustration_path');
                         Import JSON
                     </button>
                 </form>
+                
+                <hr class="my-4">
+                
+                <div class="alert alert-warning">
+                    <h4 class="alert-title"><i class="ti ti-alert-triangle"></i> Clear All Data</h4>
+                    <p>This will permanently delete all categories, subcategories, and items from the database. This action cannot be undone!</p>
+                    <form method="POST" onsubmit="return confirm('Are you absolutely sure you want to delete ALL categories, subcategories, and items? This action CANNOT be undone!');">
+                        <input type="hidden" name="action" value="clear_all_data">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="ti ti-trash icon"></i>
+                            Clear All Categories, Subcategories & Items
+                        </button>
+                    </form>
+                </div>
                 
                 <hr class="my-4">
                 
