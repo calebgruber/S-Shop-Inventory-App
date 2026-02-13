@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         $barcode = generateUniqueBarcode('PS');
-        $createdBy = $_POST['created_by'] ?? 'Unknown';
+        $createdBy = $currentUser['name']; // Use logged-in user's name
         
         // Check if shop order already exists
         $existing = getDB()->fetchOne("SELECT id FROM pullsheets WHERE show_id = ?", [$postShowId]);
@@ -100,11 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php else: ?>
                     <input type="hidden" name="show_id" value="<?php echo $showId; ?>">
                     <?php endif; ?>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Your Name</label>
-                        <input type="text" class="form-control" name="created_by" placeholder="Enter your name" <?php echo $showId ? 'autofocus' : ''; ?>>
-                    </div>
                     
                     <div class="alert alert-info">
                         <i class="ti ti-info-circle"></i>

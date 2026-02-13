@@ -542,6 +542,9 @@ function showItemDetailsFromQuickLookup(id, name, barcode, description, category
             // Remove this listener after it fires once
             quickLookupModalEl.removeEventListener('hidden.bs.modal', openItemDetails);
             
+            // Remove any leftover backdrops to prevent gray filter issue
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+            
             // Now show the item details modal
             const itemDetailsModal = new bootstrap.Modal(document.getElementById('itemDetailsModal'));
             itemDetailsModal.show();
@@ -596,6 +599,14 @@ document.getElementById('quickLookupModal')?.addEventListener('hidden.bs.modal',
     items.forEach(item => {
         item.style.display = '';
     });
+    // Clean up any leftover backdrops
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+});
+
+// Clean up backdrops when item details modal closes
+document.getElementById('itemDetailsModal')?.addEventListener('hidden.bs.modal', function() {
+    // Clean up any leftover backdrops
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
 });
 
 // Focus input when modal opens

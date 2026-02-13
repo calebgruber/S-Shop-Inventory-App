@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         
         if ($_POST['action'] === 'start_pick') {
             $barcode = trim($_POST['barcode']);
-            $pickerName = trim($_POST['picker_name']);
+            $pickerName = $user['name']; // Use logged-in user's name
             
             // Try shop order first
             $pullsheet = getPullsheetByBarcode($barcode);
@@ -389,14 +389,9 @@ if (ob_get_level()) {
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label class="form-label">Your Name</label>
-                                    <input type="text" class="form-control" id="pickerName" placeholder="Enter your name" autofocus>
-                                </div>
-                                
-                                <div class="mb-3">
                                     <label class="form-label">Scan Pullsheet or Change Order Barcode</label>
                                     <input type="text" class="form-control scan-input" id="pullsheetBarcode" 
-                                           placeholder="Scan barcode...">
+                                           placeholder="Scan barcode..." autofocus>
                                 </div>
                                 
                                 <button class="btn btn-primary w-100" id="startBtn">
@@ -578,15 +573,14 @@ if (ob_get_level()) {
         <?php if (!$pickSession): ?>
             // Start pick session
             const startPick = () => {
-                const name = document.getElementById('pickerName').value.trim();
                 const barcode = document.getElementById('pullsheetBarcode').value.trim();
                 
-                if (!name || !barcode) {
-                    alert('Please enter both name and barcode');
+                if (!barcode) {
+                    alert('Please scan a barcode');
                     return;
                 }
                 
-                post(`ajax=1&action=start_pick&picker_name=${encodeURIComponent(name)}&barcode=${encodeURIComponent(barcode)}`, data => {
+                post(`ajax=1&action=start_pick&barcode=${encodeURIComponent(barcode)}`, data => {
                     if (data.success) {
                         playSuccess();
                         if (data.is_resuming_draft) {
