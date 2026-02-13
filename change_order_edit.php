@@ -393,7 +393,7 @@ document.getElementById('confirmBtn').addEventListener('click', () => {
         if (data.success) {
             playSuccessSound();
             modal.hide();
-            location.reload();
+            location.reload(true);
         } else {
             alert(data.message || 'Error adding item');
             playErrorSound();
@@ -417,7 +417,7 @@ document.getElementById('saveDraftBtn').addEventListener('click', () => {
         if (data.success) {
             playSuccessSound();
             // Stay on the same page with a success alert
-            location.reload();
+            location.reload(true);
         } else {
             alert(data.message || 'Error saving draft');
             playErrorSound();
@@ -471,7 +471,7 @@ document.querySelectorAll('.remove-item-btn').forEach(btn => {
         .then(data => {
             if (data.success) {
                 playSuccessSound();
-                location.reload();
+                location.reload(true);
             } else {
                 alert('Error removing item');
                 playErrorSound();
