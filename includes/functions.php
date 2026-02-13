@@ -119,6 +119,7 @@ function getItemByBarcode($barcode) {
 function searchItems($query) {
     $db = getDB();
     // Escape SQL wildcards and backslashes in user input to prevent unintended matches
+    // Note: Assumes MySQL default backslash escape handling (NO_BACKSLASH_ESCAPES not set)
     // Backslashes must be escaped first to avoid double-escaping
     $sanitizedQuery = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query);
     $searchTerm = '%' . $sanitizedQuery . '%';
