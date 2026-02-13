@@ -122,6 +122,7 @@ function searchItems($query) {
     // Using backslash to escape % and _ in the query
     $sanitizedQuery = addcslashes($query, '%_');
     $searchTerm = '%' . $sanitizedQuery . '%';
+    $prefixTerm = $sanitizedQuery . '%';
     return $db->fetchAll(
         "SELECT i.*, c.name as category_name, sc.name as subcategory_name 
          FROM items i 
@@ -133,7 +134,7 @@ function searchItems($query) {
            CASE WHEN i.name LIKE ? THEN 0 ELSE 1 END,
            i.name
          LIMIT 50",
-        [$searchTerm, $searchTerm, $searchTerm, $query, $query . '%']
+        [$searchTerm, $searchTerm, $searchTerm, $query, $prefixTerm]
     );
 }
 
