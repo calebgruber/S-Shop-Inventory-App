@@ -116,6 +116,24 @@ function getItemByBarcode($barcode) {
     );
 }
 
+function searchItems($query) {
+    $db = getDB();
+    $searchTerm = '%' . $query . '%';
+    return $db->fetchAll(
+        "SELECT i.*, c.name as category_name, sc.name as subcategory_name 
+         FROM items i 
+         LEFT JOIN categories c ON i.category_id = c.id 
+         LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
+         WHERE i.barcode LIKE ? OR i.name LIKE ? OR i.description LIKE ?
+         ORDER BY 
+           CASE WHEN i.barcode = ? THEN 0 ELSE 1 END,
+           CASE WHEN i.name LIKE ? THEN 0 ELSE 1 END,
+           i.name
+         LIMIT 50",
+        [$searchTerm, $searchTerm, $searchTerm, $query, $query . '%']
+    );
+}
+
 function getAllItems() {
     $db = getDB();
     return $db->fetchAll(

@@ -14,6 +14,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     }
     
     try {
+        if ($_POST['action'] === 'search_items') {
+            $query = trim($_POST['query']);
+            
+            if (empty($query)) {
+                echo json_encode(['success' => false, 'message' => 'Please enter a search term']);
+                exit;
+            }
+            
+            // First try exact barcode match
+            $exactMatch = getItemByBarcode($query);
+            if ($exactMatch) {
+                echo json_encode([
+                    'success' => true,
+                    'single' => true,
+                    'item' => [
+                        'id' => $exactMatch['id'],
+                        'name' => $exactMatch['name'],
+                        'barcode' => $exactMatch['barcode'],
+                        'in_stock' => $exactMatch['in_stock_quantity'],
+                        'category' => $exactMatch['category_name'] ?? ''
+                    ]
+                ]);
+                exit;
+            }
+            
+            // Otherwise search for matches
+            $items = searchItems($query);
+            
+            if (empty($items)) {
+                echo json_encode(['success' => false, 'message' => 'No items found matching "' . htmlspecialchars($query) . '"']);
+                exit;
+            }
+            
+            // If only one result, treat it like exact match
+            if (count($items) === 1) {
+                $item = $items[0];
+                echo json_encode([
+                    'success' => true,
+                    'single' => true,
+                    'item' => [
+                        'id' => $item['id'],
+                        'name' => $item['name'],
+                        'barcode' => $item['barcode'],
+                        'in_stock' => $item['in_stock_quantity'],
+                        'category' => $item['category_name'] ?? ''
+                    ]
+                ]);
+                exit;
+            }
+            
+            // Multiple results - return them all
+            $itemsData = [];
+            foreach ($items as $item) {
+                $itemsData[] = [
+                    'id' => $item['id'],
+                    'name' => $item['name'],
+                    'barcode' => $item['barcode'],
+                    'in_stock' => $item['in_stock_quantity'],
+                    'category' => $item['category_name'] ?? ''
+                ];
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'single' => false,
+                'items' => $itemsData
+            ]);
+            exit;
+        }
+        
         if ($_POST['action'] === 'check_item') {
             $itemBarcode = $_POST['barcode'];
             $item = getItemByBarcode($itemBarcode);
@@ -259,6 +329,25 @@ $items = getChangeOrderItems($coId);
 </div>
 
 <?php if ($co['status'] === 'draft'): ?>
+<!-- Search Results Modal -->
+<div class="modal fade" id="searchResultsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Search Results</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group" id="searchResultsList">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="addModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -295,11 +384,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
 let selectedItem = null;
 const modalEl = document.getElementById('addModal');
+const searchResultsModalEl = document.getElementById('searchResultsModal');
 const barcodeInput = document.getElementById('itemBarcode');
 const searchBtn = document.getElementById('searchBtn');
 
 if (!modalEl) {
     console.error('Modal element not found');
+    return;
+}
+
+if (!searchResultsModalEl) {
+    console.error('Search results modal element not found');
     return;
 }
 
@@ -309,7 +404,8 @@ if (!barcodeInput) {
 }
 
 const modal = new bootstrap.Modal(modalEl);
-console.log('Modal initialized successfully');
+const searchResultsModal = new bootstrap.Modal(searchResultsModalEl);
+console.log('Modals initialized successfully');
 
 if (searchBtn) {
     searchBtn.addEventListener('click', searchItem);
@@ -328,23 +424,29 @@ barcodeInput.addEventListener('keydown', function(e) {
 console.log('Barcode input Enter key handler attached');
 
 function searchItem() {
-    const barcode = barcodeInput.value.trim();
-    if (!barcode) return;
+    const query = barcodeInput.value.trim();
+    if (!query) return;
     
-    console.log('Searching for barcode:', barcode);
+    console.log('Searching for:', query);
     
     fetch('?id=<?php echo htmlspecialchars($coId, ENT_QUOTES, 'UTF-8'); ?>', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'ajax=1&action=check_item&barcode=' + encodeURIComponent(barcode)
+        body: 'ajax=1&action=search_items&query=' + encodeURIComponent(query)
     })
     .then(r => r.json())
     .then(data => {
         console.log('Search result:', data);
         if (data.success) {
-            showAddItemModal(data.item);
+            if (data.single) {
+                // Single result - show add modal directly
+                showAddItemModal(data.item);
+            } else {
+                // Multiple results - show selection modal
+                showSearchResults(data.items);
+            }
         } else {
-            alert(data.message || 'Item not found');
+            alert(data.message || 'No items found');
             playErrorSound();
         }
         barcodeInput.value = '';
@@ -352,10 +454,47 @@ function searchItem() {
     })
     .catch(err => {
         console.error('Search error:', err);
-        alert('Error searching for item');
+        alert('Error searching for items');
         playErrorSound();
     });
 }
+
+function showSearchResults(items) {
+    const listEl = document.getElementById('searchResultsList');
+    listEl.innerHTML = '';
+    
+    items.forEach(item => {
+        const itemEl = document.createElement('button');
+        itemEl.type = 'button';
+        itemEl.className = 'list-group-item list-group-item-action';
+        itemEl.innerHTML = `
+            <div class="d-flex w-100 justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">${escapeHtml(item.name)}</h6>
+                    <small class="text-muted">Barcode: ${escapeHtml(item.barcode)}</small>
+                    ${item.category ? `<br><small class="text-muted">Category: ${escapeHtml(item.category)}</small>` : ''}
+                </div>
+                <span class="badge ${item.in_stock > 0 ? 'bg-success' : 'bg-danger'}">
+                    ${item.in_stock} in stock
+                </span>
+            </div>
+        `;
+        itemEl.addEventListener('click', () => {
+            searchResultsModal.hide();
+            showAddItemModal(item);
+        });
+        listEl.appendChild(itemEl);
+    });
+    
+    searchResultsModal.show();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 
 function showAddItemModal(item) {
     if (!modal) {
