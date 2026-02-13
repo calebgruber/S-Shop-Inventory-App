@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             $items = searchItems($query);
             
             if (empty($items)) {
-                echo json_encode(['success' => false, 'message' => 'No items found matching "' . htmlspecialchars($query) . '"']);
+                echo json_encode(['success' => false, 'message' => 'No items found matching ' . json_encode($query)]);
                 exit;
             }
             
