@@ -133,7 +133,7 @@ function searchItems($query) {
            CASE WHEN i.name LIKE ? THEN 0 ELSE 1 END,
            i.name
          LIMIT 50",
-        [$searchTerm, $searchTerm, $searchTerm, $query, $sanitizedQuery . '%']
+        [$searchTerm, $searchTerm, $searchTerm, $query, $query . '%']
     );
 }
 
