@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         
         if ($_POST['action'] === 'start_pick') {
             $barcode = trim($_POST['barcode']);
-            $pickerName = $user['name']; // Use logged-in user's name
+            $pickerName = $user['name'] ?? 'Unknown'; // Use logged-in user's name with fallback
             
             // Try shop order first
             $pullsheet = getPullsheetByBarcode($barcode);

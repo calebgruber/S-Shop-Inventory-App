@@ -506,6 +506,11 @@ if ($isDesigner || $isProductionAudio) {
 
 <div class="row">
 <script>
+// Helper function to clean up modal backdrops
+function cleanupModalBackdrops() {
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+}
+
 // Function to show item details modal
 function showItemDetailsFromQuickLookup(id, name, barcode, description, category, subcategory, trackingType, totalQty, inStockQty, location, photoPath) {
     // Populate item details first
@@ -543,7 +548,7 @@ function showItemDetailsFromQuickLookup(id, name, barcode, description, category
             quickLookupModalEl.removeEventListener('hidden.bs.modal', openItemDetails);
             
             // Remove any leftover backdrops to prevent gray filter issue
-            document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+            cleanupModalBackdrops();
             
             // Now show the item details modal
             const itemDetailsModal = new bootstrap.Modal(document.getElementById('itemDetailsModal'));
@@ -600,13 +605,13 @@ document.getElementById('quickLookupModal')?.addEventListener('hidden.bs.modal',
         item.style.display = '';
     });
     // Clean up any leftover backdrops
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+    cleanupModalBackdrops();
 });
 
 // Clean up backdrops when item details modal closes
 document.getElementById('itemDetailsModal')?.addEventListener('hidden.bs.modal', function() {
     // Clean up any leftover backdrops
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+    cleanupModalBackdrops();
 });
 
 // Focus input when modal opens

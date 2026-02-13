@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         $barcode = generateUniqueBarcode('PS');
-        $createdBy = $currentUser['name']; // Use logged-in user's name
+        $createdBy = $currentUser['name'] ?? 'Unknown'; // Use logged-in user's name with fallback
         
         // Check if shop order already exists
         $existing = getDB()->fetchOne("SELECT id FROM pullsheets WHERE show_id = ?", [$postShowId]);

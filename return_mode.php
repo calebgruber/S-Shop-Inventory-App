@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         
         if ($_POST['action'] === 'start_return') {
             $barcode = trim($_POST['barcode']);
-            $returnerName = $user['name']; // Use logged-in user's name
+            $returnerName = $user['name'] ?? 'Unknown'; // Use logged-in user's name with fallback
             
             // Try shop order first
             $pullsheet = getPullsheetByBarcode($barcode);
