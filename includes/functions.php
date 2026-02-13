@@ -119,17 +119,18 @@ function getItemByBarcode($barcode) {
 function searchItems($query) {
     $db = getDB();
     // Escape SQL wildcards in user input to prevent unintended matches
-    $sanitizedQuery = str_replace(['%', '_'], ['\\%', '\\_'], $query);
+    // Using backslash to escape % and _ in the query
+    $sanitizedQuery = addcslashes($query, '%_');
     $searchTerm = '%' . $sanitizedQuery . '%';
     return $db->fetchAll(
         "SELECT i.*, c.name as category_name, sc.name as subcategory_name 
          FROM items i 
          LEFT JOIN categories c ON i.category_id = c.id 
          LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
-         WHERE i.barcode LIKE ? ESCAPE '\\' OR i.name LIKE ? ESCAPE '\\' OR i.description LIKE ? ESCAPE '\\'
+         WHERE i.barcode LIKE ? OR i.name LIKE ? OR i.description LIKE ?
          ORDER BY 
            CASE WHEN i.barcode = ? THEN 0 ELSE 1 END,
-           CASE WHEN i.name LIKE ? ESCAPE '\\' THEN 0 ELSE 1 END,
+           CASE WHEN i.name LIKE ? THEN 0 ELSE 1 END,
            i.name
          LIMIT 50",
         [$searchTerm, $searchTerm, $searchTerm, $query, $sanitizedQuery . '%']
