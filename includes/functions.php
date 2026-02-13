@@ -344,9 +344,21 @@ function redirect($url = null) {
     // This is critical for flash messages to persist
     session_write_close();
     
-    // Ignores $url parameter - always reloads the current page
-    // This is intentional to prevent accidental redirects away from the current page
-    header("Location: " . $_SERVER['PHP_SELF'] . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : ''));
+    if ($url === null) {
+        $url = $_SERVER['PHP_SELF'] . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : '');
+    }
+    
+    // Primary: Header redirect (if headers not sent)
+    if (!headers_sent()) {
+        header("Location: $url");
+        exit;
+    }
+    
+    // Backup 1: Meta refresh (if headers already sent)
+    echo "<meta http-equiv='refresh' content='0;url=" . htmlspecialchars($url) . "'>";
+    
+    // Backup 2: JavaScript redirect (belt and suspenders)
+    echo "<script>window.location.href = '" . addslashes($url) . "';</script>";
     exit;
 }
 

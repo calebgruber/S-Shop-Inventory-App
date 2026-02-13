@@ -346,6 +346,41 @@ $currentUser = getCurrentUser();
             });
         }
     </script>
+    
+    <!-- Universal Form Reload Handler -->
+    <script>
+    // Ensure ALL forms reload page after submission
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all forms on the page
+        const forms = document.querySelectorAll('form');
+        
+        forms.forEach(function(form) {
+            // Skip forms explicitly marked as no-reload
+            if (form.hasAttribute('data-no-reload')) {
+                return;
+            }
+            
+            // Add submit handler
+            form.addEventListener('submit', function(e) {
+                // Store form reference
+                const thisForm = this;
+                
+                // Check if form uses AJAX (has data-ajax attribute)
+                if (thisForm.hasAttribute('data-ajax')) {
+                    // For AJAX forms, let them handle their own reload
+                    return;
+                }
+                
+                // For regular forms, schedule page reload after submission completes
+                // The delay allows the POST request to complete before reload
+                setTimeout(function() {
+                    // Force page reload to show fresh data and alerts
+                    window.location.href = window.location.href;
+                }, 500);
+            });
+        });
+    });
+    </script>
 </head>
 <body>
     <div class="page">
