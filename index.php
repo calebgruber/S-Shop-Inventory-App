@@ -451,51 +451,6 @@ if ($isDesigner || $isProductionAudio) {
 </div>
 
 <div class="row">
-    <?php if (isAdmin()): ?>
-    <div class="col-lg-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Pending Picks</h3>
-            </div>
-            <div class="card-body">
-                <?php if (empty($pendingPullsheets) && empty($changeOrdersToPick)): ?>
-                    <p class="text-muted">No pending picks</p>
-                <?php else: ?>
-                    <div class="list-group list-group-flush">
-                        <?php foreach ($pendingPullsheets as $pullsheet): ?>
-                            <div class="list-group-item">
-                                <div class="row align-items-center">
-                                    <div class="col">
-                                        <strong><?php echo htmlspecialchars($pullsheet['show_name']); ?></strong>
-                                        <div class="text-muted small">Pullsheet - Created <?php echo date('m/d/Y', strtotime($pullsheet['created_at'])); ?></div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <span class="badge bg-warning">To Pick</span>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                        <?php foreach ($changeOrdersToPick as $co): ?>
-                            <div class="list-group-item">
-                                <div class="row align-items-center">
-                                    <div class="col">
-                                        <strong><?php echo htmlspecialchars($co['show_name']); ?></strong>
-                                        <div class="text-muted small">Change Order - <?php echo $co['items_to_add']; ?> items to add</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <span class="badge bg-info">CO Pick</span>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-    
-
 <script>
 // Quick Lookup functionality - filter list
 document.getElementById('quickLookupInput')?.addEventListener('input', function(e) {
