@@ -118,9 +118,9 @@ function getItemByBarcode($barcode) {
 
 function searchItems($query) {
     $db = getDB();
-    // Escape SQL wildcards in user input to prevent unintended matches
-    // Using backslash to escape % and _ in the query
-    $sanitizedQuery = addcslashes($query, '%_');
+    // Escape SQL wildcards and backslashes in user input to prevent unintended matches
+    // Backslashes must be escaped first to avoid double-escaping
+    $sanitizedQuery = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query);
     $searchTerm = '%' . $sanitizedQuery . '%';
     $prefixTerm = $sanitizedQuery . '%';
     return $db->fetchAll(
