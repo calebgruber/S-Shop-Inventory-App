@@ -411,7 +411,7 @@ document.getElementById('confirmAddBtn').addEventListener('click', function() {
         if (data.success) {
             playSuccessSound();
             modal.hide();
-            location.reload(true);
+            window.location.href = window.location.href;
         } else {
             alert(data.message);
             playErrorSound();
@@ -432,7 +432,7 @@ document.querySelectorAll('.remove-item-btn').forEach(btn => {
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                location.reload(true);
+                window.location.href = window.location.href;
             }
         });
     });

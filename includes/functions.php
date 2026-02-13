@@ -340,6 +340,10 @@ function validateRequired($value, $fieldName) {
 }
 
 function redirect($url = null) {
+    // Ensure session data is written before redirect
+    // This is critical for flash messages to persist
+    session_write_close();
+    
     // Ignores $url parameter - always reloads the current page
     // This is intentional to prevent accidental redirects away from the current page
     header("Location: " . $_SERVER['PHP_SELF'] . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : ''));

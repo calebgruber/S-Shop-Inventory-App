@@ -83,7 +83,7 @@ document.getElementById('startBtn').addEventListener('click',()=>{
 const n=document.getElementById('returnerName').value,b=document.getElementById('pullsheetBarcode').value;
 if(!n||!b)return;
 post(`ajax=1&action=start_return&returner_name=${encodeURIComponent(n)}&barcode=${encodeURIComponent(b)}`,d=>{
-if(d.success){ps();location.reload(true)}else{pe();alert(d.message)}
+if(d.success){ps();window.location.href = window.location.href}else{pe();alert(d.message)}
 });
 });
 <?php else: ?>

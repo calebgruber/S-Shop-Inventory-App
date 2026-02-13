@@ -518,7 +518,7 @@ if (ob_get_level()) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="location.reload(true)">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href = window.location.href">Cancel</button>
                     <button type="button" class="btn btn-success" id="completeWithSignature">
                         <i class="ti ti-check"></i> Complete with Signature
                     </button>
@@ -593,7 +593,7 @@ if (ob_get_level()) {
                             // Store draft info in sessionStorage for display after reload
                             sessionStorage.setItem('showDraftNotice', 'true');
                         }
-                        location.reload(true);
+                        window.location.href = window.location.href;
                     } else {
                         playError();
                         alert(data.message || 'Not found');

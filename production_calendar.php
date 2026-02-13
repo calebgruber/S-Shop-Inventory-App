@@ -347,7 +347,7 @@ function saveEvent() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload(true); // Reload to show changes
+            window.location.href = window.location.href; // Reload to show changes
             calendar.refetchEvents();
             const modalEl = document.getElementById('eventModal');
             const modal = bootstrap.Modal.getInstance(modalEl);
@@ -356,7 +356,7 @@ function saveEvent() {
             }
             // Reload the page to show updated events
             setTimeout(() => {
-                location.reload(true);
+                window.location.href = window.location.href;
             }, 500);
         } else {
             alert(data.message || 'Error saving event');
@@ -382,7 +382,7 @@ function deleteEvent() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload(true); // Reload to show changes
+            window.location.href = window.location.href; // Reload to show changes
             calendar.refetchEvents();
             bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
             showAlert('Event deleted successfully', 'success');
