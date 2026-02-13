@@ -178,56 +178,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Get header row
                         $headers = fgetcsv($handle);
                         
+                        // Normalize headers to lowercase for case-insensitive matching
+                        $normalizedHeaders = array_map('strtolower', $headers);
+                        
                         if ($importType === 'all') {
                             // For "all" type, detect based on headers
-                            if (in_array('category_id', $headers) && in_array('barcode', $headers)) {
+                            // CSV format: Column 1 = ID, Column 2 = Name (as per user requirement)
+                            if (in_array('category_id', $normalizedHeaders) && in_array('barcode', $normalizedHeaders)) {
                                 $importType = 'items';
-                            } elseif (in_array('category_id', $headers) && !in_array('barcode', $headers)) {
+                            } elseif (in_array('category_id', $normalizedHeaders) && !in_array('barcode', $normalizedHeaders)) {
                                 $importType = 'subcategories';
-                            } elseif (count($headers) == 2 || count($headers) == 3) {
-                                // Check first data row to determine type
-                                $firstRow = fgetcsv($handle);
-                                if ($firstRow) {
-                                    rewind($handle);
-                                    fgetcsv($handle); // Skip headers again
-                                    if (strpos($headers[0], 'name') !== false) {
-                                        $importType = 'categories';
-                                    }
-                                }
+                            } elseif (count($headers) <= 3 && !in_array('category_id', $normalizedHeaders)) {
+                                // Likely categories - simple ID, name, description format
+                                $importType = 'categories';
                             }
                         }
                         
                         // Process based on import type
                         switch ($importType) {
                             case 'categories':
-                                // Map headers to column indices
-                                $headerMap = array_flip(array_map('strtolower', $headers));
+                                // CSV format: Column 1 = ID, Column 2 = Name, Column 3 = Description (optional)
+                                // This allows importing with specific IDs to maintain relationships
                                 
                                 while (($row = fgetcsv($handle)) !== false) {
                                     // Skip empty rows
                                     if (empty(array_filter($row))) continue;
                                     
-                                    // Get name from the correct column
-                                    $nameIdx = $headerMap['name'] ?? 0;
-                                    $descIdx = $headerMap['description'] ?? 1;
+                                    // Get ID from column 0, name from column 1
+                                    $csvId = isset($row[0]) && trim($row[0]) !== '' ? trim($row[0]) : null;
+                                    $name = isset($row[1]) && trim($row[1]) !== '' ? trim($row[1]) : null;
+                                    $description = isset($row[2]) ? trim($row[2]) : '';
                                     
-                                    if (empty($row[$nameIdx])) continue;
-                                    
-                                    $name = trim($row[$nameIdx]);
-                                    $description = isset($row[$descIdx]) ? trim($row[$descIdx]) : '';
+                                    if (!$name) continue; // Name is required
                                     
                                     try {
-                                        // Check if category exists
+                                        // Check if category with this name already exists
                                         $existing = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$name]);
                                         if ($existing) {
                                             $skipped++;
                                             continue;
                                         }
                                         
-                                        $db->query(
-                                            "INSERT INTO categories (name, description) VALUES (?, ?)",
-                                            [$name, $description]
-                                        );
+                                        // If CSV has an ID column and it's numeric, try to insert with that ID
+                                        if ($csvId && is_numeric($csvId)) {
+                                            // Check if ID is already taken
+                                            $idExists = $db->fetchOne("SELECT id FROM categories WHERE id = ?", [(int)$csvId]);
+                                            if ($idExists) {
+                                                // ID taken, insert without specifying ID
+                                                $db->query(
+                                                    "INSERT INTO categories (name, description) VALUES (?, ?)",
+                                                    [$name, $description]
+                                                );
+                                            } else {
+                                                // Insert with specific ID
+                                                $db->query(
+                                                    "INSERT INTO categories (id, name, description) VALUES (?, ?, ?)",
+                                                    [(int)$csvId, $name, $description]
+                                                );
+                                            }
+                                        } else {
+                                            // No ID specified or not numeric, auto-generate
+                                            $db->query(
+                                                "INSERT INTO categories (name, description) VALUES (?, ?)",
+                                                [$name, $description]
+                                            );
+                                        }
                                         $imported++;
                                     } catch (Exception $e) {
                                         $errors[] = "Category '$name': " . $e->getMessage();
@@ -236,105 +251,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 break;
                                 
                             case 'subcategories':
-                                // Map headers to column indices
-                                $headerMap = array_flip(array_map('strtolower', $headers));
-                                
-                                // Detect if we have category_id or category_name
-                                $hasCategoryId = isset($headerMap['category_id']);
-                                $hasCategoryName = isset($headerMap['category_name']);
+                                // CSV format: Column 1 = ID, Column 2 = Name, Column 3 = Category ID, Column 4 = Description (optional)
+                                // This allows importing with specific IDs and category relationships
                                 
                                 while (($row = fgetcsv($handle)) !== false) {
                                     // Skip empty rows
                                     if (empty(array_filter($row))) continue;
                                     
-                                    // Get values from the correct columns
-                                    $nameIdx = $headerMap['name'] ?? 1;
-                                    $descIdx = $headerMap['description'] ?? 2;
+                                    // Get values: ID from column 0, name from column 1
+                                    $csvId = isset($row[0]) && trim($row[0]) !== '' ? trim($row[0]) : null;
+                                    $name = isset($row[1]) && trim($row[1]) !== '' ? trim($row[1]) : null;
                                     
-                                    if (empty($row[$nameIdx])) continue;
+                                    if (!$name) continue; // Name is required
                                     
-                                    $name = trim($row[$nameIdx]);
-                                    $description = isset($row[$descIdx]) ? trim($row[$descIdx]) : '';
+                                    // Try to find category_id from headers or assume column 2
+                                    $categoryValue = isset($row[2]) && trim($row[2]) !== '' ? trim($row[2]) : null;
+                                    $description = isset($row[3]) ? trim($row[3]) : '';
                                     
-                                    // Determine category lookup method
-                                    $category = null;
-                                    $categoryIdentifier = null;
-                                    
-                                    if ($hasCategoryId) {
-                                        // Use category_id column
-                                        $categoryIdIdx = $headerMap['category_id'];
-                                        if (empty($row[$categoryIdIdx])) continue;
-                                        
-                                        $categoryId = trim($row[$categoryIdIdx]);
-                                        $categoryIdentifier = "ID '$categoryId'";
-                                        
-                                        try {
-                                            // Look up by ID
-                                            if (is_numeric($categoryId)) {
-                                                $category = $db->fetchOne("SELECT id FROM categories WHERE id = ?", [(int)$categoryId]);
-                                            }
-                                        } catch (Exception $e) {
-                                            $errors[] = "Subcategory '$name': Error looking up category by ID: " . $e->getMessage();
-                                            continue;
-                                        }
-                                    } elseif ($hasCategoryName) {
-                                        // Use category_name column
-                                        $categoryNameIdx = $headerMap['category_name'];
-                                        if (empty($row[$categoryNameIdx])) continue;
-                                        
-                                        $categoryName = trim($row[$categoryNameIdx]);
-                                        $categoryIdentifier = "name '$categoryName'";
-                                        
-                                        try {
-                                            // Look up by name
-                                            $category = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$categoryName]);
-                                        } catch (Exception $e) {
-                                            $errors[] = "Subcategory '$name': Error looking up category by name: " . $e->getMessage();
-                                            continue;
-                                        }
-                                    } else {
-                                        // Fallback: try first column, detect if numeric (ID) or string (name)
-                                        $firstColIdx = 0;
-                                        if (empty($row[$firstColIdx])) continue;
-                                        
-                                        $firstColValue = trim($row[$firstColIdx]);
-                                        
-                                        try {
-                                            if (is_numeric($firstColValue)) {
-                                                // Treat as category ID
-                                                $categoryIdentifier = "ID '$firstColValue'";
-                                                $category = $db->fetchOne("SELECT id FROM categories WHERE id = ?", [(int)$firstColValue]);
-                                            } else {
-                                                // Treat as category name
-                                                $categoryIdentifier = "name '$firstColValue'";
-                                                $category = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$firstColValue]);
-                                            }
-                                        } catch (Exception $e) {
-                                            $errors[] = "Subcategory '$name': Error looking up category: " . $e->getMessage();
-                                            continue;
-                                        }
-                                    }
-                                    
-                                    if (!$category) {
-                                        $errors[] = "Category with $categoryIdentifier not found for subcategory '$name'";
+                                    if (!$categoryValue) {
+                                        $errors[] = "Subcategory '$name': Missing category reference";
                                         continue;
                                     }
+                                    
+                                    // Determine if category value is ID or name
+                                    $categoryId = null;
+                                    try {
+                                        if (is_numeric($categoryValue)) {
+                                            // Treat as category ID
+                                            $category = $db->fetchOne("SELECT id FROM categories WHERE id = ?", [(int)$categoryValue]);
+                                            if ($category) {
+                                                $categoryId = $category['id'];
+                                            } else {
+                                                $errors[] = "Subcategory '$name': Category ID '$categoryValue' not found";
+                                                continue;
+                                            }
+                                        } else {
+                                            // Treat as category name
+                                            $category = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$categoryValue]);
+                                            if ($category) {
+                                                $categoryId = $category['id'];
+                                            } else {
+                                                $errors[] = "Subcategory '$name': Category '$categoryValue' not found";
+                                                continue;
+                                            }
+                                        }
+                                    } catch (Exception $e) {
+                                        $errors[] = "Subcategory '$name': Error looking up category: " . $e->getMessage();
+                                        continue;
+                                    }
+                                    
+                                    if (!$categoryId) continue;
                                     
                                     try {
                                         // Check if subcategory exists
                                         $existing = $db->fetchOne(
                                             "SELECT id FROM subcategories WHERE name = ? AND category_id = ?",
-                                            [$name, $category['id']]
+                                            [$name, $categoryId]
                                         );
                                         if ($existing) {
                                             $skipped++;
                                             continue;
                                         }
                                         
-                                        $db->query(
-                                            "INSERT INTO subcategories (category_id, name, description) VALUES (?, ?, ?)",
-                                            [$category['id'], $name, $description]
-                                        );
+                                        // If CSV has an ID column and it's numeric, try to insert with that ID
+                                        if ($csvId && is_numeric($csvId)) {
+                                            // Check if ID is already taken
+                                            $idExists = $db->fetchOne("SELECT id FROM subcategories WHERE id = ?", [(int)$csvId]);
+                                            if ($idExists) {
+                                                // ID taken, insert without specifying ID
+                                                $db->query(
+                                                    "INSERT INTO subcategories (category_id, name, description) VALUES (?, ?, ?)",
+                                                    [$categoryId, $name, $description]
+                                                );
+                                            } else {
+                                                // Insert with specific ID
+                                                $db->query(
+                                                    "INSERT INTO subcategories (id, category_id, name, description) VALUES (?, ?, ?, ?)",
+                                                    [(int)$csvId, $categoryId, $name, $description]
+                                                );
+                                            }
+                                        } else {
+                                            // No ID specified or not numeric, auto-generate
+                                            $db->query(
+                                                "INSERT INTO subcategories (category_id, name, description) VALUES (?, ?, ?)",
+                                                [$categoryId, $name, $description]
+                                            );
+                                        }
                                         $imported++;
                                     } catch (Exception $e) {
                                         $errors[] = "Subcategory '$name': " . $e->getMessage();
@@ -379,21 +381,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 break;
                                 
                             case 'items':
-                                // Expected columns: name, description, barcode, category_name, subcategory_name, tracking_type, total_quantity, in_stock_quantity, location
-                                $headerMap = array_flip($headers);
+                                // CSV format: Column 1 = ID, Column 2 = Name, then other columns
+                                // Support both ID-based and name-based lookups for categories/subcategories
+                                
+                                // Map headers to column indices
+                                $headerMap = array_flip(array_map('strtolower', $headers));
                                 
                                 while (($row = fgetcsv($handle)) !== false) {
-                                    if (empty($row[$headerMap['name'] ?? 0]) || empty($row[$headerMap['barcode'] ?? 2])) continue;
+                                    // Skip empty rows
+                                    if (empty(array_filter($row))) continue;
                                     
-                                    $name = trim($row[$headerMap['name'] ?? 0]);
-                                    $description = isset($headerMap['description']) ? trim($row[$headerMap['description']]) : '';
-                                    $barcode = trim($row[$headerMap['barcode'] ?? 2]);
-                                    $categoryName = isset($headerMap['category_name']) ? trim($row[$headerMap['category_name']]) : '';
-                                    $subcategoryName = isset($headerMap['subcategory_name']) ? trim($row[$headerMap['subcategory_name']]) : '';
-                                    $trackingType = isset($headerMap['tracking_type']) ? trim($row[$headerMap['tracking_type']]) : 'quantity';
-                                    $totalQuantity = isset($headerMap['total_quantity']) ? (int)$row[$headerMap['total_quantity']] : 0;
-                                    $inStockQuantity = isset($headerMap['in_stock_quantity']) ? (int)$row[$headerMap['in_stock_quantity']] : 0;
-                                    $location = isset($headerMap['location']) ? trim($row[$headerMap['location']]) : '';
+                                    // Get ID from column 0 (optional), name from column 1
+                                    $csvId = isset($row[0]) && trim($row[0]) !== '' ? trim($row[0]) : null;
+                                    $name = isset($row[1]) && trim($row[1]) !== '' ? trim($row[1]) : null;
+                                    
+                                    if (!$name) continue; // Name is required
+                                    
+                                    // Get other fields using header map
+                                    $description = isset($headerMap['description']) && isset($row[$headerMap['description']]) 
+                                        ? trim($row[$headerMap['description']]) : '';
+                                    $barcode = isset($headerMap['barcode']) && isset($row[$headerMap['barcode']]) 
+                                        ? trim($row[$headerMap['barcode']]) : '';
+                                    
+                                    // If no barcode, skip (barcode is required for items)
+                                    if (empty($barcode)) {
+                                        $errors[] = "Item '$name': Missing barcode";
+                                        continue;
+                                    }
+                                    
+                                    // Get category and subcategory references (can be ID or name)
+                                    $categoryRef = null;
+                                    $subcategoryRef = null;
+                                    
+                                    // Check for category_id or category_name header
+                                    if (isset($headerMap['category_id']) && isset($row[$headerMap['category_id']])) {
+                                        $categoryRef = trim($row[$headerMap['category_id']]);
+                                    } elseif (isset($headerMap['category_name']) && isset($row[$headerMap['category_name']])) {
+                                        $categoryRef = trim($row[$headerMap['category_name']]);
+                                    } elseif (isset($headerMap['category']) && isset($row[$headerMap['category']])) {
+                                        $categoryRef = trim($row[$headerMap['category']]);
+                                    }
+                                    
+                                    // Check for subcategory_id or subcategory_name header
+                                    if (isset($headerMap['subcategory_id']) && isset($row[$headerMap['subcategory_id']])) {
+                                        $subcategoryRef = trim($row[$headerMap['subcategory_id']]);
+                                    } elseif (isset($headerMap['subcategory_name']) && isset($row[$headerMap['subcategory_name']])) {
+                                        $subcategoryRef = trim($row[$headerMap['subcategory_name']]);
+                                    } elseif (isset($headerMap['subcategory']) && isset($row[$headerMap['subcategory']])) {
+                                        $subcategoryRef = trim($row[$headerMap['subcategory']]);
+                                    }
+                                    
+                                    $trackingType = isset($headerMap['tracking_type']) && isset($row[$headerMap['tracking_type']]) 
+                                        ? trim($row[$headerMap['tracking_type']]) : 'quantity';
+                                    $totalQuantity = isset($headerMap['total_quantity']) && isset($row[$headerMap['total_quantity']]) 
+                                        ? (int)$row[$headerMap['total_quantity']] : 0;
+                                    $inStockQuantity = isset($headerMap['in_stock_quantity']) && isset($row[$headerMap['in_stock_quantity']]) 
+                                        ? (int)$row[$headerMap['in_stock_quantity']] : 0;
+                                    $location = isset($headerMap['location']) && isset($row[$headerMap['location']]) 
+                                        ? trim($row[$headerMap['location']]) : '';
                                     
                                     try {
                                         // Check if item exists
@@ -403,28 +448,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             continue;
                                         }
                                         
-                                        // Find category and subcategory IDs
+                                        // Find category ID
                                         $categoryId = null;
+                                        if ($categoryRef) {
+                                            if (is_numeric($categoryRef)) {
+                                                // Lookup by ID
+                                                $category = $db->fetchOne("SELECT id FROM categories WHERE id = ?", [(int)$categoryRef]);
+                                                $categoryId = $category ? $category['id'] : null;
+                                            } else {
+                                                // Lookup by name
+                                                $category = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$categoryRef]);
+                                                $categoryId = $category ? $category['id'] : null;
+                                            }
+                                        }
+                                        
+                                        // Find subcategory ID
                                         $subcategoryId = null;
-                                        
-                                        if ($categoryName) {
-                                            $category = $db->fetchOne("SELECT id FROM categories WHERE name = ?", [$categoryName]);
-                                            $categoryId = $category ? $category['id'] : null;
+                                        if ($subcategoryRef && $categoryId) {
+                                            if (is_numeric($subcategoryRef)) {
+                                                // Lookup by ID (and verify it belongs to the category)
+                                                $subcategory = $db->fetchOne(
+                                                    "SELECT id FROM subcategories WHERE id = ? AND category_id = ?",
+                                                    [(int)$subcategoryRef, $categoryId]
+                                                );
+                                                $subcategoryId = $subcategory ? $subcategory['id'] : null;
+                                            } else {
+                                                // Lookup by name within the category
+                                                $subcategory = $db->fetchOne(
+                                                    "SELECT id FROM subcategories WHERE name = ? AND category_id = ?",
+                                                    [$subcategoryRef, $categoryId]
+                                                );
+                                                $subcategoryId = $subcategory ? $subcategory['id'] : null;
+                                            }
                                         }
                                         
-                                        if ($subcategoryName && $categoryId) {
-                                            $subcategory = $db->fetchOne(
-                                                "SELECT id FROM subcategories WHERE name = ? AND category_id = ?",
-                                                [$subcategoryName, $categoryId]
+                                        // Insert item (with or without specified ID)
+                                        if ($csvId && is_numeric($csvId)) {
+                                            // Check if ID is already taken
+                                            $idExists = $db->fetchOne("SELECT id FROM items WHERE id = ?", [(int)$csvId]);
+                                            if ($idExists) {
+                                                // ID taken, insert without specifying ID
+                                                $db->query(
+                                                    "INSERT INTO items (name, description, barcode, category_id, subcategory_id, tracking_type, total_quantity, in_stock_quantity, location) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                                    [$name, $description, $barcode, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location]
+                                                );
+                                            } else {
+                                                // Insert with specific ID
+                                                $db->query(
+                                                    "INSERT INTO items (id, name, description, barcode, category_id, subcategory_id, tracking_type, total_quantity, in_stock_quantity, location) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                                    [(int)$csvId, $name, $description, $barcode, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location]
+                                                );
+                                            }
+                                        } else {
+                                            // No ID specified, auto-generate
+                                            $db->query(
+                                                "INSERT INTO items (name, description, barcode, category_id, subcategory_id, tracking_type, total_quantity, in_stock_quantity, location) 
+                                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                                [$name, $description, $barcode, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location]
                                             );
-                                            $subcategoryId = $subcategory ? $subcategory['id'] : null;
                                         }
-                                        
-                                        $db->query(
-                                            "INSERT INTO items (name, description, barcode, category_id, subcategory_id, tracking_type, total_quantity, in_stock_quantity, location) 
-                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                                            [$name, $description, $barcode, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location]
-                                        );
                                         $imported++;
                                     } catch (Exception $e) {
                                         $errors[] = "Item '$name' ($barcode): " . $e->getMessage();

@@ -816,9 +816,18 @@ function generateChangeOrderPDF($changeOrderId) {
 // Notification functions
 function createNotification($userId, $type, $message, $link = null) {
     $db = getDB();
+    
+    // Extract a title from the message (first 100 chars or first line)
+    $title = substr($message, 0, 100);
+    if (strpos($message, "\n") !== false) {
+        $title = substr($message, 0, strpos($message, "\n"));
+    }
+    // Clean up title - remove extra whitespace
+    $title = trim(preg_replace('/\s+/', ' ', $title));
+    
     $db->query(
-        "INSERT INTO notifications (user_id, type, message, link) VALUES (?, ?, ?, ?)",
-        [$userId, $type, $message, $link]
+        "INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)",
+        [$userId, $type, $title, $message, $link]
     );
 }
 
