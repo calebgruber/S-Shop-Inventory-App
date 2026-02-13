@@ -509,13 +509,7 @@ if ($isDesigner || $isProductionAudio) {
 <script>
 // Function to show item details modal
 function showItemDetailsFromQuickLookup(id, name, barcode, description, category, subcategory, trackingType, totalQty, inStockQty, location, photoPath) {
-    // Close the quick lookup modal first
-    const quickLookupModal = bootstrap.Modal.getInstance(document.getElementById('quickLookupModal'));
-    if (quickLookupModal) {
-        quickLookupModal.hide();
-    }
-    
-    // Populate item details
+    // Populate item details first
     document.getElementById('detailName').textContent = name;
     document.getElementById('detailBarcode').textContent = barcode;
     document.getElementById('detailDescription').textContent = description || 'N/A';
@@ -529,19 +523,38 @@ function showItemDetailsFromQuickLookup(id, name, barcode, description, category
     // Handle photo display
     const photoContainer = document.getElementById('itemPhotoContainer');
     if (photoPath) {
-        photoContainer.innerHTML = `<img src="uploads/items/${photoPath}" alt="${name}" class="img-fluid" style="max-width: 300px; max-height: 300px; object-fit: contain; border: 2px solid #dee2e6; border-radius: 8px; background: #f8f9fa;">`;
+        photoContainer.innerHTML = `<img src="uploads/items/${photoPath}" alt="${name}" class="img-fluid" style="max-width: 200px; max-height: 200px; object-fit: contain; border: 2px solid #dee2e6; border-radius: 8px; background: #f8f9fa;">`;
     } else {
         photoContainer.innerHTML = `
-            <div style="width: 300px; height: 300px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
-                <i class="ti ti-photo-off" style="font-size: 4rem; color: #adb5bd;"></i>
+            <div style="width: 200px; height: 200px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
+                <i class="ti ti-photo-off" style="font-size: 3rem; color: #adb5bd;"></i>
                 <p class="text-muted mt-2 mb-0">No Linked Photo</p>
             </div>
         `;
     }
     
-    // Show the item details modal
-    const itemDetailsModal = new bootstrap.Modal(document.getElementById('itemDetailsModal'));
-    itemDetailsModal.show();
+    // Close the quick lookup modal first
+    const quickLookupModalEl = document.getElementById('quickLookupModal');
+    const quickLookupModal = bootstrap.Modal.getInstance(quickLookupModalEl);
+    
+    if (quickLookupModal) {
+        // Wait for the quick lookup modal to fully close before opening item details
+        quickLookupModalEl.addEventListener('hidden.bs.modal', function openItemDetails() {
+            // Remove this listener after it fires once
+            quickLookupModalEl.removeEventListener('hidden.bs.modal', openItemDetails);
+            
+            // Now show the item details modal
+            const itemDetailsModal = new bootstrap.Modal(document.getElementById('itemDetailsModal'));
+            itemDetailsModal.show();
+        });
+        
+        // Close the quick lookup modal
+        quickLookupModal.hide();
+    } else {
+        // If quick lookup modal isn't open, just show item details
+        const itemDetailsModal = new bootstrap.Modal(document.getElementById('itemDetailsModal'));
+        itemDetailsModal.show();
+    }
 }
 
 // Quick Lookup functionality - filter list
