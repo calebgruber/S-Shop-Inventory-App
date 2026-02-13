@@ -1,226 +1,79 @@
-# CSV Import Feature Documentation
+# CSV Import Guide
 
 ## Overview
-The CSV Import feature allows administrators to import data from CSV files into the S-Shop Inventory database. This is useful for:
-- Migrating data from a production database to development
-- Bulk importing items, categories, subcategories, and theatre spaces
-- Restoring data from backups
+The CSV import feature has been enhanced to support importing complete inventory data with proper relationships between categories, subcategories, and items.
 
-## Accessing the Import Feature
-1. Log in as an admin user
-2. Navigate to **Settings** page
-3. Scroll to the **Import Data from CSV** section
+## Fixed Issues
+1. **Notification Error**: Fixed PDO exception when creating notifications (missing 'title' column)
+2. **CSV Import**: Enhanced to handle ID-based imports with proper relationship management
 
-## CSV Format Requirements
+## CSV Format
 
-### General Requirements
-- First row must contain column headers
-- Use comma (`,`) as the delimiter
-- Save file with `.csv` extension
-- UTF-8 encoding recommended
-- Duplicate entries (based on name or barcode) will be skipped
+### General Format
+All CSV files follow this structure:
+- **Column 1**: ID (optional, numeric) - If provided and available, this ID will be used
+- **Column 2**: Name (required) - The display name
+- **Additional columns**: Depend on the data type
 
 ### Categories CSV
-**Required Columns:**
-- `name` - Category name (required, must be unique)
-- `description` - Category description (optional)
 
-**Example:**
-```csv
-name,description
-Microphones,Professional microphones and recording equipment
-Cables,Audio cables and adapters
-Speakers,PA speakers and monitors
+Example:
 ```
+id,name,description
+1,Audio,Audio equipment and accessories
+2,Lighting,Stage lighting equipment
+3,Cables,Various cables and connectors
+```
+
+**Columns:**
+- Column 0: ID (optional)
+- Column 1: Name (required)
+- Column 2: Description (optional)
 
 ### Subcategories CSV
-**Supported Column Headers:**
 
-**Option 1 - Using category_id (recommended for database exports):**
-- `category_id` - Parent category ID (required, must exist in categories table)
-- `name` - Subcategory name (required)
-- `description` - Subcategory description (optional)
-
-**Option 2 - Using category_name:**
-- `category_name` - Parent category name (required, must exist in categories table)
-- `name` - Subcategory name (required)
-- `description` - Subcategory description (optional)
-
-**Example with category_id:**
-```csv
-category_id,name,description
-1,Wired Microphones,Standard wired microphones
-1,Wireless Microphones,Wireless microphone systems
-2,XLR Cables,3-pin XLR cables
+Example:
+```
+id,name,category_id,description
+1,Microphones,1,Various microphone types
+2,Speakers,1,Amplifiers and speakers
+3,Moving Lights,2,Intelligent lighting fixtures
 ```
 
-**Example with category_name:**
-```csv
-category_name,name,description
-Microphones,Wired Microphones,Standard wired microphones
-Microphones,Wireless Microphones,Wireless microphone systems
-Cables,XLR Cables,3-pin XLR cables
-```
-
-**Note:** The import will automatically detect whether you're using category_id or category_name. If neither header is present, it will check if the first column values are numeric (treated as IDs) or text (treated as names). Categories must be imported before subcategories.
-
-### Theatre Spaces CSV
-**Required Columns:**
-- `name` - Theatre space name (required, must be unique)
-- `description` - Space description (optional)
-
-**Example:**
-```csv
-name,description
-Main Stage,Primary performance space with 500 seat capacity
-Studio Theatre,Intimate black box theatre with flexible seating
-Rehearsal Hall,Large rehearsal space with full lighting grid
-```
+**Columns:**
+- Column 0: ID (optional)
+- Column 1: Name (required)
+- Column 2: Category reference (can be ID number or category name)
+- Column 3: Description (optional)
 
 ### Items CSV
-**Required Columns:**
-- `name` - Item name (required)
-- `description` - Item description (optional)
-- `barcode` - Unique item barcode (required, must be unique)
-- `category_name` - Category name (optional, must exist)
-- `subcategory_name` - Subcategory name (optional, must exist and match category)
-- `tracking_type` - Either "quantity" or "serial" (default: "quantity")
-- `total_quantity` - Total quantity (default: 0)
-- `in_stock_quantity` - Current in-stock quantity (default: 0)
-- `location` - Storage location (optional)
 
-**Example:**
-```csv
-name,description,barcode,category_name,subcategory_name,tracking_type,total_quantity,in_stock_quantity,location
-Shure SM58,Dynamic vocal microphone,MIC-SM58-001,Microphones,Wired Microphones,quantity,10,8,Cabinet A1
-Sennheiser EW 100,Wireless handheld system,MIC-EW100-001,Microphones,Wireless Microphones,quantity,5,5,Cabinet A2
-XLR Cable 25ft,25 foot XLR cable,CABLE-XLR25-001,Cables,XLR Cables,quantity,50,45,Cable Rack 1
+Example:
+```
+id,name,barcode,description,category_id,subcategory_id,tracking_type,total_quantity,in_stock_quantity,location
+1,Shure SM58,123456789,Dynamic microphone,1,1,quantity,10,8,Shelf A1
 ```
 
-**Note:** Categories and subcategories must be imported before items.
+**Required:**
+- Column 1: Name (required)
+- barcode: Unique barcode (required)
 
-## Import Process
+**Optional:**
+- Column 0: id - Item ID
+- description, category_id, subcategory_id, tracking_type, total_quantity, in_stock_quantity, location
 
-### Step-by-Step Instructions
+## Import Order
 
-1. **Prepare your CSV file**
-   - Ensure it follows the format requirements above
-   - Validate that all required columns are present
-   - Check that category/subcategory references are correct
+For best results, import in this order:
+1. Categories first
+2. Subcategories second
+3. Items last
 
-2. **Select import type**
-   - **Auto-detect from file**: System will attempt to determine the data type from column headers
-   - **Categories**: For importing categories only
-   - **Subcategories**: For importing subcategories only
-   - **Theatre Spaces**: For importing theatre spaces only
-   - **Items**: For importing items only
+## Benefits
 
-3. **Upload the file**
-   - Click "Choose File" and select your CSV
-   - Select the import type
-   - Click "Import CSV"
-
-4. **Review results**
-   - Success message shows number of records imported
-   - Skipped records are reported (duplicates)
-   - Errors are displayed if any rows failed to import
-
-## Import Order for Complete Database Migration
-
-When importing a complete database backup, follow this order:
-
-1. **Categories** first
-2. **Subcategories** second (requires categories)
-3. **Theatre Spaces** (independent, can be done anytime)
-4. **Items** last (requires categories and subcategories)
-
-## Sample CSV Files
-
-Sample CSV files are available in the `sample_csvs/` directory:
-- `categories_sample.csv`
-- `subcategories_sample.csv`
-- `theatre_spaces_sample.csv`
-- `items_sample.csv`
-
-## Error Handling
-
-### Common Errors and Solutions
-
-**"Category not found for subcategory"**
-- Solution: Import categories before subcategories
-
-**"Duplicate entry"**
-- Solution: Entry already exists, it will be skipped automatically
-
-**"Invalid file type"**
-- Solution: Ensure file has .csv extension
-
-**"Please upload a CSV file"**
-- Solution: Select a file before clicking Import
-
-**Missing required columns**
-- Solution: Verify CSV has correct column headers in first row
-
-## Tips and Best Practices
-
-1. **Test with small files first**: Start with a few rows to verify format
-2. **Use sample files as templates**: Modify sample CSVs for your data
-3. **Check data before import**: Verify relationships between categories/subcategories
-4. **Review import results**: Check for skipped or failed rows
-5. **Backup before import**: Always backup your database before large imports
-6. **Import in correct order**: Categories → Subcategories → Items
-7. **Handle duplicates**: Existing records are automatically skipped
-
-## Limitations
-
-- Maximum file size determined by PHP settings (typically 2MB - 100MB)
-- Import runs in one request (may timeout for very large files)
-- Duplicate detection based on name (categories/subcategories/spaces) or barcode (items)
-- Cannot update existing records, only insert new ones
-- Cannot import users, shows, pullsheets, or other advanced data
-
-## Technical Details
-
-### Duplicate Detection
-- **Categories**: Checked by `name`
-- **Subcategories**: Checked by `name` and `category_id`
-- **Theatre Spaces**: Checked by `name`
-- **Items**: Checked by `barcode`
-
-### Character Encoding
-- UTF-8 recommended
-- Special characters should be properly encoded
-
-### File Size
-- No explicit limit in the application
-- Limited by PHP upload_max_filesize setting
-- Large files (1000+ rows) may take several seconds to import
-
-## Troubleshooting
-
-### Import takes too long
-- Break large files into smaller chunks
-- Import in multiple batches
-
-### Some rows not importing
-- Check error messages in the result
-- Verify CSV format matches requirements
-- Check for missing parent records (categories for subcategories)
-
-### CSV formatting issues
-- Use a proper CSV editor or spreadsheet software
-- Ensure commas are used as delimiters
-- Quote fields that contain commas
-
-### Database errors
-- Check database permissions
-- Verify foreign key constraints are satisfied
-- Ensure database is not read-only
-
-## Support
-
-For additional help:
-1. Check sample CSV files in `sample_csvs/` directory
-2. Review error messages carefully
-3. Verify data format matches documentation
-4. Test with smaller datasets first
+✅ Maintain Relationships with IDs
+✅ Flexible References (IDs or names)
+✅ Batch Import capability
+✅ Error Recovery with detailed messages
+✅ Duplicate Prevention
+✅ Partial Success reporting
