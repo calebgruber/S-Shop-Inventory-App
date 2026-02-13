@@ -529,7 +529,7 @@ function showItemDetailsFromQuickLookup(id, name, barcode, description, category
     // Handle photo display
     const photoContainer = document.getElementById('itemPhotoContainer');
     if (photoPath) {
-        photoContainer.innerHTML = `<img src="uploads/items/${photoPath}" alt="${name}" class="img-fluid" style="max-width: 400px; max-height: 400px; object-fit: contain; border: 2px solid #dee2e6; border-radius: 8px; background: #f8f9fa;">`;
+        photoContainer.innerHTML = `<img src="uploads/items/${photoPath}" alt="${name}" class="img-fluid" style="max-width: 300px; max-height: 300px; object-fit: contain; border: 2px solid #dee2e6; border-radius: 8px; background: #f8f9fa;">`;
     } else {
         photoContainer.innerHTML = `
             <div style="width: 300px; height: 300px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
