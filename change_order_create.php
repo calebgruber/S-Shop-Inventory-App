@@ -27,7 +27,7 @@ require_once 'includes/header.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $barcode = generateUniqueBarcode('CO');
-        $createdBy = $_POST['created_by'] ?? 'Unknown';
+        $createdBy = $currentUser['name'] ?? 'Unknown'; // Use logged-in user's name with fallback
         
         getDB()->query(
             "INSERT INTO change_orders (show_id, barcode, created_by, status) VALUES (?, ?, ?, 'draft')",
@@ -50,11 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="card-body">
                 <form method="POST">
-                    <div class="mb-3">
-                        <label class="form-label">Your Name</label>
-                        <input type="text" class="form-control" name="created_by" autofocus>
+                    <div class="alert alert-info">
+                        <i class="ti ti-info-circle"></i>
+                        You'll be able to add items to the change order on the next screen.
                     </div>
-                    <button type="submit" class="btn btn-primary">Create</button>
+                    <button type="submit" class="btn btn-primary">Create Change Order</button>
                     <a href="show_edit?id=<?php echo $showId; ?>" class="btn btn-secondary">Cancel</a>
                 </form>
             </div>

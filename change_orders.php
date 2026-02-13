@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_change_order']
             throw new Exception('You do not have permission to create change order for this show');
         }
         
-        $createdBy = $_POST['created_by'] ?? 'Unknown';
+        $createdBy = $currentUser['name'] ?? 'Unknown'; // Use logged-in user's name with fallback
         $barcode = generateUniqueBarcode('CO');
         
         getDB()->query(
@@ -165,10 +165,6 @@ foreach ($changeOrders as $changeOrder) {
                             <?php endforeach; ?>
                         </select>
                         <small class="form-hint">You can create a change order without a show if needed</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label required">Your Name</label>
-                        <input type="text" class="form-control" name="created_by" placeholder="Enter your name" required>
                     </div>
                 </div>
                 <div class="modal-footer">
