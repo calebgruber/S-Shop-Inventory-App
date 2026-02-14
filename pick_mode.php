@@ -9,9 +9,16 @@ $pickSession = $_SESSION['pick_session'] ?? null;
 
 // Log for debugging
 error_log("Pick mode: REQUEST_METHOD=" . $_SERVER['REQUEST_METHOD'] . ", POST keys=" . implode(',', array_keys($_POST ?? [])));
+error_log("Pick mode: ajax isset=" . (isset($_POST['ajax']) ? 'YES' : 'NO') . ", ajax value=" . ($_POST['ajax'] ?? 'NOT SET'));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     error_log("Pick mode: AJAX request detected, action=" . ($_POST['action'] ?? 'none'));
+    
+    // Clean any output that was buffered before setting header
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    
     header('Content-Type: application/json');
     
     // Suppress error display for AJAX (errors still logged)
