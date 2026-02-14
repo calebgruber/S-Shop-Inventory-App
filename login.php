@@ -80,17 +80,17 @@ try {
 }
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
     <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     <title>Sign in - <?php echo htmlspecialchars($appName); ?></title>
     
-    <!-- Apply theme immediately to prevent flash -->
+    <!-- Force dark mode for login page -->
     <script>
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        // Override any saved theme preference - login page is always dark
+        document.documentElement.setAttribute('data-bs-theme', 'dark');
     </script>
     
     <!-- Tabler CSS -->
@@ -107,7 +107,7 @@ try {
       }
     </style>
   </head>
-  <body class="d-flex flex-column bg-white">
+  <body class="d-flex flex-column">
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/js/tabler.min.js"></script>
     <div class="row g-0 flex-fill">
       <div class="col-12 col-lg-6 col-xl-4 border-top-wide border-primary d-flex flex-column justify-content-center">
