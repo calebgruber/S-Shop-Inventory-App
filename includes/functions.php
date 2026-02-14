@@ -150,6 +150,36 @@ function getAllItems() {
     );
 }
 
+function getAllItemsFiltered($categoryId = null, $subcategoryId = null) {
+    $db = getDB();
+    
+    $sql = "SELECT i.*, c.name as category_name, sc.name as subcategory_name 
+            FROM items i 
+            LEFT JOIN categories c ON i.category_id = c.id 
+            LEFT JOIN subcategories sc ON i.subcategory_id = sc.id";
+    
+    $params = [];
+    $whereClauses = [];
+    
+    if ($categoryId !== null) {
+        $whereClauses[] = "i.category_id = ?";
+        $params[] = $categoryId;
+    }
+    
+    if ($subcategoryId !== null) {
+        $whereClauses[] = "i.subcategory_id = ?";
+        $params[] = $subcategoryId;
+    }
+    
+    if (!empty($whereClauses)) {
+        $sql .= " WHERE " . implode(" AND ", $whereClauses);
+    }
+    
+    $sql .= " ORDER BY c.name, sc.name, i.name";
+    
+    return $db->fetchAll($sql, $params);
+}
+
 function updateItemStock($itemId, $quantityChange) {
     $db = getDB();
     $db->query(

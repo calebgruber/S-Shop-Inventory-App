@@ -18,7 +18,16 @@ if ($canEdit && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id
     }
 }
 
-$items = getAllItems();
+// Get filter parameters
+$filterCategory = isset($_GET['category']) && $_GET['category'] !== '' ? (int)$_GET['category'] : null;
+$filterSubcategory = isset($_GET['subcategory']) && $_GET['subcategory'] !== '' ? (int)$_GET['subcategory'] : null;
+
+// Get all categories and subcategories for filters
+$categories = getAllCategories();
+$allSubcategories = getAllSubcategories();
+
+// Get filtered items
+$items = getAllItemsFiltered($filterCategory, $filterSubcategory);
 ?>
 
 <?php if ($canEdit): ?>
@@ -31,11 +40,71 @@ $items = getAllItems();
 </div>
 <?php endif; ?>
 
+<!-- Filters -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">
+                    <i class="ti ti-filter"></i> Filters
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="items" id="filterForm">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Category</label>
+                            <select name="category" id="categoryFilter" class="form-select">
+                                <option value="">All Categories</option>
+                                <?php foreach ($categories as $category): ?>
+                                    <option value="<?php echo $category['id']; ?>" 
+                                            <?php echo $filterCategory == $category['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($category['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Subcategory</label>
+                            <select name="subcategory" id="subcategoryFilter" class="form-select">
+                                <option value="">All Subcategories</option>
+                                <?php foreach ($allSubcategories as $subcategory): ?>
+                                    <option value="<?php echo $subcategory['id']; ?>" 
+                                            data-category="<?php echo $subcategory['category_id']; ?>"
+                                            <?php echo $filterSubcategory == $subcategory['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($subcategory['name']); ?> (<?php echo htmlspecialchars($subcategory['category_name']); ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="ti ti-search"></i> Apply Filters
+                            </button>
+                            <a href="items" class="btn btn-secondary">
+                                <i class="ti ti-x"></i> Clear
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">All Items <?php if (!$canEdit): ?><span class="badge bg-info ms-2">Read-Only</span><?php endif; ?></h3>
+                <h3 class="card-title">
+                    All Items 
+                    <?php if (!$canEdit): ?>
+                        <span class="badge bg-info ms-2">Read-Only</span>
+                    <?php endif; ?>
+                    <?php if ($filterCategory || $filterSubcategory): ?>
+                        <span class="badge bg-primary ms-2">Filtered</span>
+                    <?php endif; ?>
+                </h3>
                 <div class="ms-auto">
                     <input type="text" class="form-control barcode-autofocus" id="searchInput" placeholder="Search items...">
                 </div>
@@ -47,6 +116,7 @@ $items = getAllItems();
                             <th>Name</th>
                             <th>Barcode</th>
                             <th>Category</th>
+                            <th>Subcategory</th>
                             <th>Type</th>
                             <th>In Stock</th>
                             <th>Total</th>
@@ -61,6 +131,7 @@ $items = getAllItems();
                                 <td><?php echo htmlspecialchars($item['name']); ?></td>
                                 <td><code><?php echo htmlspecialchars($item['barcode']); ?></code></td>
                                 <td><?php echo htmlspecialchars($item['category_name'] ?? 'N/A'); ?></td>
+                                <td><?php echo htmlspecialchars($item['subcategory_name'] ?? 'N/A'); ?></td>
                                 <td><span class="badge"><?php echo ucfirst($item['tracking_type']); ?></span></td>
                                 <td><?php echo $item['in_stock_quantity']; ?></td>
                                 <td><?php echo $item['total_quantity']; ?></td>
@@ -92,6 +163,7 @@ $items = getAllItems();
 </div>
 
 <script>
+// Search functionality
 document.getElementById('searchInput').addEventListener('keyup', function() {
     const searchTerm = this.value.toLowerCase();
     const rows = document.querySelectorAll('#itemsTable tbody tr');
@@ -101,6 +173,42 @@ document.getElementById('searchInput').addEventListener('keyup', function() {
         row.style.display = text.includes(searchTerm) ? '' : 'none';
     });
 });
+
+// Dynamic subcategory filtering based on selected category
+const categoryFilter = document.getElementById('categoryFilter');
+const subcategoryFilter = document.getElementById('subcategoryFilter');
+
+// Store all subcategory options
+const allSubcategoryOptions = Array.from(subcategoryFilter.options).slice(1); // Skip "All Subcategories" option
+
+function updateSubcategoryOptions() {
+    const selectedCategory = categoryFilter.value;
+    
+    // Clear current options except the first one
+    subcategoryFilter.innerHTML = '<option value="">All Subcategories</option>';
+    
+    if (selectedCategory === '') {
+        // Show all subcategories
+        allSubcategoryOptions.forEach(option => {
+            subcategoryFilter.appendChild(option.cloneNode(true));
+        });
+    } else {
+        // Show only subcategories for selected category
+        allSubcategoryOptions.forEach(option => {
+            if (option.dataset.category === selectedCategory) {
+                subcategoryFilter.appendChild(option.cloneNode(true));
+            }
+        });
+    }
+}
+
+// Update subcategories when category changes
+categoryFilter.addEventListener('change', function() {
+    updateSubcategoryOptions();
+});
+
+// Initialize on page load
+updateSubcategoryOptions();
 </script>
 
 <?php require_once 'includes/footer.php'; ?>
