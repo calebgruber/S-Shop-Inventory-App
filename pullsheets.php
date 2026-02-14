@@ -141,6 +141,84 @@ foreach ($pullsheets as $pullsheet) {
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPullsheetModal">
             <i class="ti ti-plus"></i> Create New Pullsheet
         </button>
+        <button type="button" class="btn btn-success ms-2" data-bs-toggle="modal" data-bs-target="#importCSVModal">
+            <i class="ti ti-file-import"></i> Import from CSV
+        </button>
+    </div>
+</div>
+
+<!-- Import CSV Modal -->
+<div class="modal fade" id="importCSVModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="import_csv.php" enctype="multipart/form-data">
+                <input type="hidden" name="redirect_to" value="pullsheets">
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Orders from CSV</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <h4 class="alert-title"><i class="ti ti-info-circle"></i> CSV Import Instructions</h4>
+                        <p>Upload a CSV file to import shop orders and/or change orders in bulk.</p>
+                        <ul class="mb-2">
+                            <li>Download the template from <a href="settings" target="_blank">Settings</a> page</li>
+                            <li>Fill in order details (order type, show name, item barcodes, quantities)</li>
+                            <li>Upload the completed CSV file here</li>
+                        </ul>
+                        <p class="mb-0"><strong>Note:</strong> All rows with the same order type and show name will be grouped into one order.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label required">CSV File</label>
+                        <input type="file" class="form-control" name="csv_file" accept=".csv" required>
+                        <small class="form-hint">Select a CSV file following the template format</small>
+                    </div>
+                    
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5>Expected CSV Format:</h5>
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Order Type</th>
+                                        <th>Show Name</th>
+                                        <th>Item Barcode</th>
+                                        <th>Item Name</th>
+                                        <th>Quantity</th>
+                                        <th>Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>shop_order</td>
+                                        <td>My Show</td>
+                                        <td>PS-001</td>
+                                        <td>Microphone</td>
+                                        <td>5</td>
+                                        <td>(blank)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>change_order</td>
+                                        <td>My Show</td>
+                                        <td>PS-002</td>
+                                        <td>Cable</td>
+                                        <td>3</td>
+                                        <td>add</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="ti ti-upload"></i> Import CSV
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 

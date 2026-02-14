@@ -659,6 +659,53 @@ $loginIllustrationPath = getSetting('login_illustration_path');
     <div class="col-12 mb-4">
         <div class="card">
             <div class="card-header">
+                <h3 class="card-title">Order CSV Templates</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h4 class="alert-title">CSV Order Import</h4>
+                    <div class="text-muted">
+                        <p>Download a CSV template to import shop orders (pullsheets) and change orders in bulk.</p>
+                        <p><strong>Features:</strong></p>
+                        <ul class="mb-0">
+                            <li>Import multiple orders at once from a single CSV file</li>
+                            <li>Works for both shop orders and change orders</li>
+                            <li>Automatically groups items by show and order type</li>
+                            <li>Includes validation and error reporting</li>
+                        </ul>
+                        <p class="mt-2 mb-0"><strong>How to use:</strong> Download the template, fill in your order details, then upload it on the Shop Orders or Change Orders page.</p>
+                    </div>
+                </div>
+                
+                <a href="csv_template.php" class="btn btn-primary" download>
+                    <i class="ti ti-download icon"></i>
+                    Download Order Import Template (CSV)
+                </a>
+                
+                <hr class="my-4">
+                
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h4 class="card-title">CSV Format</h4>
+                        <p><strong>Columns:</strong></p>
+                        <ul>
+                            <li><strong>Order Type:</strong> "shop_order" or "change_order"</li>
+                            <li><strong>Show Name:</strong> Name of the show (must exist in database)</li>
+                            <li><strong>Item Barcode:</strong> Barcode of the inventory item</li>
+                            <li><strong>Item Name:</strong> (Optional) For reference only</li>
+                            <li><strong>Quantity:</strong> Number of items</li>
+                            <li><strong>Type:</strong> For change orders: "add" or "remove" (leave blank for shop orders)</li>
+                        </ul>
+                        <p class="mb-0"><strong>Note:</strong> All rows with the same Order Type and Show Name will be grouped into one order automatically.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
                 <h3 class="card-title">Import Data from JSON</h3>
             </div>
             <div class="card-body">
