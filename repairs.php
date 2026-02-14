@@ -220,30 +220,55 @@ $allItems = getAllItems();
 
 <!-- Create Repair Modal -->
 <div class="modal fade" id="createRepairModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Create New Repair</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST">
+            <form method="POST" id="createRepairForm">
                 <input type="hidden" name="action" value="create">
+                <input type="hidden" name="item_id" id="selectedItemId" required>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label required">Item</label>
-                        <select class="form-select" name="item_id" required>
-                            <option value="">-- Select Item --</option>
+                        <label class="form-label required">Search Item</label>
+                        <input type="text" class="form-control" id="repairItemSearch" placeholder="Search items by name, barcode, or category..." autocomplete="off">
+                        <div class="mt-2" id="selectedItemDisplay" style="display: none;">
+                            <div class="alert alert-info mb-0">
+                                <strong>Selected:</strong> <span id="selectedItemName"></span>
+                                <button type="button" class="btn-close float-end" onclick="clearSelectedItem()" aria-label="Clear"></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3" id="itemSearchResults" style="max-height: 300px; overflow-y: auto; display: none;">
+                        <div class="list-group" id="repairItemsList">
                             <?php foreach ($allItems as $item): ?>
-                            <option value="<?php echo $item['id']; ?>">
-                                <?php echo htmlspecialchars($item['name']); ?> 
-                                (In Stock: <?php echo $item['in_stock_quantity']; ?>)
-                            </option>
+                            <div class="list-group-item list-group-item-action repair-item-option" style="cursor: pointer;" 
+                                 data-item-id="<?php echo $item['id']; ?>"
+                                 data-item-name="<?php echo htmlspecialchars($item['name']); ?>"
+                                 data-item-stock="<?php echo $item['in_stock_quantity']; ?>"
+                                 onclick="selectRepairItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['name']); ?>', <?php echo $item['in_stock_quantity']; ?>)">
+                                <div class="d-flex w-100 align-items-center gap-2">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
+                                        <small class="text-muted"><?php echo htmlspecialchars($item['category_name'] ?? 'Uncategorized'); ?> - <?php echo htmlspecialchars($item['barcode']); ?></small>
+                                    </div>
+                                    <div class="text-end me-2">
+                                        <small class="<?php echo $item['in_stock_quantity'] > 0 ? 'text-success' : 'text-danger'; ?>">
+                                            In Stock: <?php echo $item['in_stock_quantity']; ?>
+                                        </small>
+                                    </div>
+                                    <?php if (!empty($item['photo_path']) && file_exists(__DIR__ . '/uploads/items/' . $item['photo_path'])): ?>
+                                    <img src="uploads/items/<?php echo htmlspecialchars($item['photo_path']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                             <?php endforeach; ?>
-                        </select>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label required">Quantity</label>
-                        <input type="number" class="form-control" name="quantity" value="1" min="1" required>
+                        <input type="number" class="form-control" name="quantity" id="repairQuantity" value="1" min="1" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description/Notes</label>
@@ -375,5 +400,88 @@ $allItems = getAllItems();
 </div>
 <?php endif; ?>
 <?php endforeach; ?>
+
+<script>
+// Repair item search functionality
+let selectedRepairItemStock = 0;
+
+document.getElementById('repairItemSearch')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const resultsDiv = document.getElementById('itemSearchResults');
+    const items = document.querySelectorAll('#repairItemsList .repair-item-option');
+    
+    if (searchTerm.length > 0) {
+        resultsDiv.style.display = 'block';
+        
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    } else {
+        resultsDiv.style.display = 'none';
+    }
+});
+
+// Focus search when modal opens
+document.getElementById('createRepairModal')?.addEventListener('shown.bs.modal', function() {
+    document.getElementById('repairItemSearch').focus();
+});
+
+// Reset form when modal closes
+document.getElementById('createRepairModal')?.addEventListener('hidden.bs.modal', function() {
+    clearSelectedItem();
+    document.getElementById('repairItemSearch').value = '';
+    document.getElementById('itemSearchResults').style.display = 'none';
+});
+
+function selectRepairItem(itemId, itemName, inStock) {
+    // Set hidden field
+    document.getElementById('selectedItemId').value = itemId;
+    
+    // Show selected item display
+    document.getElementById('selectedItemName').textContent = itemName + ' (In Stock: ' + inStock + ')';
+    document.getElementById('selectedItemDisplay').style.display = 'block';
+    
+    // Hide search results and clear search input
+    document.getElementById('itemSearchResults').style.display = 'none';
+    document.getElementById('repairItemSearch').value = '';
+    
+    // Store stock quantity for validation
+    selectedRepairItemStock = inStock;
+    
+    // Set max quantity
+    document.getElementById('repairQuantity').max = inStock;
+}
+
+function clearSelectedItem() {
+    document.getElementById('selectedItemId').value = '';
+    document.getElementById('selectedItemDisplay').style.display = 'none';
+    document.getElementById('repairItemSearch').value = '';
+    selectedRepairItemStock = 0;
+    document.getElementById('repairQuantity').max = '';
+}
+
+// Form validation
+document.getElementById('createRepairForm')?.addEventListener('submit', function(e) {
+    const itemId = document.getElementById('selectedItemId').value;
+    const quantity = parseInt(document.getElementById('repairQuantity').value);
+    
+    if (!itemId) {
+        e.preventDefault();
+        alert('Please select an item first');
+        return false;
+    }
+    
+    if (quantity > selectedRepairItemStock) {
+        e.preventDefault();
+        alert('Quantity exceeds available stock (' + selectedRepairItemStock + ')');
+        return false;
+    }
+});
+</script>
 
 <?php require_once 'includes/footer.php'; ?>

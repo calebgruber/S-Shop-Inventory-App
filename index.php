@@ -597,6 +597,29 @@ document.getElementById('quickLookupInput')?.addEventListener('input', function(
     });
 });
 
+// Quick Lookup - Enter key to open first visible item
+document.getElementById('quickLookupInput')?.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        
+        // Find first visible item
+        const items = document.querySelectorAll('#quickLookupList .quick-lookup-item');
+        let firstVisibleItem = null;
+        
+        for (let item of items) {
+            if (item.style.display !== 'none') {
+                firstVisibleItem = item;
+                break;
+            }
+        }
+        
+        // Click the first visible item if it's clickable (not for students)
+        if (firstVisibleItem && firstVisibleItem.classList.contains('list-group-item-action')) {
+            firstVisibleItem.click();
+        }
+    }
+});
+
 // Reset modal when closed
 document.getElementById('quickLookupModal')?.addEventListener('hidden.bs.modal', function() {
     document.getElementById('quickLookupInput').value = '';

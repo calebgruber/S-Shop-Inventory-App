@@ -97,6 +97,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         logMessage("Show assignments updated for user ID $userId by user ID $currentUserId", 'INFO');
         setAlert('Show assignments updated successfully', 'success');
         redirect();
+    } elseif ($action === 'bulk_create') {
+        $names = trim($_POST['names'] ?? '');
+        $role = $_POST['role'] ?? 'student';
+        $defaultPassword = $_POST['default_password'] ?? 'Purchase123!';
+        
+        if (empty($names)) {
+            setAlert('Please enter at least one name', 'danger');
+        } else {
+            $nameLines = explode("\n", $names);
+            $created = 0;
+            $errors = [];
+            $passwordHash = password_hash($defaultPassword, PASSWORD_DEFAULT);
+            
+            foreach ($nameLines as $line) {
+                $name = trim($line);
+                if (empty($name)) continue;
+                
+                // Generate email from name (lowercase, replace spaces with dots)
+                $emailName = strtolower(str_replace(' ', '.', $name));
+                $email = $emailName . '@purchase.edu';
+                
+                // Check if email already exists
+                $existing = $db->fetchOne("SELECT id FROM users WHERE email = ?", [$email]);
+                if ($existing) {
+                    $errors[] = "$name (email already exists)";
+                } else {
+                    try {
+                        $db->query(
+                            "INSERT INTO users (email, password_hash, full_name, role, is_active) VALUES (?, ?, ?, ?, 1)",
+                            [$email, $passwordHash, $name, $role]
+                        );
+                        $created++;
+                    } catch (Exception $e) {
+                        $errors[] = "$name (error: " . $e->getMessage() . ")";
+                    }
+                }
+            }
+            
+            if ($created > 0) {
+                setAlert("Successfully created $created user(s)" . (!empty($errors) ? ". Errors: " . implode(', ', $errors) : ''), $created > 0 ? 'success' : 'warning');
+            } else {
+                setAlert('No users were created. ' . implode(', ', $errors), 'danger');
+            }
+            redirect();
+        }
+    } elseif ($action === 'bulk_delete') {
+        $userIds = $_POST['user_ids'] ?? [];
+        
+        if (empty($userIds)) {
+            setAlert('Please select at least one user', 'danger');
+        } else {
+            $deleted = 0;
+            foreach ($userIds as $userId) {
+                $db->query("UPDATE users SET is_deleted = 1, is_active = 0 WHERE id = ?", [$userId]);
+                $deleted++;
+            }
+            setAlert("Successfully deleted $deleted user(s)", 'success');
+            redirect();
+        }
+    } elseif ($action === 'bulk_inactivate') {
+        $userIds = $_POST['user_ids'] ?? [];
+        
+        if (empty($userIds)) {
+            setAlert('Please select at least one user', 'danger');
+        } else {
+            $inactivated = 0;
+            foreach ($userIds as $userId) {
+                $db->query("UPDATE users SET is_active = 0 WHERE id = ?", [$userId]);
+                $inactivated++;
+            }
+            setAlert("Successfully inactivated $inactivated user(s)", 'success');
+            redirect();
+        }
     }
 }
 
@@ -124,10 +197,24 @@ $allPermissions = [
 
 <div class="row mb-4">
     <div class="col-12">
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
-            <i class="ti ti-plus icon"></i> Create New User
-        </button>
+        <div class="btn-group">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                <i class="ti ti-plus icon"></i> Create New User
+            </button>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkCreateModal">
+                <i class="ti ti-users-plus icon"></i> Bulk Create Users
+            </button>
+        </div>
+        <div class="btn-group ms-2" id="bulkActionButtons" style="display: none;">
+            <button class="btn btn-warning" onclick="bulkInactivate()">
+                <i class="ti ti-user-off icon"></i> Inactivate Selected
+            </button>
+            <button class="btn btn-danger" onclick="bulkDelete()">
+                <i class="ti ti-trash icon"></i> Delete Selected
+            </button>
+        </div>
     </div>
+</div>
 </div>
 
 <div class="card">
@@ -141,6 +228,9 @@ $allPermissions = [
         <table class="table table-vcenter card-table" id="usersTable">
             <thead>
                 <tr>
+                    <th class="w-1">
+                        <input type="checkbox" class="form-check-input" id="selectAllUsers" onchange="toggleAllUsers(this)">
+                    </th>
                     <th>Name</th>
                     <th>Email</th>
                     <th>Role</th>
@@ -152,6 +242,9 @@ $allPermissions = [
             <tbody>
                 <?php foreach ($users as $user): ?>
                 <tr>
+                    <td>
+                        <input type="checkbox" class="form-check-input user-checkbox" value="<?php echo $user['id']; ?>" onchange="updateBulkActions()">
+                    </td>
                     <td>
                         <div class="d-flex align-items-center">
                             <span class="avatar avatar-sm me-2" style="background-image: url('<?php echo getUserAvatarUrl($user); ?>')"></span>
@@ -436,6 +529,61 @@ $allPermissions = [
 </div>
 <?php endforeach; ?>
 
+<!-- Bulk Create Users Modal -->
+<div class="modal fade" id="bulkCreateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bulk Create Users</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <input type="hidden" name="action" value="bulk_create">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Instructions:</strong> Enter one name per line. Email addresses will be automatically generated as name@purchase.edu (spaces converted to dots, lowercase).
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required">Names (one per line)</label>
+                        <textarea class="form-control" name="names" rows="10" placeholder="John Smith&#10;Jane Doe&#10;Robert Johnson" required></textarea>
+                        <small class="form-hint">Example: "John Smith" will become john.smith@purchase.edu</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required">Default Password</label>
+                        <input type="text" class="form-control" name="default_password" value="Purchase123!" required>
+                        <small class="form-hint">All users will be created with this password</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required">Role</label>
+                        <select class="form-select" name="role" required>
+                            <option value="student" selected>Student</option>
+                            <option value="designer">Designer</option>
+                            <option value="production_audio">Production Audio</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Users</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Delete Confirmation Form -->
+<form method="POST" id="bulkDeleteForm" style="display: none;">
+    <input type="hidden" name="action" value="bulk_delete">
+    <div id="bulkDeleteUserIds"></div>
+</form>
+
+<!-- Bulk Inactivate Confirmation Form -->
+<form method="POST" id="bulkInactivateForm" style="display: none;">
+    <input type="hidden" name="action" value="bulk_inactivate">
+    <div id="bulkInactivateUserIds"></div>
+</form>
+
 <script>
 // User search functionality
 document.getElementById('userSearchInput').addEventListener('keyup', function() {
@@ -447,6 +595,85 @@ document.getElementById('userSearchInput').addEventListener('keyup', function() 
         row.style.display = text.includes(searchTerm) ? '' : 'none';
     });
 });
+
+// Bulk actions functionality
+function toggleAllUsers(checkbox) {
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateBulkActions();
+}
+
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+    const bulkButtons = document.getElementById('bulkActionButtons');
+    
+    if (checkboxes.length > 0) {
+        bulkButtons.style.display = 'inline-block';
+    } else {
+        bulkButtons.style.display = 'none';
+    }
+}
+
+function getSelectedUserIds() {
+    const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function bulkDelete() {
+    const userIds = getSelectedUserIds();
+    
+    if (userIds.length === 0) {
+        alert('Please select at least one user');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete ${userIds.length} user(s)? This action cannot be undone.`)) {
+        return;
+    }
+    
+    // Add user IDs as hidden inputs
+    const container = document.getElementById('bulkDeleteUserIds');
+    container.innerHTML = '';
+    userIds.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'user_ids[]';
+        input.value = id;
+        container.appendChild(input);
+    });
+    
+    // Submit form
+    document.getElementById('bulkDeleteForm').submit();
+}
+
+function bulkInactivate() {
+    const userIds = getSelectedUserIds();
+    
+    if (userIds.length === 0) {
+        alert('Please select at least one user');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to inactivate ${userIds.length} user(s)?`)) {
+        return;
+    }
+    
+    // Add user IDs as hidden inputs
+    const container = document.getElementById('bulkInactivateUserIds');
+    container.innerHTML = '';
+    userIds.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'user_ids[]';
+        input.value = id;
+        container.appendChild(input);
+    });
+    
+    // Submit form
+    document.getElementById('bulkInactivateForm').submit();
+}
 </script>
 
 <?php require_once 'includes/footer.php'; ?>
