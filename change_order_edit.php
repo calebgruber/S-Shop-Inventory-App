@@ -129,8 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             
             try {
                 getDB()->query(
-                    "INSERT INTO change_order_items (change_order_id, item_id, quantity_change, type) VALUES (?, ?, ?, ?)",
-                    [$coId, $item['id'], (int)$_POST['quantity'], $type]
+                    "INSERT INTO change_order_items (change_order_id, item_id, type, quantity) VALUES (?, ?, ?, ?)",
+                    [$coId, $item['id'], $type, (int)$_POST['quantity']]
                 );
                 logMessage("Change order item added: CO=$coId, Item={$item['id']}, Type=$type, Qty={$_POST['quantity']}", 'INFO');
             } catch (Exception $e) {
