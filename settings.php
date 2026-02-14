@@ -103,6 +103,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     setAlert('Settings updated successfully');
                     break;
                     
+                case 'remove_logo':
+                    $logoPath = getSetting('logo_path');
+                    if ($logoPath) {
+                        // Delete the logo file if it exists
+                        $logoFile = UPLOAD_DIR . basename($logoPath);
+                        if (file_exists($logoFile)) {
+                            unlink($logoFile);
+                        }
+                        // Clear the logo_path setting
+                        setSetting('logo_path', '');
+                        setAlert('Logo removed successfully. App name will now be displayed as text.');
+                    } else {
+                        setAlert('No logo to remove.', 'info');
+                    }
+                    redirect();
+                    break;
+                    
                 case 'add_category':
                     getDB()->query(
                         "INSERT INTO categories (name, description) VALUES (?, ?)",
@@ -458,12 +475,18 @@ $supportEmail = getSetting('support_email', 'support@example.com');
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Logo (for Header & PDFs)</label>
                             <?php if ($logoPath && file_exists(UPLOAD_DIR . $logoPath)): ?>
-                                <div class="mb-2">
+                                <div class="mb-2 d-flex align-items-center gap-2">
                                     <img src="uploads/<?php echo htmlspecialchars($logoPath); ?>" alt="Logo" style="max-height: 80px; border: 1px solid #ddd; padding: 5px;">
+                                    <form method="POST" style="display: inline;" onsubmit="showLoading()">
+                                        <input type="hidden" name="action" value="remove_logo">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove logo and use text instead?')">
+                                            <i class="ti ti-trash"></i> Remove Logo
+                                        </button>
+                                    </form>
                                 </div>
                             <?php endif; ?>
                             <input type="file" class="form-control" name="logo" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
-                            <small class="form-hint">Upload a logo to appear in header and on PDFs (PNG, JPG, GIF, WebP - max 5MB)</small>
+                            <small class="form-hint">Upload a logo to appear in header and on PDFs (PNG, JPG, GIF, WebP - max 5MB). Without a logo, the app name will be displayed as text.</small>
                         </div>
                         
                         <div class="col-md-6 mb-3">

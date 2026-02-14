@@ -321,6 +321,44 @@ $currentUser = getCurrentUser();
         .notification-item:hover {
             background-color: var(--tblr-hover-bg);
         }
+        
+        /* Loading Screen - Super quick page transition */
+        #pageLoadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--tblr-body-bg);
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+        
+        #pageLoadingScreen.show {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(var(--tblr-primary-rgb), 0.1);
+            border-top-color: var(--tblr-primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        [data-bs-theme="dark"] #pageLoadingScreen {
+            background: var(--tblr-body-bg);
+        }
     </style>
     
     <!-- Random Cursor Easter Egg - 1% chance -->
@@ -349,6 +387,27 @@ $currentUser = getCurrentUser();
     
     <!-- Universal Form Reload Handler -->
     <script>
+    // Loading screen function - show during page transitions
+    function showLoading() {
+        const loadingScreen = document.getElementById('pageLoadingScreen');
+        if (loadingScreen) {
+            loadingScreen.classList.add('show');
+        }
+    }
+    
+    // Hide loading screen when page loads
+    window.addEventListener('load', function() {
+        const loadingScreen = document.getElementById('pageLoadingScreen');
+        if (loadingScreen) {
+            loadingScreen.classList.remove('show');
+        }
+    });
+    
+    // Show loading on page unload (when navigating away)
+    window.addEventListener('beforeunload', function() {
+        showLoading();
+    });
+    
     // Ensure ALL forms reload page after submission
     document.addEventListener('DOMContentLoaded', function() {
         // Get all forms on the page
@@ -362,6 +421,9 @@ $currentUser = getCurrentUser();
             
             // Add submit handler
             form.addEventListener('submit', function(e) {
+                // Show loading screen
+                showLoading();
+                
                 // Store form reference
                 const thisForm = this;
                 
@@ -383,6 +445,11 @@ $currentUser = getCurrentUser();
     </script>
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div id="pageLoadingScreen">
+        <div class="loading-spinner"></div>
+    </div>
+    
     <div class="page">
         <!-- Navbar -->
         <header class="navbar navbar-expand-md navbar-light d-print-none">
