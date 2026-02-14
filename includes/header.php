@@ -667,6 +667,12 @@ $currentUser = getCurrentUser();
                                     <?php if (hasPermission('return_mode')): ?>
                                     <li><a class="dropdown-item" href="return_mode">Return Mode</a></li>
                                     <?php endif; ?>
+                                    <?php if (isAdmin()): ?>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="admin_approvals">
+                                        <i class="ti ti-signature me-2"></i>Admin Approvals
+                                    </a></li>
+                                    <?php endif; ?>
                                 </ul>
                             </li>
                             <?php endif; ?>
