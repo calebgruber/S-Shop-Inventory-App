@@ -297,8 +297,9 @@ foreach ($changeOrders as $changeOrder) {
                                                 <div class="card-header">
                                                     <h3 class="card-title">Change Order</h3>
                                                     <div class="card-actions">
-                                                        <span class="badge bg-<?php echo $co['status'] === 'draft' ? 'secondary' : 'success'; ?>">
-                                                            <?php echo ucfirst($co['status']); ?>
+                                                        <?php $badge = getStatusBadge($co); ?>
+                                                        <span class="badge <?php echo $badge['class']; ?>">
+                                                            <?php echo $badge['text']; ?>
                                                         </span>
                                                     </div>
                                                 </div>
@@ -364,8 +365,9 @@ foreach ($changeOrders as $changeOrder) {
                                                 <div class="card-header">
                                                     <h3 class="card-title">Change Order</h3>
                                                     <div class="card-actions">
-                                                        <span class="badge bg-<?php echo $co['status'] === 'draft' ? 'secondary' : 'success'; ?>">
-                                                            <?php echo ucfirst($co['status']); ?>
+                                                        <?php $badge = getStatusBadge($co); ?>
+                                                        <span class="badge <?php echo $badge['class']; ?>">
+                                                            <?php echo $badge['text']; ?>
                                                         </span>
                                                     </div>
                                                 </div>

@@ -291,16 +291,12 @@ foreach ($pullsheets as $pullsheet) {
                                                 <div class="card-header">
                                                     <h3 class="card-title">Shop Order</h3>
                                                     <div class="card-actions">
-                                                        <?php
-                                                        $badgeClass = [
-                                                            'draft' => 'bg-secondary',
-                                                            'finalized' => 'bg-warning',
-                                                            'picked' => 'bg-info',
-                                                            'completed' => 'bg-success'
-                                                        ][$pullsheet['status']] ?? 'bg-secondary';
-                                                        ?>
-                                                        <span class="badge <?php echo $badgeClass; ?>">
-                                                            <?php echo ucfirst($pullsheet['status']); ?>
+                                                        <?php $badge = getStatusBadge($pullsheet); ?>
+
+                                                        <span class="badge <?php echo $badge['class']; ?>">
+
+                                                            <?php echo $badge['text']; ?>
+
                                                         </span>
                                                     </div>
                                                 </div>
@@ -371,16 +367,12 @@ foreach ($pullsheets as $pullsheet) {
                                                 <div class="card-header">
                                                     <h3 class="card-title">Shop Order</h3>
                                                     <div class="card-actions">
-                                                        <?php
-                                                        $badgeClass = [
-                                                            'draft' => 'bg-secondary',
-                                                            'finalized' => 'bg-warning',
-                                                            'picked' => 'bg-info',
-                                                            'completed' => 'bg-success'
-                                                        ][$pullsheet['status']] ?? 'bg-secondary';
-                                                        ?>
-                                                        <span class="badge <?php echo $badgeClass; ?>">
-                                                            <?php echo ucfirst($pullsheet['status']); ?>
+                                                        <?php $badge = getStatusBadge($pullsheet); ?>
+
+                                                        <span class="badge <?php echo $badge['class']; ?>">
+
+                                                            <?php echo $badge['text']; ?>
+
                                                         </span>
                                                     </div>
                                                 </div>

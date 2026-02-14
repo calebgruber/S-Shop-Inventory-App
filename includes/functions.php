@@ -1303,3 +1303,29 @@ function sendWelcomeEmail($email, $name, $tempPassword) {
         return false;
     }
 }
+
+/**
+ * Get status badge class and text for pullsheets/change orders
+ * Checks for pending approval status first
+ */
+function getStatusBadge($item) {
+    // Check for pending approval first
+    if (isset($item['approval_status']) && $item['approval_status'] === 'pending') {
+        return [
+            'class' => 'bg-orange',
+            'text' => 'Awaiting Approval'
+        ];
+    }
+    
+    // Normal status badges
+    $statusMap = [
+        'draft' => ['class' => 'bg-secondary', 'text' => 'Draft'],
+        'finalized' => ['class' => 'bg-warning', 'text' => 'Finalized'],
+        'picked' => ['class' => 'bg-info', 'text' => 'Picked'],
+        'completed' => ['class' => 'bg-success', 'text' => 'Completed'],
+        'processed' => ['class' => 'bg-success', 'text' => 'Processed']
+    ];
+    
+    $status = $item['status'] ?? 'draft';
+    return $statusMap[$status] ?? ['class' => 'bg-secondary', 'text' => ucfirst($status)];
+}
