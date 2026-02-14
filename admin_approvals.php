@@ -3,7 +3,7 @@ require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
 requireLogin();
-requireAdmin(); // Only admins can access this page
+requireRole('admin'); // Only admins can access this page
 
 $currentUser = getCurrentUser();
 $db = getDB();
