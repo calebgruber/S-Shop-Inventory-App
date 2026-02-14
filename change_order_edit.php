@@ -165,16 +165,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             // Check if approval is required
             $requiresApproval = requiresApproval();
             
+            // Get or create master pullsheet for this show
+            $masterPullsheet = getDB()->fetchOne(
+                "SELECT id FROM pullsheets WHERE show_id = ? ORDER BY created_at ASC LIMIT 1",
+                [$changeOrder['show_id']]
+            );
+            
+            // If no master pullsheet exists, create one
+            if (!$masterPullsheet) {
+                $barcode = generateUniqueBarcode('PS');
+                $createdBy = $currentUser['name'] ?? 'Unknown';
+                getDB()->query(
+                    "INSERT INTO pullsheets (show_id, barcode, created_by, status) VALUES (?, ?, ?, 'draft')",
+                    [$changeOrder['show_id'], $barcode, $createdBy]
+                );
+                $masterPullsheetId = getDB()->lastInsertId();
+            } else {
+                $masterPullsheetId = $masterPullsheet['id'];
+            }
+            
             // Process item changes
             foreach ($items as $item) {
+                $qty = abs($item['quantity_change']);
+                
                 if ($item['type'] === 'add') {
                     // Add items to show (reserve them)
                     getDB()->query(
                         "INSERT INTO item_allocations (item_id, show_id, change_order_id, quantity, status) 
                          VALUES (?, ?, ?, ?, 'checked_out')",
-                        [$item['item_id'], $changeOrder['show_id'], $coId, abs($item['quantity_change'])]
+                        [$item['item_id'], $changeOrder['show_id'], $coId, $qty]
                     );
-                    updateItemStock($item['item_id'], -abs($item['quantity_change']));
+                    updateItemStock($item['item_id'], -$qty);
+                    
+                    // Update master pullsheet: add or increase quantity
+                    $existingItem = getDB()->fetchOne(
+                        "SELECT id, quantity_needed FROM pullsheet_items 
+                         WHERE pullsheet_id = ? AND item_id = ?",
+                        [$masterPullsheetId, $item['item_id']]
+                    );
+                    
+                    if ($existingItem) {
+                        getDB()->query(
+                            "UPDATE pullsheet_items SET quantity_needed = quantity_needed + ? WHERE id = ?",
+                            [$qty, $existingItem['id']]
+                        );
+                    } else {
+                        getDB()->query(
+                            "INSERT INTO pullsheet_items (pullsheet_id, item_id, quantity_needed) VALUES (?, ?, ?)",
+                            [$masterPullsheetId, $item['item_id'], $qty]
+                        );
+                    }
                 } elseif ($item['type'] === 'remove') {
                     // Remove items from show (return them)
                     // Find the allocation to remove
@@ -186,8 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     );
                     
                     if ($allocation) {
-                        $qtyToRemove = abs($item['quantity_change']);
-                        if ($qtyToRemove >= $allocation['quantity']) {
+                        if ($qty >= $allocation['quantity']) {
                             // Remove entire allocation
                             getDB()->query("DELETE FROM item_allocations WHERE id = ?", [$allocation['id']]);
                             updateItemStock($item['item_id'], $allocation['quantity']);
@@ -195,9 +234,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                             // Reduce allocation quantity
                             getDB()->query(
                                 "UPDATE item_allocations SET quantity = quantity - ? WHERE id = ?",
-                                [$qtyToRemove, $allocation['id']]
+                                [$qty, $allocation['id']]
                             );
-                            updateItemStock($item['item_id'], $qtyToRemove);
+                            updateItemStock($item['item_id'], $qty);
+                        }
+                    }
+                    
+                    // Update master pullsheet: reduce or remove quantity
+                    $existingItem = getDB()->fetchOne(
+                        "SELECT id, quantity_needed FROM pullsheet_items 
+                         WHERE pullsheet_id = ? AND item_id = ?",
+                        [$masterPullsheetId, $item['item_id']]
+                    );
+                    
+                    if ($existingItem) {
+                        $newQty = $existingItem['quantity_needed'] - $qty;
+                        if ($newQty <= 0) {
+                            // Remove item from pullsheet if quantity is 0 or less
+                            getDB()->query(
+                                "DELETE FROM pullsheet_items WHERE id = ?",
+                                [$existingItem['id']]
+                            );
+                        } else {
+                            // Reduce quantity
+                            getDB()->query(
+                                "UPDATE pullsheet_items SET quantity_needed = ? WHERE id = ?",
+                                [$newQty, $existingItem['id']]
+                            );
                         }
                     }
                 }
