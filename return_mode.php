@@ -323,8 +323,8 @@ if (ob_get_level()) {
     </style>
 </head>
 <body>
-    <audio id="successSound"><source src="assets/sounds/success.mp3" type="audio/mpeg"></audio>
-    <audio id="errorSound"><source src="assets/sounds/error.mp3" type="audio/mpeg"></audio>
+    <audio id="successSound" preload="auto"><source src="assets/sounds/success.mp3" type="audio/mpeg"></audio>
+    <audio id="errorSound" preload="auto"><source src="assets/sounds/error.mp3" type="audio/mpeg"></audio>
     
     <div class="fullscreen-container">
         <div class="container-fluid">

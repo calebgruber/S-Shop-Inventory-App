@@ -77,19 +77,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
 // Get pending approvals
 $pendingPullsheets = $db->fetchAll(
-    "SELECT p.*, s.name as show_name, u.name as user_name, u.email as user_email
+    "SELECT p.*, s.name as show_name, u.full_name as user_name, u.email as user_email
      FROM pullsheets p
      LEFT JOIN shows s ON p.show_id = s.id
-     LEFT JOIN users u ON p.picked_by = u.name
+     LEFT JOIN users u ON p.picked_by = u.id
      WHERE p.approval_status = 'pending' AND p.status = 'picked'
      ORDER BY p.picked_at DESC"
 );
 
 $pendingChangeOrders = $db->fetchAll(
-    "SELECT co.*, s.name as show_name, u.name as user_name, u.email as user_email
+    "SELECT co.*, s.name as show_name, u.full_name as user_name, u.email as user_email
      FROM change_orders co
      LEFT JOIN shows s ON co.show_id = s.id
-     LEFT JOIN users u ON co.processed_by = u.name
+     LEFT JOIN users u ON co.processed_by = u.id
      WHERE co.approval_status = 'pending' AND co.status = 'processed'
      ORDER BY co.processed_at DESC"
 );
