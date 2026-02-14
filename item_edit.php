@@ -48,8 +48,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         unlink($uploadDir . $photoPath);
                     }
                     $photoPath = $fileName;
+                    logMessage("Photo uploaded successfully: $fileName", 'INFO');
+                } else {
+                    logMessage("Failed to move uploaded file to: $uploadPath", 'ERROR');
+                    throw new Exception("Failed to upload photo file");
                 }
+            } else {
+                throw new Exception("Invalid file type. Only JPG, PNG, and GIF are allowed.");
             }
+        } elseif (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+            // File upload error occurred
+            $uploadErrors = [
+                UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize',
+                UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'File upload stopped by extension'
+            ];
+            $errorMsg = $uploadErrors[$_FILES['photo']['error']] ?? 'Unknown upload error';
+            logMessage("Photo upload error: $errorMsg (code: {$_FILES['photo']['error']})", 'ERROR');
+            throw new Exception("Photo upload failed: $errorMsg");
         }
         
         if ($itemId) {
@@ -59,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  total_quantity = ?, in_stock_quantity = ?, location = ?, photo_path = ? WHERE id = ?",
                 [$name, $description, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location, $photoPath, $itemId]
             );
+            logMessage("Item updated successfully (ID: $itemId, photo_path: " . ($photoPath ?: 'NULL') . ")", 'INFO');
             setAlert('Item updated successfully');
         } else {
             // Create new item - use custom barcode or generate one
@@ -77,6 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [$name, $description, $barcode, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location, $photoPath]
             );
+            $newItemId = getDB()->lastInsertId();
+            logMessage("Item created successfully (ID: $newItemId, barcode: $barcode, photo_path: " . ($photoPath ?: 'NULL') . ")", 'INFO');
             setAlert('Item created successfully');
         }
         
