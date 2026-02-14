@@ -1,4 +1,7 @@
 <?php
+// Start output buffering to catch any warnings/errors for AJAX requests
+ob_start();
+
 require_once 'includes/functions.php';
 requirePermission('change_orders');
 
@@ -6,6 +9,10 @@ $coId = $_GET['id'] ?? null;
 
 // Handle AJAX requests BEFORE any HTML output
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
+    // Clean any output that might have been generated
+    if (ob_get_level()) {
+        ob_clean();
+    }
     header('Content-Type: application/json');
     
     if (!$coId) {
@@ -242,6 +249,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 }
 
 // Regular page rendering starts here
+// Flush output buffer for HTML rendering
+if (ob_get_level()) {
+    ob_end_flush();
+}
+
 $pageTitle = 'Edit Change Order';
 require_once 'includes/header.php';
 

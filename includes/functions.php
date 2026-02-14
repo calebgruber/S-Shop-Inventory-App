@@ -864,10 +864,24 @@ function createNotification($userId, $type, $message, $link = null) {
     // Clean up title - remove extra whitespace
     $title = trim(preg_replace('/\s+/', ' ', $title));
     
-    $db->query(
-        "INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)",
-        [$userId, $type, $title, $message, $link]
-    );
+    try {
+        // Try to insert with title column first
+        $db->query(
+            "INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)",
+            [$userId, $type, $title, $message, $link]
+        );
+    } catch (Exception $e) {
+        // If title column doesn't exist, try without it
+        if (strpos($e->getMessage(), 'title') !== false || strpos($e->getMessage(), '1054') !== false) {
+            $db->query(
+                "INSERT INTO notifications (user_id, type, message, link) VALUES (?, ?, ?, ?)",
+                [$userId, $type, $message, $link]
+            );
+        } else {
+            // Re-throw if it's a different error
+            throw $e;
+        }
+    }
 }
 
 function createNotificationForAdmins($type, $message, $link = null) {
