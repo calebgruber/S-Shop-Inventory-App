@@ -33,28 +33,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         }
         
         try {
+            // Split full name into first and last name
+            $nameParts = explode(' ', $currentUser['full_name'], 2);
+            $firstName = $nameParts[0] ?? '';
+            $lastName = $nameParts[1] ?? '';
+            
             // Update approval status
             if ($type === 'pullsheet') {
                 $db->query(
-                    "UPDATE pullsheets SET approval_status = 'approved', approved_at = NOW(), approved_by = ? WHERE id = ?",
+                    "UPDATE pullsheets SET approval_status = 'approved', approved_at = NOW(), approved_by = ? WHERE id = ? AND approval_status = 'pending'",
                     [$currentUser['id'], $id]
                 );
                 
                 // Store signature
                 $db->query(
                     "INSERT INTO signatures (user_id, pullsheet_id, signature_data, first_name, last_name, created_at) VALUES (?, ?, ?, ?, ?, NOW())",
-                    [$currentUser['id'], $id, $signatureData, $currentUser['first_name'], $currentUser['last_name']]
+                    [$currentUser['id'], $id, $signatureData, $firstName, $lastName]
                 );
             } else {
                 $db->query(
-                    "UPDATE change_orders SET approval_status = 'approved', approved_at = NOW(), approved_by = ? WHERE id = ?",
+                    "UPDATE change_orders SET approval_status = 'approved', approved_at = NOW(), approved_by = ? WHERE id = ? AND approval_status = 'pending'",
                     [$currentUser['id'], $id]
                 );
                 
                 // Store signature
                 $db->query(
                     "INSERT INTO signatures (user_id, change_order_id, signature_data, first_name, last_name, created_at) VALUES (?, ?, ?, ?, ?, NOW())",
-                    [$currentUser['id'], $id, $signatureData, $currentUser['first_name'], $currentUser['last_name']]
+                    [$currentUser['id'], $id, $signatureData, $firstName, $lastName]
                 );
             }
             
