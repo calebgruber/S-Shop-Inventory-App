@@ -894,9 +894,20 @@ function createNotificationForAdmins($type, $message, $link = null) {
 
 function createNotificationForDesigners($type, $message, $link = null) {
     $db = getDB();
-    $designers = $db->fetchAll("SELECT id FROM users WHERE role IN ('admin', 'designer') AND is_active = 1");
+    // Only send to designers and production_audio, NOT admins (admins get separate notifications)
+    $designers = $db->fetchAll("SELECT id FROM users WHERE role IN ('designer', 'production_audio') AND is_active = 1");
     foreach ($designers as $designer) {
         createNotification($designer['id'], $type, $message, $link);
+    }
+}
+
+function createNotificationForOperations($type, $message, $link = null) {
+    // Notify all users who can perform operations (pick/return)
+    // This includes admins, designers, and production_audio
+    $db = getDB();
+    $users = $db->fetchAll("SELECT id FROM users WHERE role IN ('admin', 'designer', 'production_audio') AND is_active = 1");
+    foreach ($users as $user) {
+        createNotification($user['id'], $type, $message, $link);
     }
 }
 
@@ -925,16 +936,18 @@ function getUnreadNotificationCount($userId) {
 
 function markNotificationAsRead($notificationId, $userId) {
     $db = getDB();
+    // Delete notification instead of marking as read to save database space
     $db->query(
-        "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?",
+        "DELETE FROM notifications WHERE id = ? AND user_id = ?",
         [$notificationId, $userId]
     );
 }
 
 function markAllNotificationsAsRead($userId) {
     $db = getDB();
+    // Delete all notifications instead of marking as read to save database space
     $db->query(
-        "UPDATE notifications SET is_read = 1 WHERE user_id = ?",
+        "DELETE FROM notifications WHERE user_id = ?",
         [$userId]
     );
 }

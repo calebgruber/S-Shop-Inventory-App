@@ -227,10 +227,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     [$pullsheetId]
                 );
                 
-                // Create notification for users with pick_mode permission
+                // Create notification for users with pick_mode permission (all operations users)
                 $pullsheet = getPullsheetById($pullsheetId);
                 $showName = $pullsheet['show_name'] ?? 'Student Requests';
-                createNotificationForDesigners(
+                createNotificationForOperations(
                     'pending_pick',
                     "New shop order ready for picking: " . $showName,
                     "pick_mode.php?pullsheet=" . $pullsheet['barcode']

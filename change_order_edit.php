@@ -223,8 +223,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 // Admin doesn't need approval
                 getDB()->query("UPDATE change_orders SET status = 'finalized', finalized_at = NOW() WHERE id = ?", [$coId]);
                 
-                // Create notification
-                createNotificationForDesigners(
+                // Create notification for all operations users
+                createNotificationForOperations(
                     'change_order',
                     "Change order finalized for " . $changeOrder['show_name'],
                     "change_orders.php"

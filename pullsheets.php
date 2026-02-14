@@ -31,12 +31,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         if ($pullsheet['status'] === 'finalized' || $pullsheet['status'] === 'picked') {
             $items = getPullsheetItems($deleteId);
             foreach ($items as $item) {
-                // Return items to stock
+                // Return items to stock - use quantity_picked if available, otherwise quantity_needed
+                $quantityToReturn = ($pullsheet['status'] === 'picked') ? $item['quantity_picked'] : $item['quantity_needed'];
                 $db->query(
                     "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
-                    [$item['quantity'], $item['item_id']]
+                    [$quantityToReturn, $item['item_id']]
                 );
-                logMessage("Unreserved {$item['quantity']} of item ID {$item['item_id']} from shop order ID $deleteId", 'INFO');
+                logMessage("Unreserved {$quantityToReturn} of item ID {$item['item_id']} from shop order ID $deleteId", 'INFO');
             }
         }
         

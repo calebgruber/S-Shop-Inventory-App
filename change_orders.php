@@ -33,11 +33,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
             foreach ($items as $item) {
                 // Only unreserve items that were being added (removed from stock)
                 if ($item['type'] === 'add') {
-                    $db->query(
-                        "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
-                        [$item['quantity'], $item['item_id']]
-                    );
-                    logMessage("Unreserved {$item['quantity']} of item ID {$item['item_id']} from change order ID $deleteId", 'INFO');
+                    // Use quantity_change field (or quantity if that's the actual column name)
+                    $quantityToReturn = abs($item['quantity_change'] ?? $item['quantity'] ?? 0);
+                    if ($quantityToReturn > 0) {
+                        $db->query(
+                            "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
+                            [$quantityToReturn, $item['item_id']]
+                        );
+                        logMessage("Unreserved {$quantityToReturn} of item ID {$item['item_id']} from change order ID $deleteId", 'INFO');
+                    }
                 }
                 // Items with type='remove' were being returned, so no stock adjustment needed
             }
