@@ -531,7 +531,8 @@ function showAddItemModal(item) {
     console.log('Modal should be visible now');
 }
 
-document.getElementById('confirmBtn').addEventListener('click', () => {
+// Function to add item (called by button or Enter key)
+function addItemToOrder() {
     if (!selectedItem) return;
     
     fetch('?id=<?php echo htmlspecialchars($coId, ENT_QUOTES, 'UTF-8'); ?>', {
@@ -555,6 +556,17 @@ document.getElementById('confirmBtn').addEventListener('click', () => {
         alert('Error adding item');
         playErrorSound();
     });
+}
+
+// Button click handler
+document.getElementById('confirmBtn').addEventListener('click', addItemToOrder);
+
+// Enter key handler on quantity input
+document.getElementById('qtyInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        addItemToOrder();
+    }
 });
 
 document.getElementById('saveDraftBtn').addEventListener('click', () => {

@@ -546,7 +546,8 @@ function showAddItemModal(item) {
     console.log('Modal should be visible now');
 }
 
-document.getElementById('confirmAddBtn').addEventListener('click', function() {
+// Function to add item (called by button or Enter key)
+function addItemToOrder() {
     if (!selectedItem) return;
     
     const quantity = parseInt(document.getElementById('quantityInput').value);
@@ -567,6 +568,17 @@ document.getElementById('confirmAddBtn').addEventListener('click', function() {
             playErrorSound();
         }
     });
+}
+
+// Button click handler
+document.getElementById('confirmAddBtn').addEventListener('click', addItemToOrder);
+
+// Enter key handler on quantity input
+document.getElementById('quantityInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        addItemToOrder();
+    }
 });
 
 document.querySelectorAll('.remove-item-btn').forEach(btn => {
