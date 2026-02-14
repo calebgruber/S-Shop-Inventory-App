@@ -1202,3 +1202,104 @@ function requiresSignature() {
     // Production Audio users need admin signature
     return $user['role'] === 'production_audio';
 }
+
+/**
+ * Send email notification
+ * 
+ * @param string $to Recipient email address
+ * @param string $subject Email subject
+ * @param string $message Email message (HTML supported)
+ * @param string $fromName Optional sender name
+ * @return bool Success status
+ */
+function sendEmail($to, $subject, $message, $fromName = null) {
+    try {
+        $appName = getSetting('app_name', 'CMFT Sound Shop Inventory');
+        $supportEmail = getSetting('support_email', 'noreply@example.com');
+        
+        if (!$fromName) {
+            $fromName = $appName;
+        }
+        
+        // Set email headers
+        $headers = [];
+        $headers[] = 'MIME-Version: 1.0';
+        $headers[] = 'Content-type: text/html; charset=utf-8';
+        $headers[] = "From: $fromName <$supportEmail>";
+        $headers[] = "Reply-To: $supportEmail";
+        $headers[] = "X-Mailer: PHP/" . phpversion();
+        
+        // Send email using PHP's mail function
+        $success = mail($to, $subject, $message, implode("\r\n", $headers));
+        
+        if ($success) {
+            logMessage("Email sent to $to: $subject", 'INFO');
+        } else {
+            logMessage("Failed to send email to $to: $subject", 'WARNING');
+        }
+        
+        return $success;
+        
+    } catch (Exception $e) {
+        logException($e, 'Error sending email');
+        return false;
+    }
+}
+
+/**
+ * Send welcome email with temporary password
+ * 
+ * @param string $email User email
+ * @param string $name User full name
+ * @param string $tempPassword Temporary password
+ * @return bool Success status
+ */
+function sendWelcomeEmail($email, $name, $tempPassword) {
+    try {
+        $appName = getSetting('app_name', 'CMFT Sound Shop Inventory');
+        $supportEmail = getSetting('support_email', 'support@example.com');
+        
+        $subject = "Welcome to $appName";
+        
+        $message = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+        </head>
+        <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+            <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+                <h2 style='color: #206bc4;'>Welcome to $appName</h2>
+                
+                <p>Hello $name,</p>
+                
+                <p>Your account has been created. Here are your login credentials:</p>
+                
+                <div style='background-color: #f8f9fa; border-left: 4px solid #206bc4; padding: 15px; margin: 20px 0;'>
+                    <p style='margin: 5px 0;'><strong>Email:</strong> $email</p>
+                    <p style='margin: 5px 0;'><strong>Temporary Password:</strong> $tempPassword</p>
+                </div>
+                
+                <p><strong>Important:</strong> For security reasons, you will be required to change your password when you first log in.</p>
+                
+                <p>To access the system, please visit the login page and use the credentials above.</p>
+                
+                <p>If you have any questions or need assistance, please contact us at <a href='mailto:$supportEmail'>$supportEmail</a>.</p>
+                
+                <hr style='border: none; border-top: 1px solid #ddd; margin: 30px 0;'>
+                
+                <p style='font-size: 12px; color: #888;'>
+                    This is an automated message from $appName. Please do not reply to this email.
+                </p>
+            </div>
+        </body>
+        </html>
+        ";
+        
+        return sendEmail($email, $subject, $message);
+        
+    } catch (Exception $e) {
+        logException($e, 'Error sending welcome email');
+        return false;
+    }
+}

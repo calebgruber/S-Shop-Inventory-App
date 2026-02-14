@@ -45,6 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 logMessage("User logged in: " . $email, 'INFO');
                 
+                // Check if user must reset password
+                if ($user['must_reset_password']) {
+                    header('Location: change_password');
+                    exit;
+                }
+                
                 header('Location: index');
                 exit;
             } else {
@@ -62,11 +68,15 @@ try {
     $appName = getSetting('app_name', 'CMFT Sound Shop Inventory');
     $loginCoverImage = getSetting('login_cover_image', '');
     $logoPath = getSetting('logo_path', '');
+    $supportEmail = getSetting('support_email', 'support@example.com');
+    $loginIllustration = getSetting('login_illustration_path', '');
 } catch (Exception $e) {
     logMessage("Error loading settings: " . $e->getMessage(), 'ERROR');
     $appName = 'CMFT Sound Shop Inventory';
     $loginCoverImage = '';
     $logoPath = '';
+    $supportEmail = 'support@example.com';
+    $loginIllustration = '';
 }
 ?>
 <!doctype html>
@@ -149,18 +159,23 @@ try {
           </form>
           
           <div class="text-center text-muted mt-3">
-            <small>Default: <code>admin@example.com</code> / <code>admin123</code></small>
+            <small>Forgot your password? Please email <a href="mailto:<?php echo htmlspecialchars($supportEmail); ?>"><?php echo htmlspecialchars($supportEmail); ?></a></small>
           </div>
         </div>
       </div>
       <div class="col-12 col-lg-6 col-xl-8 d-none d-lg-block">
         <!-- Photo -->
         <div class="bg-cover h-100 min-vh-100" style="background-image: url(<?php 
-          if ($loginCoverImage && file_exists(__DIR__ . '/uploads/' . basename($loginCoverImage))) {
-            echo 'uploads/' . htmlspecialchars(basename($loginCoverImage));
+          // Check for login illustration first, then login cover image
+          $coverImagePath = '';
+          if ($loginIllustration && file_exists(__DIR__ . '/uploads/' . basename($loginIllustration))) {
+            $coverImagePath = 'uploads/' . htmlspecialchars(basename($loginIllustration));
+          } elseif ($loginCoverImage && file_exists(__DIR__ . '/uploads/' . basename($loginCoverImage))) {
+            $coverImagePath = 'uploads/' . htmlspecialchars(basename($loginCoverImage));
           } else {
-            echo 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80';
+            $coverImagePath = 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80';
           }
+          echo $coverImagePath;
         ?>)"></div>
       </div>
     </div>

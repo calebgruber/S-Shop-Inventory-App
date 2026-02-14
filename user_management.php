@@ -125,10 +125,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     try {
                         $db->query(
-                            "INSERT INTO users (email, password_hash, full_name, role, is_active) VALUES (?, ?, ?, ?, 1)",
-                            [$email, $passwordHash, $name, $role]
+                            "INSERT INTO users (email, password_hash, full_name, role, is_active, must_reset_password, temp_password) VALUES (?, ?, ?, ?, 1, 1, ?)",
+                            [$email, $passwordHash, $name, $role, $defaultPassword]
                         );
                         $created++;
+                        
+                        // Send welcome email with temporary password
+                        try {
+                            sendWelcomeEmail($email, $name, $defaultPassword);
+                            logMessage("Welcome email sent to: $email", 'INFO');
+                        } catch (Exception $e) {
+                            logMessage("Failed to send welcome email to $email: " . $e->getMessage(), 'WARNING');
+                            // Don't add to errors array - user was created successfully
+                        }
                     } catch (Exception $e) {
                         $errors[] = "$name (error: " . $e->getMessage() . ")";
                     }
@@ -136,7 +145,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             if ($created > 0) {
-                setAlert("Successfully created $created user(s)" . (!empty($errors) ? ". Errors: " . implode(', ', $errors) : ''), $created > 0 ? 'success' : 'warning');
+                $message = "Successfully created $created user(s). Welcome emails have been sent.";
+                if (!empty($errors)) {
+                    $message .= " Errors: " . implode(', ', $errors);
+                }
+                setAlert($message, $created > 0 ? 'success' : 'warning');
             } else {
                 setAlert('No users were created. ' . implode(', ', $errors), 'danger');
             }

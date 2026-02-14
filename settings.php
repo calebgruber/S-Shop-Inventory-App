@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             switch ($_POST['action']) {
                 case 'update_app_settings':
                     setSetting('app_name', $_POST['app_name']);
+                    setSetting('support_email', $_POST['support_email'] ?? 'support@example.com');
                     
                     // Handle logo upload
                     if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
@@ -429,6 +430,7 @@ $theatreSpaces = getAllTheatreSpaces();
 $appName = getSetting('app_name');
 $logoPath = getSetting('logo_path');
 $loginIllustrationPath = getSetting('login_illustration_path');
+$supportEmail = getSetting('support_email', 'support@example.com');
 ?>
 
 <div class="row">
@@ -444,6 +446,12 @@ $loginIllustrationPath = getSetting('login_illustration_path');
                     <div class="mb-3">
                         <label class="form-label">Application Name</label>
                         <input type="text" class="form-control" name="app_name" value="<?php echo htmlspecialchars($appName); ?>" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Support Email</label>
+                        <input type="email" class="form-control" name="support_email" value="<?php echo htmlspecialchars($supportEmail); ?>" required>
+                        <small class="form-hint">This email will be displayed on the login page for password reset requests</small>
                     </div>
                     
                     <div class="row">
