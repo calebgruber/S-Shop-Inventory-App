@@ -133,9 +133,12 @@ $allPermissions = [
 <div class="card">
     <div class="card-header">
         <h3 class="card-title">Users</h3>
+        <div class="ms-auto">
+            <input type="text" class="form-control" id="userSearchInput" placeholder="Search users...">
+        </div>
     </div>
     <div class="table-responsive">
-        <table class="table table-vcenter card-table">
+        <table class="table table-vcenter card-table" id="usersTable">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -432,5 +435,18 @@ $allPermissions = [
     </div>
 </div>
 <?php endforeach; ?>
+
+<script>
+// User search functionality
+document.getElementById('userSearchInput').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#usersTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+</script>
 
 <?php require_once 'includes/footer.php'; ?>

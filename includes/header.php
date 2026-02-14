@@ -562,7 +562,7 @@ $currentUser = getCurrentUser();
                             </li>
                             <?php endif; ?>
                             
-                            <?php if (hasPermission('pullsheets')): ?>
+                            <?php if (hasPermission('pullsheets') && !isStudent()): ?>
                             <li class="nav-item <?php echo $currentPage === 'pullsheets' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="pullsheets">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -573,7 +573,7 @@ $currentUser = getCurrentUser();
                             </li>
                             <?php endif; ?>
                             
-                            <?php if (hasPermission('change_orders')): ?>
+                            <?php if (hasPermission('change_orders') && !isStudent()): ?>
                             <li class="nav-item <?php echo $currentPage === 'change_orders' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="change_orders">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -604,7 +604,7 @@ $currentUser = getCurrentUser();
                             </li>
                             <?php endif; ?>
                             
-                            <?php if (hasPermission('reports')): ?>
+                            <?php if (hasPermission('reports') && !isStudent()): ?>
                             <li class="nav-item <?php echo $currentPage === 'reports' ? 'active' : ''; ?>">
                                 <a class="nav-link" href="reports">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
