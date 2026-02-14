@@ -536,7 +536,7 @@ if (ob_get_level()) {
         const playError = () => document.getElementById('errorSound')?.play()?.catch(() => {});
         
         const post = (data, callback) => {
-            fetch('pick_mode.php', {
+            fetch('pick_mode', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: data
