@@ -284,9 +284,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: 'action=get_events'
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error ' + response.status);
+                }
+                return response.json();
+            })
             .then(data => successCallback(data))
-            .catch(error => failureCallback(error));
+            .catch(error => {
+                console.error('Error loading events:', error);
+                failureCallback(error);
+            });
         },
         eventClick: function(info) {
             <?php if (isAdmin()): ?>
@@ -344,7 +352,12 @@ function saveEvent() {
         method: 'POST',
         body: new URLSearchParams(formData)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('HTTP error ' + response.status);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             window.location.href = window.location.href; // Reload to show changes
@@ -363,7 +376,7 @@ function saveEvent() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        console.error('Error saving event:', error);
         alert('Error saving event');
     });
 }
@@ -379,7 +392,12 @@ function deleteEvent() {
         method: 'POST',
         body: new URLSearchParams(formData)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('HTTP error ' + response.status);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             window.location.href = window.location.href; // Reload to show changes
@@ -391,7 +409,7 @@ function deleteEvent() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        console.error('Error deleting event:', error);
         showAlert('Error deleting event', 'danger');
     });
 }
@@ -409,7 +427,12 @@ function updateShowColor(input) {
         method: 'POST',
         body: new URLSearchParams(formData)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('HTTP error ' + response.status);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Update preview badge
@@ -419,7 +442,10 @@ function updateShowColor(input) {
             showAlert('Color updated successfully', 'success');
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error updating show color:', error);
+        showAlert('Error updating color', 'danger');
+    });
 }
 
 function showAlert(message, type) {
