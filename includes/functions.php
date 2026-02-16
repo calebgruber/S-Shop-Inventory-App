@@ -1258,8 +1258,21 @@ function sendWelcomeEmail($email, $name, $tempPassword) {
     try {
         $appName = getSetting('app_name', 'CMFT Sound Shop Inventory');
         $supportEmail = getSetting('support_email', 'support@example.com');
+        $appUrl = getSetting('app_url', '');
         
         $subject = "Welcome to $appName";
+        
+        // Build login button HTML if app URL is configured
+        $loginButton = '';
+        if ($appUrl) {
+            $loginButton = "
+                <div style='text-align: center; margin: 30px 0;'>
+                    <a href='$appUrl' style='display: inline-block; background-color: #206bc4; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;'>
+                        Login Now
+                    </a>
+                </div>
+            ";
+        }
         
         $message = "
         <!DOCTYPE html>
@@ -1280,9 +1293,9 @@ function sendWelcomeEmail($email, $name, $tempPassword) {
                     <p style='margin: 5px 0;'><strong>Temporary Password:</strong> $tempPassword</p>
                 </div>
                 
-                <p><strong>Important:</strong> For security reasons, you will be required to change your password when you first log in.</p>
+                $loginButton
                 
-                <p>To access the system, please visit the login page and use the credentials above.</p>
+                <p><strong>Important:</strong> For security reasons, you will be required to change your password when you first log in.</p>
                 
                 <p>If you have any questions or need assistance, please contact us at <a href='mailto:$supportEmail'>$supportEmail</a>.</p>
                 
