@@ -80,9 +80,12 @@ class RealtimeUpdates {
                 const newCount = parseInt(data.count);
                 this.updateNotificationBadge(newCount);
                 
-                // If count increased, show toast notification
-                if (newCount > this.lastNotificationCount) {
-                    this.showNewNotificationToast(newCount - this.lastNotificationCount);
+                // If count increased, just play sound (no toast)
+                if (newCount > this.lastNotificationCount && this.lastNotificationCount > 0) {
+                    const sound = document.getElementById('notificationSound');
+                    if (sound) {
+                        sound.play().catch(e => console.log('Cannot play sound:', e));
+                    }
                 }
                 
                 this.lastNotificationCount = newCount;
@@ -98,18 +101,6 @@ class RealtimeUpdates {
             badge.textContent = count;
             badge.style.display = count > 0 ? 'inline-block' : 'none';
         }
-    }
-
-    showNewNotificationToast(count) {
-        // Play sound if available
-        const sound = document.getElementById('notificationSound');
-        if (sound) {
-            sound.play().catch(e => console.log('Cannot play sound:', e));
-        }
-        
-        // Show toast notification
-        const message = count === 1 ? 'You have a new notification' : `You have ${count} new notifications`;
-        this.showToast(message, 'info');
     }
 
     async checkApprovalStatus() {
