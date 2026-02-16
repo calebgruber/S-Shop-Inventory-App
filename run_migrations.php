@@ -80,6 +80,23 @@ try {
                     $output[] = "  ✓ app_url setting already exists";
                 }
             }
+        ],
+        [
+            'name' => '005_create_login_banners_table',
+            'description' => 'Create table for rotating login banner images',
+            'sql' => [
+                "CREATE TABLE IF NOT EXISTS login_banners (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    file_path VARCHAR(255) NOT NULL,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    display_order INT DEFAULT 0,
+                    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    uploaded_by INT,
+                    INDEX idx_active (is_active),
+                    INDEX idx_order (display_order),
+                    FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            ]
         ]
     ];
     

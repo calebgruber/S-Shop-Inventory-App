@@ -58,9 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect();
     } elseif ($action === 'delete') {
         $userId = $_POST['user_id'] ?? 0;
-        // Soft delete
-        $db->query("UPDATE users SET is_deleted = 1, is_active = 0 WHERE id = ?", [$userId]);
-        setAlert('User deleted successfully', 'success');
+        // Hard delete - permanently remove from database
+        $db->query("DELETE FROM users WHERE id = ?", [$userId]);
+        setAlert('User permanently deleted from database', 'success');
         redirect();
     } elseif ($action === 'update_permissions') {
         $userId = $_POST['user_id'] ?? 0;
@@ -163,10 +163,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $deleted = 0;
             foreach ($userIds as $userId) {
-                $db->query("UPDATE users SET is_deleted = 1, is_active = 0 WHERE id = ?", [$userId]);
+                // Hard delete - permanently remove from database
+                $db->query("DELETE FROM users WHERE id = ?", [$userId]);
                 $deleted++;
             }
-            setAlert("Successfully deleted $deleted user(s)", 'success');
+            setAlert("Successfully permanently deleted $deleted user(s) from database", 'success');
             redirect();
         }
     } elseif ($action === 'bulk_inactivate') {
