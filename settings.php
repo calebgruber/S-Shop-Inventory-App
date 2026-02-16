@@ -434,6 +434,112 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         setAlert('Import failed: ' . $e->getMessage(), 'danger');
                     }
                     break;
+                    
+                case 'upload_banner':
+                    if (!isset($_FILES['banners']) || empty($_FILES['banners']['name'][0])) {
+                        setAlert('Please select at least one image', 'danger');
+                        redirect();
+                    }
+                    
+                    $uploadDir = 'uploads/banners/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    
+                    $uploadedCount = 0;
+                    $files = $_FILES['banners'];
+                    $fileCount = count($files['name']);
+                    
+                    for ($i = 0; $i < $fileCount; $i++) {
+                        if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                            // Validate file size (max 5MB)
+                            if ($files['size'][$i] > 5 * 1024 * 1024) {
+                                setAlert('File ' . $files['name'][$i] . ' is too large (max 5MB)', 'warning');
+                                continue;
+                            }
+                            
+                            // Validate image type
+                            $imageInfo = getimagesize($files['tmp_name'][$i]);
+                            if ($imageInfo === false) {
+                                setAlert('File ' . $files['name'][$i] . ' is not a valid image', 'warning');
+                                continue;
+                            }
+                            
+                            $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
+                            $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+                            if (!in_array($ext, $allowedExtensions)) {
+                                setAlert('File ' . $files['name'][$i] . ' has invalid extension', 'warning');
+                                continue;
+                            }
+                            
+                            // Generate unique filename
+                            $filename = 'banner_' . time() . '_' . $i . '.' . $ext;
+                            $filepath = $uploadDir . $filename;
+                            
+                            if (move_uploaded_file($files['tmp_name'][$i], $filepath)) {
+                                // Save to database
+                                getDB()->query(
+                                    "INSERT INTO login_banners (file_path, uploaded_by, display_order) VALUES (?, ?, ?)",
+                                    [$filepath, getCurrentUser()['id'], $i]
+                                );
+                                $uploadedCount++;
+                            }
+                        }
+                    }
+                    
+                    if ($uploadedCount > 0) {
+                        setAlert("Successfully uploaded $uploadedCount banner(s)", 'success');
+                    } else {
+                        setAlert('No banners were uploaded', 'warning');
+                    }
+                    redirect();
+                    break;
+                    
+                case 'delete_banner':
+                    if (isset($_POST['banner_id'])) {
+                        $banner = getDB()->fetchOne(
+                            "SELECT * FROM login_banners WHERE id = ?",
+                            [$_POST['banner_id']]
+                        );
+                        
+                        if ($banner) {
+                            // Delete file
+                            if (file_exists($banner['file_path'])) {
+                                unlink($banner['file_path']);
+                            }
+                            
+                            // Delete from database
+                            getDB()->query("DELETE FROM login_banners WHERE id = ?", [$_POST['banner_id']]);
+                            
+                            echo json_encode(['success' => true, 'message' => 'Banner deleted successfully']);
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Banner not found']);
+                        }
+                        exit;
+                    }
+                    break;
+                    
+                case 'toggle_banner_active':
+                    if (isset($_POST['banner_id'])) {
+                        $banner = getDB()->fetchOne(
+                            "SELECT * FROM login_banners WHERE id = ?",
+                            [$_POST['banner_id']]
+                        );
+                        
+                        if ($banner) {
+                            $newStatus = !$banner['is_active'];
+                            getDB()->query(
+                                "UPDATE login_banners SET is_active = ? WHERE id = ?",
+                                [$newStatus, $_POST['banner_id']]
+                            );
+                            
+                            echo json_encode(['success' => true, 'active' => $newStatus]);
+                        } else {
+                            echo json_encode(['success' => false, 'message' => 'Banner not found']);
+                        }
+                        exit;
+                    }
+                    break;
             }
         }
         redirect();
@@ -450,6 +556,7 @@ $logoPath = getSetting('logo_path');
 $loginIllustrationPath = getSetting('login_illustration_path');
 $supportEmail = getSetting('support_email', 'support@example.com');
 $appUrl = getSetting('app_url', '');
+$loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_order, uploaded_at DESC");
 ?>
 
 <div class="row">
@@ -874,6 +981,87 @@ $appUrl = getSetting('app_url', '');
             </div>
         </div>
         
+        <!-- Login Banners Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3 class="card-title">Login Banners</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Upload multiple banner images for the login page. Images will rotate to provide visual variety.
+                </p>
+                
+                <!-- Upload Form -->
+                <form method="POST" enctype="multipart/form-data" onsubmit="return handleBannerUpload(event)">
+                    <input type="hidden" name="action" value="upload_banner">
+                    <div class="mb-3">
+                        <label class="form-label">Upload Banners (Multiple)</label>
+                        <input type="file" class="form-control" name="banners[]" id="bannerFiles" 
+                               accept="image/png,image/jpeg,image/gif,image/webp" 
+                               multiple onchange="previewBanners(this)">
+                        <div class="form-hint">
+                            Maximum 5MB per image. Supported formats: JPG, PNG, GIF, WEBP
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Container -->
+                    <div id="bannerPreview" class="row g-2 mb-3"></div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-upload icon"></i>
+                        Upload Banners
+                    </button>
+                </form>
+                
+                <!-- Existing Banners Gallery -->
+                <?php if (!empty($loginBanners)): ?>
+                <hr class="my-4">
+                <h4 class="mb-3">Current Banners (<?= count($loginBanners) ?>)</h4>
+                <div class="row g-3">
+                    <?php foreach ($loginBanners as $banner): ?>
+                    <div class="col-md-4 col-lg-3" id="banner-<?= $banner['id'] ?>">
+                        <div class="card">
+                            <img src="<?= htmlspecialchars($banner['file_path']) ?>" 
+                                 class="card-img-top" 
+                                 style="height: 200px; object-fit: cover;"
+                                 alt="Login Banner">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge <?= $banner['is_active'] ? 'bg-success' : 'bg-secondary' ?>" id="status-badge-<?= $banner['id'] ?>">
+                                        <?= $banner['is_active'] ? 'Active' : 'Inactive' ?>
+                                    </span>
+                                    <small class="text-muted">Order: <?= $banner['display_order'] ?></small>
+                                </div>
+                                <small class="text-muted d-block mb-2">
+                                    <?= date('M j, Y', strtotime($banner['uploaded_at'])) ?>
+                                </small>
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            onclick="toggleBannerActive(<?= $banner['id'] ?>)" 
+                                            id="toggle-btn-<?= $banner['id'] ?>">
+                                        <i class="ti ti-toggle-<?= $banner['is_active'] ? 'right' : 'left' ?> icon"></i>
+                                        Toggle
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteBanner(<?= $banner['id'] ?>)">
+                                        <i class="ti ti-trash icon"></i>
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php else: ?>
+                <div class="alert alert-info mt-3">
+                    <i class="ti ti-info-circle icon"></i>
+                    No banners uploaded yet. Upload your first banner above!
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
         <!-- Database Migrations Card -->
         <div class="card mt-4">
             <div class="card-header">
@@ -966,6 +1154,130 @@ function runMigrations() {
         // Re-enable button
         btn.disabled = false;
         btn.innerHTML = '<i class="ti ti-database-cog icon"></i> Run Database Migrations';
+    });
+}
+
+// Banner management functions
+function previewBanners(input) {
+    const preview = document.getElementById('bannerPreview');
+    preview.innerHTML = '';
+    
+    if (input.files) {
+        Array.from(input.files).forEach((file, index) => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-3';
+                    col.innerHTML = `
+                        <div class="card">
+                            <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="Preview">
+                            <div class="card-body p-2">
+                                <small class="text-muted">${file.name}</small>
+                            </div>
+                        </div>
+                    `;
+                    preview.appendChild(col);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+}
+
+function handleBannerUpload(event) {
+    const fileInput = document.getElementById('bannerFiles');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Please select at least one image file');
+        event.preventDefault();
+        return false;
+    }
+    
+    // Check file sizes
+    for (let i = 0; i < fileInput.files.length; i++) {
+        if (fileInput.files[i].size > 5 * 1024 * 1024) {
+            alert(`File "${fileInput.files[i].name}" is too large (max 5MB)`);
+            event.preventDefault();
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+function deleteBanner(bannerId) {
+    if (!confirm('Are you sure you want to delete this banner? This action cannot be undone.')) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'delete_banner');
+    formData.append('banner_id', bannerId);
+    
+    fetch('settings.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the banner card from DOM
+            const bannerCard = document.getElementById('banner-' + bannerId);
+            if (bannerCard) {
+                bannerCard.remove();
+            }
+            
+            // Show success message
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show';
+            alert.innerHTML = `
+                <i class="ti ti-check icon"></i>
+                ${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.card-body').prepend(alert);
+            
+            setTimeout(() => alert.remove(), 3000);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error deleting banner: ' + error.message);
+    });
+}
+
+function toggleBannerActive(bannerId) {
+    const formData = new FormData();
+    formData.append('action', 'toggle_banner_active');
+    formData.append('banner_id', bannerId);
+    
+    fetch('settings.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update badge
+            const badge = document.getElementById('status-badge-' + bannerId);
+            const toggleBtn = document.getElementById('toggle-btn-' + bannerId);
+            
+            if (data.active) {
+                badge.className = 'badge bg-success';
+                badge.textContent = 'Active';
+                toggleBtn.querySelector('.ti').className = 'ti ti-toggle-right icon';
+            } else {
+                badge.className = 'badge bg-secondary';
+                badge.textContent = 'Inactive';
+                toggleBtn.querySelector('.ti').className = 'ti ti-toggle-left icon';
+            }
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error toggling banner status: ' + error.message);
     });
 }
 </script>
