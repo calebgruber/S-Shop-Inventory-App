@@ -443,8 +443,16 @@ $currentUser = getCurrentUser();
         });
     });
     </script>
+    
+    <!-- Real-Time Updates -->
+    <script src="assets/js/realtime-updates.js"></script>
 </head>
 <body>
+    <!-- Notification Sound -->
+    <audio id="notificationSound" preload="auto">
+        <source src="assets/sounds/success.mp3" type="audio/mpeg">
+    </audio>
+    
     <!-- Loading Screen -->
     <div id="pageLoadingScreen">
         <div class="loading-spinner"></div>
@@ -629,25 +637,27 @@ $currentUser = getCurrentUser();
                             </li>
                             <?php endif; ?>
                             
-                            <?php if (hasPermission('pullsheets') && !isStudent()): ?>
-                            <li class="nav-item <?php echo $currentPage === 'pullsheets' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="pullsheets">
+                            <?php if ((hasPermission('pullsheets') || hasPermission('change_orders')) && !isStudent()): ?>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle <?php echo in_array($currentPage, ['pullsheets', 'pullsheet_create', 'pullsheet_edit', 'pullsheet_view', 'change_orders', 'change_order_create', 'change_order_edit', 'change_order_view']) ? 'active' : ''; ?>" 
+                                   href="#" data-bs-toggle="dropdown" aria-expanded="false" role="button">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-file-text"></i>
+                                        <i class="ti ti-clipboard-list"></i>
                                     </span>
-                                    <span class="nav-link-title">Shop Orders</span>
+                                    <span class="nav-link-title">Orders</span>
                                 </a>
-                            </li>
-                            <?php endif; ?>
-                            
-                            <?php if (hasPermission('change_orders') && !isStudent()): ?>
-                            <li class="nav-item <?php echo $currentPage === 'change_orders' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="change_orders">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-exchange"></i>
-                                    </span>
-                                    <span class="nav-link-title">Change Orders</span>
-                                </a>
+                                <ul class="dropdown-menu">
+                                    <?php if (hasPermission('pullsheets')): ?>
+                                    <li><a class="dropdown-item <?php echo in_array($currentPage, ['pullsheets', 'pullsheet_create', 'pullsheet_edit', 'pullsheet_view']) ? 'active' : ''; ?>" href="pullsheets">
+                                        <i class="ti ti-file-text me-2"></i>Shop Orders
+                                    </a></li>
+                                    <?php endif; ?>
+                                    <?php if (hasPermission('change_orders')): ?>
+                                    <li><a class="dropdown-item <?php echo in_array($currentPage, ['change_orders', 'change_order_create', 'change_order_edit', 'change_order_view']) ? 'active' : ''; ?>" href="change_orders">
+                                        <i class="ti ti-exchange me-2"></i>Change Orders
+                                    </a></li>
+                                    <?php endif; ?>
+                                </ul>
                             </li>
                             <?php endif; ?>
                             
