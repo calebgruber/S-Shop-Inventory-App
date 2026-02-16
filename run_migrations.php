@@ -1,0 +1,178 @@
+<?php
+/**
+ * Unified Database Migration Runner
+ * This file runs all pending database migrations
+ * Can be executed via CLI or web interface
+ */
+
+require_once 'includes/config.php';
+require_once 'includes/functions.php';
+
+// Check if running from CLI or web
+$isCLI = php_sapi_name() === 'cli';
+
+// If web request, require admin permission
+if (!$isCLI) {
+    session_start();
+    requireRole('admin');
+    
+    // Return JSON for AJAX requests
+    header('Content-Type: application/json');
+}
+
+try {
+    $db = getDB();
+    $output = [];
+    $hasErrors = false;
+    
+    // Create migrations tracking table if it doesn't exist
+    $output[] = "Checking migrations tracking table...";
+    $db->query("
+        CREATE TABLE IF NOT EXISTS migrations (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            migration_name VARCHAR(255) UNIQUE NOT NULL,
+            executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_migration_name (migration_name)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    $output[] = "✓ Migrations tracking table ready";
+    
+    // Define all migrations in order
+    $migrations = [
+        [
+            'name' => '001_add_password_reset_fields',
+            'description' => 'Add password reset fields to users table',
+            'sql' => [
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS must_reset_password BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS temp_password VARCHAR(255) NULL"
+            ]
+        ],
+        [
+            'name' => '002_add_approval_status',
+            'description' => 'Add approval status for admin approvals',
+            'sql' => [
+                "ALTER TABLE pullsheets ADD COLUMN IF NOT EXISTS approval_status VARCHAR(20) NULL DEFAULT NULL",
+                "ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS approval_status VARCHAR(20) NULL DEFAULT NULL"
+            ]
+        ],
+        [
+            'name' => '003_add_notifications_title',
+            'description' => 'Add title column to notifications table',
+            'sql' => [
+                "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS title VARCHAR(255) NULL"
+            ]
+        ],
+        [
+            'name' => '004_ensure_app_url_setting',
+            'description' => 'Ensure app_url setting exists in settings table',
+            'callback' => function($db, &$output) {
+                // Check if app_url setting exists
+                $result = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'app_url'");
+                
+                if ($result === null) {
+                    // Insert default app_url setting
+                    $db->query(
+                        "INSERT INTO settings (setting_key, setting_value) VALUES ('app_url', '')",
+                        []
+                    );
+                    $output[] = "  ✓ Created app_url setting (empty - configure in Settings)";
+                } else {
+                    $output[] = "  ✓ app_url setting already exists";
+                }
+            }
+        ]
+    ];
+    
+    $output[] = "\nRunning migrations...";
+    $migrationsRun = 0;
+    $migrationsSkipped = 0;
+    
+    foreach ($migrations as $migration) {
+        $migrationName = $migration['name'];
+        
+        // Check if migration has already been run
+        $result = $db->fetchOne(
+            "SELECT id FROM migrations WHERE migration_name = ?",
+            [$migrationName]
+        );
+        
+        if ($result) {
+            $output[] = "⊘ Skipping {$migrationName} (already run)";
+            $migrationsSkipped++;
+            continue;
+        }
+        
+        $output[] = "\n→ Running: {$migrationName}";
+        $output[] = "  Description: {$migration['description']}";
+        
+        try {
+            // Run SQL statements if defined
+            if (isset($migration['sql'])) {
+                foreach ($migration['sql'] as $sql) {
+                    $db->query($sql);
+                }
+                $output[] = "  ✓ SQL executed successfully";
+            }
+            
+            // Run callback if defined
+            if (isset($migration['callback']) && is_callable($migration['callback'])) {
+                $migration['callback']($db, $output);
+            }
+            
+            // Mark migration as complete
+            $db->query(
+                "INSERT INTO migrations (migration_name) VALUES (?)",
+                [$migrationName]
+            );
+            
+            $output[] = "  ✓ Migration {$migrationName} completed";
+            $migrationsRun++;
+            
+        } catch (Exception $e) {
+            $output[] = "  ✗ Error: " . $e->getMessage();
+            $hasErrors = true;
+            // Continue with other migrations even if one fails
+        }
+    }
+    
+    $output[] = "\n" . str_repeat("=", 50);
+    $output[] = "Migration Summary:";
+    $output[] = "  - Migrations run: {$migrationsRun}";
+    $output[] = "  - Migrations skipped: {$migrationsSkipped}";
+    $output[] = "  - Total migrations: " . count($migrations);
+    
+    if ($hasErrors) {
+        $output[] = "\n⚠ Some migrations had errors (see above)";
+    } else {
+        $output[] = "\n✓ All migrations completed successfully!";
+    }
+    
+    // Output results
+    if ($isCLI) {
+        foreach ($output as $line) {
+            echo $line . "\n";
+        }
+        exit($hasErrors ? 1 : 0);
+    } else {
+        echo json_encode([
+            'success' => !$hasErrors,
+            'output' => $output,
+            'migrations_run' => $migrationsRun,
+            'migrations_skipped' => $migrationsSkipped
+        ]);
+    }
+    
+} catch (Exception $e) {
+    $errorMsg = "Fatal error: " . $e->getMessage();
+    
+    if ($isCLI) {
+        echo $errorMsg . "\n";
+        exit(1);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'error' => $errorMsg,
+            'output' => [$errorMsg]
+        ]);
+    }
+}

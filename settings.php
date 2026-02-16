@@ -873,7 +873,101 @@ $appUrl = getSetting('app_url', '');
                 </div>
             </div>
         </div>
+        
+        <!-- Database Migrations Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3 class="card-title">Database Migrations</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Run database migrations to update the database schema to the latest version. 
+                    This ensures all required tables and columns exist.
+                </p>
+                
+                <button type="button" class="btn btn-primary" id="runMigrationsBtn" onclick="runMigrations()">
+                    <i class="ti ti-database-cog icon"></i>
+                    Run Database Migrations
+                </button>
+                
+                <div id="migrationOutput" class="mt-3" style="display: none;">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">Migration Output:</h5>
+                            <pre id="migrationLog" style="max-height: 400px; overflow-y: auto; font-size: 12px;"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+function runMigrations() {
+    const btn = document.getElementById('runMigrationsBtn');
+    const output = document.getElementById('migrationOutput');
+    const log = document.getElementById('migrationLog');
+    
+    // Disable button and show loading
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Running migrations...';
+    output.style.display = 'block';
+    log.textContent = 'Starting migrations...\n';
+    
+    // Run migrations
+    fetch('run_migrations.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            log.textContent = data.output.join('\n');
+            
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+            alertDiv.innerHTML = `
+                <i class="ti ti-check icon"></i>
+                <strong>Success!</strong> ${data.migrations_run} migration(s) completed successfully.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            output.parentElement.insertBefore(alertDiv, output);
+        } else {
+            log.textContent = data.output ? data.output.join('\n') : data.error;
+            
+            // Show error message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+            alertDiv.innerHTML = `
+                <i class="ti ti-alert-triangle icon"></i>
+                <strong>Error!</strong> Some migrations failed. Check the output above.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            output.parentElement.insertBefore(alertDiv, output);
+        }
+    })
+    .catch(error => {
+        log.textContent = 'Error: ' + error.message;
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+        alertDiv.innerHTML = `
+            <i class="ti ti-alert-triangle icon"></i>
+            <strong>Error!</strong> Failed to run migrations: ${error.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        output.parentElement.insertBefore(alertDiv, output);
+    })
+    .finally(() => {
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-database-cog icon"></i> Run Database Migrations';
+    });
+}
+</script>
 
 <?php require_once 'includes/footer.php'; ?>
