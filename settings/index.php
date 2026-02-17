@@ -1214,7 +1214,7 @@ function deleteBanner(bannerId) {
     formData.append('action', 'delete_banner');
     formData.append('banner_id', bannerId);
     
-    fetch('settings.php', {
+    fetch('', {
         method: 'POST',
         body: formData
     })
@@ -1252,7 +1252,7 @@ function toggleBannerActive(bannerId) {
     formData.append('action', 'toggle_banner_active');
     formData.append('banner_id', bannerId);
     
-    fetch('settings.php', {
+    fetch('', {
         method: 'POST',
         body: formData
     })
