@@ -29,3 +29,4 @@ Thumbs.db
 composer.lock
 node_modules/
 package-lock.json
+includes/tcpdf/

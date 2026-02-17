@@ -1313,10 +1313,16 @@ $hasPendingMigrations = count($pendingMigrations) > 0;
                                 </label>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary">
-                                <i class="ti ti-device-floppy icon"></i>
-                                Save PDF Settings
-                            </button>
+                            <div class="btn-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="ti ti-device-floppy icon"></i>
+                                    Save PDF Settings
+                                </button>
+                                <a href="/pdf_preview" target="_blank" class="btn btn-info">
+                                    <i class="ti ti-eye icon"></i>
+                                    Preview PDF
+                                </a>
+                            </div>
                         </form>
                     </div>
                 </div>
