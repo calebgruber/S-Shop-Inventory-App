@@ -823,7 +823,7 @@ $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_
                     </div>
                 </div>
                 
-                <a href="csv_template.php" class="btn btn-primary" download>
+                <a href="/csv_template.php" class="btn btn-primary" download>
                     <i class="ti ti-download icon"></i>
                     Download Order Import Template (CSV)
                 </a>
@@ -1104,7 +1104,7 @@ function runMigrations() {
     log.textContent = 'Starting migrations...\n';
     
     // Run migrations
-    fetch('run_migrations.php', {
+    fetch('/run_migrations.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
