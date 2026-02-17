@@ -4,10 +4,79 @@ require_once '../includes/functions.php';
 // Only admins can access settings
 requireRole('admin');
 
+// Handle JSON-returning POST actions BEFORE header to avoid HTML in JSON response
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+    
+    // Actions that return JSON (no HTML output)
+    if ($action === 'delete_banner') {
+        header('Content-Type: application/json');
+        try {
+            if (isset($_POST['banner_id'])) {
+                $banner = getDB()->fetchOne(
+                    "SELECT * FROM login_banners WHERE id = ?",
+                    [$_POST['banner_id']]
+                );
+                
+                if ($banner) {
+                    // Convert web path to file system path
+                    $filePath = __DIR__ . '/..' . $banner['file_path'];
+                    
+                    // Delete file if it exists
+                    if (file_exists($filePath)) {
+                        unlink($filePath);
+                    }
+                    
+                    // Delete from database
+                    getDB()->query("DELETE FROM login_banners WHERE id = ?", [$_POST['banner_id']]);
+                    
+                    echo json_encode(['success' => true, 'message' => 'Banner deleted successfully']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Banner not found']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Banner ID not provided']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+    
+    if ($action === 'toggle_banner_active') {
+        header('Content-Type: application/json');
+        try {
+            if (isset($_POST['banner_id'])) {
+                $banner = getDB()->fetchOne(
+                    "SELECT * FROM login_banners WHERE id = ?",
+                    [$_POST['banner_id']]
+                );
+                
+                if ($banner) {
+                    $newStatus = !$banner['is_active'];
+                    getDB()->query(
+                        "UPDATE login_banners SET is_active = ? WHERE id = ?",
+                        [$newStatus, $_POST['banner_id']]
+                    );
+                    
+                    echo json_encode(['success' => true, 'active' => $newStatus]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Banner not found']);
+                }
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Banner ID not provided']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+}
+
 $pageTitle = 'Settings';
 require_once '../includes/header.php';
 
-// Handle form submissions
+// Handle form submissions (actions that redirect)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if (isset($_POST['action'])) {
@@ -496,55 +565,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     redirect();
                     break;
-                    
-                case 'delete_banner':
-                    if (isset($_POST['banner_id'])) {
-                        $banner = getDB()->fetchOne(
-                            "SELECT * FROM login_banners WHERE id = ?",
-                            [$_POST['banner_id']]
-                        );
-                        
-                        if ($banner) {
-                            // Convert web path to file system path
-                            $filePath = __DIR__ . '/..' . $banner['file_path'];
-                            
-                            // Delete file if it exists
-                            if (file_exists($filePath)) {
-                                unlink($filePath);
-                            }
-                            
-                            // Delete from database
-                            getDB()->query("DELETE FROM login_banners WHERE id = ?", [$_POST['banner_id']]);
-                            
-                            echo json_encode(['success' => true, 'message' => 'Banner deleted successfully']);
-                        } else {
-                            echo json_encode(['success' => false, 'message' => 'Banner not found']);
-                        }
-                        exit;
-                    }
-                    break;
-                    
-                case 'toggle_banner_active':
-                    if (isset($_POST['banner_id'])) {
-                        $banner = getDB()->fetchOne(
-                            "SELECT * FROM login_banners WHERE id = ?",
-                            [$_POST['banner_id']]
-                        );
-                        
-                        if ($banner) {
-                            $newStatus = !$banner['is_active'];
-                            getDB()->query(
-                                "UPDATE login_banners SET is_active = ? WHERE id = ?",
-                                [$newStatus, $_POST['banner_id']]
-                            );
-                            
-                            echo json_encode(['success' => true, 'active' => $newStatus]);
-                        } else {
-                            echo json_encode(['success' => false, 'message' => 'Banner not found']);
-                        }
-                        exit;
-                    }
-                    break;
             }
         }
         redirect();
@@ -610,14 +630,14 @@ $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Login Illustration (optional)</label>
+                            <label class="form-label">Default Login Banner</label>
                             <?php if ($loginIllustrationPath && file_exists(UPLOAD_DIR . $loginIllustrationPath)): ?>
                                 <div class="mb-2">
-                                    <img src="/uploads/<?php echo htmlspecialchars($loginIllustrationPath); ?>" alt="Login Illustration" style="max-height: 80px; border: 1px solid #ddd; padding: 5px;">
+                                    <img src="/uploads/<?php echo htmlspecialchars($loginIllustrationPath); ?>" alt="Default Login Banner" style="max-height: 80px; border: 1px solid #ddd; padding: 5px;">
                                 </div>
                             <?php endif; ?>
                             <input type="file" class="form-control" name="login_illustration" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
-                            <small class="form-hint">Upload an illustration for the login page (PNG, JPG, GIF, WebP - max 5MB)</small>
+                            <small class="form-hint">Upload a default banner for the login page. This will be shown when no rotating banners are active. (PNG, JPG, GIF, WebP - max 5MB)</small>
                         </div>
                     </div>
                     
@@ -993,7 +1013,8 @@ $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_
             </div>
             <div class="card-body">
                 <p class="text-muted mb-3">
-                    Upload multiple banner images for the login page. Images will rotate to provide visual variety.
+                    Upload multiple banner images for the login page. Active banners will rotate every 5 seconds. 
+                    If no active banners are uploaded, the Default Login Banner (above) will be displayed instead.
                 </p>
                 
                 <!-- Upload Form -->
