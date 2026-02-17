@@ -70,6 +70,11 @@ try {
     $logoPath = getSetting('logo_path', '');
     $supportEmail = getSetting('support_email', 'support@example.com');
     $loginIllustration = getSetting('login_illustration_path', '');
+    
+    // Fetch active login banners
+    $loginBanners = getDB()->fetchAll(
+        "SELECT file_path FROM login_banners WHERE is_active = 1 ORDER BY display_order, uploaded_at DESC"
+    );
 } catch (Exception $e) {
     logMessage("Error loading settings: " . $e->getMessage(), 'ERROR');
     $appName = 'CMFT Sound Shop Inventory';
@@ -77,6 +82,7 @@ try {
     $logoPath = '';
     $supportEmail = 'support@example.com';
     $loginIllustration = '';
+    $loginBanners = [];
 }
 ?>
 <!doctype html>
@@ -164,11 +170,14 @@ try {
         </div>
       </div>
       <div class="col-12 col-lg-6 col-xl-8 d-none d-lg-block">
-        <!-- Photo -->
-        <div class="bg-cover h-100 min-vh-100" style="background-image: url(<?php 
-          // Check for login illustration first, then login cover image
+        <!-- Photo with rotating banners -->
+        <div id="login-background" class="bg-cover h-100 min-vh-100" style="background-image: url(<?php 
+          // Determine initial background image
           $coverImagePath = '';
-          if ($loginIllustration && file_exists(__DIR__ . '/uploads/' . basename($loginIllustration))) {
+          if (!empty($loginBanners)) {
+            // Use first active banner
+            $coverImagePath = htmlspecialchars($loginBanners[0]['file_path']);
+          } elseif ($loginIllustration && file_exists(__DIR__ . '/uploads/' . basename($loginIllustration))) {
             $coverImagePath = 'uploads/' . htmlspecialchars(basename($loginIllustration));
           } elseif ($loginCoverImage && file_exists(__DIR__ . '/uploads/' . basename($loginCoverImage))) {
             $coverImagePath = 'uploads/' . htmlspecialchars(basename($loginCoverImage));
@@ -176,7 +185,26 @@ try {
             $coverImagePath = 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80';
           }
           echo $coverImagePath;
-        ?>)"></div>
+        ?>); transition: background-image 1s ease-in-out;"></div>
+        
+        <?php if (count($loginBanners) > 1): ?>
+        <script>
+          // Rotating banner functionality
+          const banners = <?php echo json_encode(array_column($loginBanners, 'file_path')); ?>;
+          let currentBannerIndex = 0;
+          const backgroundElement = document.getElementById('login-background');
+          
+          function rotateBanner() {
+            if (banners.length <= 1) return;
+            
+            currentBannerIndex = (currentBannerIndex + 1) % banners.length;
+            backgroundElement.style.backgroundImage = `url(${banners[currentBannerIndex]})`;
+          }
+          
+          // Rotate every 5 seconds
+          setInterval(rotateBanner, 5000);
+        </script>
+        <?php endif; ?>
       </div>
     </div>
   </body>
