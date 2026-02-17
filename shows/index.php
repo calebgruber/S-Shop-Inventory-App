@@ -81,10 +81,10 @@ $shows = getDB()->fetchAll("SELECT s.*, t.name as theatre_space_name
                                         <a href="/shows/edit?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-primary">
                                             <i class="ti ti-edit"></i>
                                         </a>
-                                        <a href="pullsheet_create.php?show_id=<?php echo $show['id']; ?>" class="btn btn-sm btn-info" title="Create Pullsheet">
+                                        <a href="/pullsheets/create?show_id=<?php echo $show['id']; ?>" class="btn btn-sm btn-info" title="Create Pullsheet">
                                             <i class="ti ti-file-text"></i>
                                         </a>
-                                        <a href="change_order_create.php?show_id=<?php echo $show['id']; ?>" class="btn btn-sm btn-warning" title="Create Change Order">
+                                        <a href="/change-orders/create?show_id=<?php echo $show['id']; ?>" class="btn btn-sm btn-warning" title="Create Change Order">
                                             <i class="ti ti-exchange"></i>
                                         </a>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this show? This cannot be undone.');">

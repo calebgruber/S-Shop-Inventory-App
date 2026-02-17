@@ -103,7 +103,7 @@ $changeOrders = getDB()->fetchAll("SELECT * FROM change_orders WHERE show_id = ?
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-check"></i> Save Changes
                         </button>
-                        <a href="shows" class="btn btn-secondary">Back to Shows</a>
+                        <a href="/shows/" class="btn btn-secondary">Back to Shows</a>
                     </div>
                 </form>
                 

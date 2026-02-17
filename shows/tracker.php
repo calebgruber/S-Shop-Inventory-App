@@ -212,7 +212,7 @@ $stages = [
                     Show Workflow Tracker - <?php echo htmlspecialchars($show['name']); ?>
                 </h3>
                 <div class="card-actions">
-                    <a href="shows" class="btn btn-secondary">
+                    <a href="/shows/" class="btn btn-secondary">
                         <i class="ti ti-arrow-left"></i> Back to Shows
                     </a>
                 </div>
