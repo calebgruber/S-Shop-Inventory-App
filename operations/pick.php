@@ -360,7 +360,7 @@ if (ob_get_level()) {
                         <small class="text-muted">- <?php echo htmlspecialchars($pickSession['show_name']); ?></small>
                     <?php endif; ?>
                 </h1>
-                <a href="index" class="btn btn-secondary">
+                <a href="/index" class="btn btn-secondary">
                     <i class="ti ti-x"></i> Exit
                 </a>
             </div>

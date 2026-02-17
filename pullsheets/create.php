@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-check"></i> Create Shop Order
                         </button>
-                        <a href="<?php echo $showId ? 'show_edit.php?id=' . $showId : 'shows.php'; ?>" class="btn btn-secondary">Cancel</a>
+                        <a href="<?php echo $showId ? '/shows/edit?id=' . $showId : '/shows/'; ?>" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
             </div>
