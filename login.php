@@ -70,6 +70,7 @@ try {
     $logoPath = getSetting('logo_path', '');
     $supportEmail = getSetting('support_email', 'support@example.com');
     $loginIllustration = getSetting('login_illustration_path', '');
+    $bannerRotationInterval = getSetting('banner_rotation_interval', '5000');
     
     // Fetch active login banners
     $loginBanners = getDB()->fetchAll(
@@ -82,6 +83,7 @@ try {
     $logoPath = '';
     $supportEmail = 'support@example.com';
     $loginIllustration = '';
+    $bannerRotationInterval = '5000';
     $loginBanners = [];
 }
 ?>
@@ -193,6 +195,7 @@ try {
           const banners = <?php echo json_encode(array_column($loginBanners, 'file_path'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
           let currentBannerIndex = 0;
           const backgroundElement = document.getElementById('login-background');
+          const rotationInterval = <?php echo (int)$bannerRotationInterval; ?>;
           
           function rotateBanner() {
             if (banners.length <= 1) return;
@@ -203,8 +206,8 @@ try {
             backgroundElement.style.backgroundImage = `url("${escapedUrl}")`;
           }
           
-          // Rotate every 5 seconds
-          setInterval(rotateBanner, 5000);
+          // Rotate at configured interval
+          setInterval(rotateBanner, rotationInterval);
         </script>
         <?php endif; ?>
       </div>

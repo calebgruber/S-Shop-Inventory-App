@@ -91,6 +91,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     setSetting('support_email', $_POST['support_email'] ?? 'support@example.com');
                     setSetting('app_url', $_POST['app_url'] ?? '');
                     
+                    // Handle banner rotation interval
+                    if (isset($_POST['banner_rotation_interval'])) {
+                        $interval = (int)$_POST['banner_rotation_interval'];
+                        // Validate interval is between 1000ms (1 second) and 60000ms (1 minute)
+                        if ($interval >= 1000 && $interval <= 60000) {
+                            setSetting('banner_rotation_interval', $interval);
+                        } else {
+                            setAlert('Banner rotation interval must be between 1 and 60 seconds.', 'warning');
+                        }
+                    }
+                    
                     // Handle logo upload
                     if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
                         // Validate file size (max 5MB)
@@ -586,6 +597,7 @@ $logoPath = getSetting('logo_path');
 $loginIllustrationPath = getSetting('login_illustration_path');
 $supportEmail = getSetting('support_email', 'support@example.com');
 $appUrl = getSetting('app_url', '');
+$bannerRotationInterval = getSetting('banner_rotation_interval', '5000');
 $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_order, uploaded_at DESC");
 ?>
 
@@ -647,6 +659,15 @@ $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_
                         <label class="form-label">Application URL</label>
                         <input type="url" class="form-control" name="app_url" value="<?php echo htmlspecialchars($appUrl); ?>" placeholder="https://inventory.calebgruber.me">
                         <small class="form-hint">The base URL of your application (e.g., https://dev.inventory.calebgruber.me or https://inventory.calebgruber.me). Used in welcome emails for the login button.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Login Banner Rotation Interval</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="banner_rotation_interval" value="<?php echo htmlspecialchars($bannerRotationInterval); ?>" min="1000" max="60000" step="1000" required>
+                            <span class="input-group-text">milliseconds</span>
+                        </div>
+                        <small class="form-hint">Time between rotating login banners (1000ms = 1 second). Must be between 1-60 seconds. Default is 5000ms (5 seconds).</small>
                     </div>
                     
                     <div class="row">

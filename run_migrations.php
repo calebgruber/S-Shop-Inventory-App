@@ -97,6 +97,25 @@ try {
                     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
             ]
+        ],
+        [
+            'name' => '006_add_banner_rotation_interval_setting',
+            'description' => 'Add setting for login banner rotation interval in milliseconds',
+            'callback' => function($db, &$output) {
+                // Check if banner_rotation_interval setting exists
+                $result = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'banner_rotation_interval'");
+                
+                if ($result === null) {
+                    // Insert default banner_rotation_interval setting (5000ms = 5 seconds)
+                    $db->query(
+                        "INSERT INTO settings (setting_key, setting_value) VALUES ('banner_rotation_interval', '5000')",
+                        []
+                    );
+                    $output[] = "  ✓ Created banner_rotation_interval setting (default: 5000ms)";
+                } else {
+                    $output[] = "  ✓ banner_rotation_interval setting already exists";
+                }
+            }
         ]
     ];
     
