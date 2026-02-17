@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_change_order']
         
         $changeOrderId = getDB()->lastInsertId();
         setAlert('Change order created successfully');
-        redirect('change_order_edit.php?id=' . $changeOrderId);
+        redirect('/change-orders/edit?id=' . $changeOrderId);
     } catch (Exception $e) {
         setAlert('Error: ' . $e->getMessage(), 'danger');
     }

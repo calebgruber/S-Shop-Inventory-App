@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_pullsheet'])) 
         
         $pullsheetId = getDB()->lastInsertId();
         setAlert('Shop Order created successfully');
-        redirect('pullsheet_edit.php?id=' . $pullsheetId);
+        redirect('/pullsheets/edit?id=' . $pullsheetId);
     } catch (Exception $e) {
         setAlert('Error: ' . $e->getMessage(), 'danger');
     }

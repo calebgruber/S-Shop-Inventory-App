@@ -216,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 createNotificationForAdmins(
                     'pullsheet_pending_approval',
                     "Pullsheet for " . ($pullsheet['show_name'] ?? 'Student Requests') . " from " . htmlspecialchars($currentUser['name']) . " needs approval",
-                    "pullsheet_view.php?id=" . $pullsheetId
+                    "/pullsheets/view?id=" . $pullsheetId
                 );
                 
                 echo json_encode(['success' => true, 'message' => 'Shop Order submitted for approval']);
@@ -276,7 +276,7 @@ if ($isDesigner && !canAccessShow($currentUser['id'], $pullsheet['show_id'])) {
 }
 
 if ($pullsheet['status'] !== 'draft') {
-    redirect('pullsheet_view.php?id=' . $pullsheetId);
+    redirect('/pullsheets/view?id=' . $pullsheetId);
 }
 
 $items = getPullsheetItems($pullsheetId);
@@ -635,7 +635,7 @@ document.getElementById('finalizeBtn').addEventListener('click', function() {
     .then(data => {
         if (data.success) {
             playSuccessSound();
-            window.location.href = 'pullsheet_view.php?id=<?php echo $pullsheetId; ?>&finalized=1';
+            window.location.href = '/pullsheets/view?id=<?php echo $pullsheetId; ?>&finalized=1';
         } else {
             alert(data.message || 'Error finalizing pullsheet');
             playErrorSound();

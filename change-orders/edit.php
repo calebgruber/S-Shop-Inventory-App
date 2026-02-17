@@ -278,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 createNotificationForAdmins(
                     'change_order_pending_approval',
                     "Change order for " . $changeOrder['show_name'] . " from " . htmlspecialchars($currentUser['name']) . " needs approval",
-                    "change_order_view.php?id=" . $coId
+                    "/change-orders/view?id=" . $coId
                 );
                 
                 echo json_encode(['success' => true, 'message' => 'Change order submitted for approval']);
@@ -669,7 +669,7 @@ document.getElementById('finalizeBtn').addEventListener('click', () => {
         if (data.success) {
             playSuccessSound();
             // Redirect to change order view page
-            window.location.href = 'change_order_view.php?id=<?php echo htmlspecialchars($coId, ENT_QUOTES, 'UTF-8'); ?>&finalized=1';
+            window.location.href = '/change-orders/view?id=<?php echo htmlspecialchars($coId, ENT_QUOTES, 'UTF-8'); ?>&finalized=1';
         } else {
             alert(data.message || 'Error finalizing');
             playErrorSound();

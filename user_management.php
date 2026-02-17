@@ -170,18 +170,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setAlert("Successfully permanently deleted $deleted user(s) from database", 'success');
             redirect();
         }
-    } elseif ($action === 'bulk_inactivate') {
+    } elseif ($action === 'bulk_deactivate') {
         $userIds = $_POST['user_ids'] ?? [];
         
         if (empty($userIds)) {
             setAlert('Please select at least one user', 'danger');
         } else {
-            $inactivated = 0;
+            $deactivated = 0;
             foreach ($userIds as $userId) {
                 $db->query("UPDATE users SET is_active = 0 WHERE id = ?", [$userId]);
-                $inactivated++;
+                $deactivated++;
             }
-            setAlert("Successfully inactivated $inactivated user(s)", 'success');
+            setAlert("Successfully deactivated $deactivated user(s)", 'success');
             redirect();
         }
     }
@@ -220,8 +220,8 @@ $allPermissions = [
             </button>
         </div>
         <div class="btn-group ms-2" id="bulkActionButtons" style="display: none;">
-            <button class="btn btn-warning" onclick="bulkInactivate()">
-                <i class="ti ti-user-off icon"></i> Inactivate Selected
+            <button class="btn btn-warning" onclick="bulkDeactivate()">
+                <i class="ti ti-user-off icon"></i> Deactivate Selected
             </button>
             <button class="btn btn-danger" onclick="bulkDelete()">
                 <i class="ti ti-trash icon"></i> Delete Selected
@@ -592,10 +592,10 @@ $allPermissions = [
     <div id="bulkDeleteUserIds"></div>
 </form>
 
-<!-- Bulk Inactivate Confirmation Form -->
-<form method="POST" id="bulkInactivateForm" style="display: none;">
-    <input type="hidden" name="action" value="bulk_inactivate">
-    <div id="bulkInactivateUserIds"></div>
+<!-- Bulk Deactivate Confirmation Form -->
+<form method="POST" id="bulkDeactivateForm" style="display: none;">
+    <input type="hidden" name="action" value="bulk_deactivate">
+    <div id="bulkDeactivateUserIds"></div>
 </form>
 
 <script>
@@ -662,7 +662,7 @@ function bulkDelete() {
     document.getElementById('bulkDeleteForm').submit();
 }
 
-function bulkInactivate() {
+function bulkDeactivate() {
     const userIds = getSelectedUserIds();
     
     if (userIds.length === 0) {
@@ -670,12 +670,12 @@ function bulkInactivate() {
         return;
     }
     
-    if (!confirm(`Are you sure you want to inactivate ${userIds.length} user(s)?`)) {
+    if (!confirm(`Are you sure you want to deactivate ${userIds.length} user(s)?`)) {
         return;
     }
     
     // Add user IDs as hidden inputs
-    const container = document.getElementById('bulkInactivateUserIds');
+    const container = document.getElementById('bulkDeactivateUserIds');
     container.innerHTML = '';
     userIds.forEach(id => {
         const input = document.createElement('input');
@@ -686,7 +686,7 @@ function bulkInactivate() {
     });
     
     // Submit form
-    document.getElementById('bulkInactivateForm').submit();
+    document.getElementById('bulkDeactivateForm').submit();
 }
 </script>
 
