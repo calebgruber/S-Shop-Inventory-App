@@ -359,7 +359,7 @@ foreach ($pullsheets as $pullsheet) {
                                             <i class="ti ti-edit"></i>
                                         </a>
                                     <?php else: ?>
-                                        <a href="pullsheet_view?id=<?php echo $ps['id']; ?>" 
+                                        <a href="/pullsheets/view?id=<?php echo $ps['id']; ?>" 
                                            class="btn btn-sm btn-info" 
                                            title="View">
                                             <i class="ti ti-eye"></i>
@@ -417,7 +417,7 @@ foreach ($pullsheets as $pullsheet) {
                                 <i class="ti ti-edit"></i> Edit
                             </a>
                         <?php else: ?>
-                            <a href="pullsheet_view?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-info">
+                            <a href="/pullsheets/view?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-info">
                                 <i class="ti ti-eye"></i> View
                             </a>
                         <?php endif; ?>

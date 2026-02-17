@@ -75,10 +75,10 @@ $shows = getDB()->fetchAll("SELECT s.*, t.name as theatre_space_name
                                 <td><?php echo date('m/d/Y', strtotime($show['created_at'])); ?></td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="show_tracker.php?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-success" title="View Workflow Tracker">
+                                        <a href="/shows/tracker?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-success" title="View Workflow Tracker">
                                             <i class="ti ti-timeline"></i>
                                         </a>
-                                        <a href="show_edit?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-primary">
+                                        <a href="/shows/edit?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-primary">
                                             <i class="ti ti-edit"></i>
                                         </a>
                                         <a href="pullsheet_create.php?show_id=<?php echo $show['id']; ?>" class="btn btn-sm btn-info" title="Create Pullsheet">

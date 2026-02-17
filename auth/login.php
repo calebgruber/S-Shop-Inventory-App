@@ -10,7 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // If already logged in, redirect to dashboard
 if (isset($_SESSION['user_id'])) {
-    header('Location: index');
+    header('Location: /');
     exit;
 }
 
@@ -47,11 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Check if user must reset password
                 if ($user['must_reset_password']) {
-                    header('Location: change_password');
+                    header('Location: /change_password');
                     exit;
                 }
                 
-                header('Location: index');
+                header('Location: /');
                 exit;
             } else {
                 $error = 'Invalid email or password.';

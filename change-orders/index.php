@@ -357,7 +357,7 @@ foreach ($changeOrders as $changeOrder) {
                                             <i class="ti ti-edit"></i>
                                         </a>
                                     <?php else: ?>
-                                        <a href="change_order_view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info" title="View">
+                                        <a href="/change-orders/view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info" title="View">
                                             <i class="ti ti-eye"></i>
                                         </a>
                                     <?php endif; ?>
@@ -414,7 +414,7 @@ foreach ($changeOrders as $changeOrder) {
                                 <i class="ti ti-edit"></i> Edit
                             </a>
                         <?php else: ?>
-                            <a href="change_order_view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info flex-fill">
+                            <a href="/change-orders/view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info flex-fill">
                                 <i class="ti ti-eye"></i> View
                             </a>
                         <?php endif; ?>
