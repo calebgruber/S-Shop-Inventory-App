@@ -323,8 +323,8 @@ if (ob_get_level()) {
     </style>
 </head>
 <body>
-    <audio id="successSound" preload="auto"><source src="assets/sounds/success.mp3" type="audio/mpeg"></audio>
-    <audio id="errorSound" preload="auto"><source src="assets/sounds/error.mp3" type="audio/mpeg"></audio>
+    <audio id="successSound" preload="auto"><source src="/assets/sounds/success.mp3" type="audio/mpeg"></audio>
+    <audio id="errorSound" preload="auto"><source src="/assets/sounds/error.mp3" type="audio/mpeg"></audio>
     
     <div class="fullscreen-container">
         <div class="container-fluid">
@@ -449,7 +449,7 @@ if (ob_get_level()) {
         const playError = () => document.getElementById('errorSound')?.play()?.catch(() => {});
         
         const post = (data, callback) => {
-            fetch('return_mode', {
+            fetch('/return_mode', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: data
