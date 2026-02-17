@@ -19,12 +19,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 );
                 
                 if ($banner) {
-                    // Convert web path to file system path
-                    $filePath = __DIR__ . '/..' . $banner['file_path'];
+                    // Convert web path to file system path and validate
+                    $filePath = realpath(__DIR__ . '/..' . $banner['file_path']);
+                    $uploadsDir = realpath(__DIR__ . '/../uploads/banners');
                     
-                    // Delete file if it exists
-                    if (file_exists($filePath)) {
-                        unlink($filePath);
+                    // Security: Ensure the file is within the uploads directory
+                    if ($filePath && $uploadsDir && strpos($filePath, $uploadsDir) === 0) {
+                        // Delete file if it exists
+                        if (file_exists($filePath)) {
+                            unlink($filePath);
+                        }
                     }
                     
                     // Delete from database
@@ -53,7 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 );
                 
                 if ($banner) {
-                    $newStatus = !$banner['is_active'];
+                    // Cast to boolean for reliable negation
+                    $newStatus = !(bool)$banner['is_active'];
                     getDB()->query(
                         "UPDATE login_banners SET is_active = ? WHERE id = ?",
                         [$newStatus, $_POST['banner_id']]
