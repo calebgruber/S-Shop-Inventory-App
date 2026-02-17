@@ -4,17 +4,17 @@ if (isset($_GET['download_pdf']) && isset($_GET['id'])) {
     require_once __DIR__ . '/../includes/functions.php';
     requirePermission('change_orders');
     require_once __DIR__ . '/../includes/config.php';
+    require_once __DIR__ . '/../includes/pdf_helper.php';
     
     $changeOrderId = $_GET['id'];
     $changeOrder = getChangeOrderById($changeOrderId);
     
     if ($changeOrder) {
-        $pdf = generateChangeOrderPDF($changeOrderId);
-        $showName = $changeOrder['show_name'] ?? 'Unknown';
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="change_order_' . $showName . '.pdf"');
-        header('Content-Length: ' . strlen($pdf));
-        echo $pdf;
+        $pdf = generateChangeOrderPDFWithColor($changeOrderId);
+        if ($pdf) {
+            $showName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $changeOrder['show_name'] ?? 'Unknown');
+            $pdf->Output('change_order_' . $showName . '.pdf', 'D');
+        }
         exit;
     }
 }

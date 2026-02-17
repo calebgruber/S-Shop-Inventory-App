@@ -4,17 +4,17 @@ if (isset($_GET['download_pdf']) && isset($_GET['id'])) {
     require_once __DIR__ . '/../includes/functions.php';
     requirePermission('pullsheets');
     require_once __DIR__ . '/../includes/config.php';
+    require_once __DIR__ . '/../includes/pdf_helper.php';
     
     $pullsheetId = $_GET['id'];
     $pullsheet = getPullsheetById($pullsheetId);
     
     if ($pullsheet) {
-        $pdf = generatePullsheetPDF($pullsheetId);
-        $showName = $pullsheet['show_name'] ?? 'Student_Requests';
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="pullsheet_' . $showName . '.pdf"');
-        header('Content-Length: ' . strlen($pdf));
-        echo $pdf;
+        $pdf = generatePullsheetPDFWithColor($pullsheetId);
+        if ($pdf) {
+            $showName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $pullsheet['show_name'] ?? 'Unknown');
+            $pdf->Output('pullsheet_' . $showName . '.pdf', 'D');
+        }
         exit;
     }
 }
