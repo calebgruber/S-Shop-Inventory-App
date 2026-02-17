@@ -10,7 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Must be logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /auth/login');
+    header('Location: /index/');
     exit;
 }
 
