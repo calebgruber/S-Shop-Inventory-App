@@ -190,7 +190,7 @@ try {
         <?php if (count($loginBanners) > 1): ?>
         <script>
           // Rotating banner functionality
-          const banners = <?php echo json_encode(array_column($loginBanners, 'file_path')); ?>;
+          const banners = <?php echo json_encode(array_column($loginBanners, 'file_path'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
           let currentBannerIndex = 0;
           const backgroundElement = document.getElementById('login-background');
           
@@ -198,7 +198,9 @@ try {
             if (banners.length <= 1) return;
             
             currentBannerIndex = (currentBannerIndex + 1) % banners.length;
-            backgroundElement.style.backgroundImage = `url(${banners[currentBannerIndex]})`;
+            // Escape and quote the URL for CSS
+            const escapedUrl = CSS.escape(banners[currentBannerIndex]);
+            backgroundElement.style.backgroundImage = `url("${escapedUrl}")`;
           }
           
           // Rotate every 5 seconds
