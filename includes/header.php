@@ -482,12 +482,12 @@ $currentUser = getCurrentUser();
     </script>
     
     <!-- Real-Time Updates -->
-    <script src="assets/js/realtime-updates.js"></script>
+    <!-- <script src="assets/js/realtime-updates.js"></script> -->
 </head>
 <body>
     <!-- Notification Sound -->
     <audio id="notificationSound" preload="auto">
-        <source src="assets/sounds/success.mp3" type="audio/mpeg">
+        <source src="/assets/sounds/success.mp3" type="audio/mpeg">
     </audio>
     
     <!-- Loading Screen -->
@@ -770,7 +770,7 @@ $currentUser = getCurrentUser();
                             
                             <?php if (isAdmin()): ?>
                             <li class="nav-item <?php echo $currentPage === 'settings' ? 'active' : ''; ?>">
-                                <a class="nav-link" href="/admin/settings">
+                                <a class="nav-link" href="/settings/">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-settings"></i>
                                     </span>

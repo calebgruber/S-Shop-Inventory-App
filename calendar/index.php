@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         height: 'auto',
         events: function(info, successCallback, failureCallback) {
-            fetch('production_calendar.php', {
+            fetch('', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: 'action=get_events'
@@ -348,7 +348,7 @@ function saveEvent() {
     const form = document.getElementById('eventForm');
     const formData = new FormData(form);
     
-    fetch('production_calendar.php', {
+    fetch('', {
         method: 'POST',
         body: new URLSearchParams(formData)
     })
@@ -388,7 +388,7 @@ function deleteEvent() {
     formData.append('action', 'delete_event');
     formData.append('event_id', currentEventId);
     
-    fetch('production_calendar.php', {
+    fetch('', {
         method: 'POST',
         body: new URLSearchParams(formData)
     })
@@ -423,7 +423,7 @@ function updateShowColor(input) {
     formData.append('show_id', showId);
     formData.append('color', color);
     
-    fetch('production_calendar.php', {
+    fetch('', {
         method: 'POST',
         body: new URLSearchParams(formData)
     })
