@@ -581,6 +581,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     redirect();
                     break;
+                    
+                case 'update_pdf_settings':
+                    setSetting('pdf_company_name', $_POST['pdf_company_name'] ?? '');
+                    setSetting('pdf_header_text', $_POST['pdf_header_text'] ?? '');
+                    setSetting('pdf_footer_text', $_POST['pdf_footer_text'] ?? '');
+                    setSetting('pdf_page_orientation', $_POST['pdf_page_orientation'] ?? 'portrait');
+                    setSetting('pdf_page_size', $_POST['pdf_page_size'] ?? 'LETTER');
+                    setSetting('pdf_margin_top', $_POST['pdf_margin_top'] ?? '15');
+                    setSetting('pdf_margin_bottom', $_POST['pdf_margin_bottom'] ?? '15');
+                    setSetting('pdf_margin_left', $_POST['pdf_margin_left'] ?? '15');
+                    setSetting('pdf_margin_right', $_POST['pdf_margin_right'] ?? '15');
+                    setSetting('pdf_font_size', $_POST['pdf_font_size'] ?? '10');
+                    setSetting('pdf_show_logo', isset($_POST['pdf_show_logo']) ? '1' : '0');
+                    
+                    setAlert('PDF settings updated successfully', 'success');
+                    redirect();
+                    break;
             }
         }
         redirect();
@@ -599,6 +616,19 @@ $supportEmail = getSetting('support_email', 'support@example.com');
 $appUrl = getSetting('app_url', '');
 $bannerRotationInterval = getSetting('banner_rotation_interval', '5000');
 $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_order, uploaded_at DESC");
+
+// Load PDF settings
+$pdfCompanyName = getSetting('pdf_company_name', $appName);
+$pdfHeaderText = getSetting('pdf_header_text', '');
+$pdfFooterText = getSetting('pdf_footer_text', '');
+$pdfPageOrientation = getSetting('pdf_page_orientation', 'portrait');
+$pdfPageSize = getSetting('pdf_page_size', 'LETTER');
+$pdfMarginTop = getSetting('pdf_margin_top', '15');
+$pdfMarginBottom = getSetting('pdf_margin_bottom', '15');
+$pdfMarginLeft = getSetting('pdf_margin_left', '15');
+$pdfMarginRight = getSetting('pdf_margin_right', '15');
+$pdfFontSize = getSetting('pdf_font_size', '10');
+$pdfShowLogo = getSetting('pdf_show_logo', '1');
 
 // Check for pending migrations
 $pendingMigrations = getPendingMigrations();
@@ -649,6 +679,11 @@ $hasPendingMigrations = count($pendingMigrations) > 0;
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab" aria-controls="media" aria-selected="false">
             <i class="ti ti-photo me-1"></i>Media
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="pdf-tab" data-bs-toggle="tab" data-bs-target="#pdf" type="button" role="tab" aria-controls="pdf" aria-selected="false">
+            <i class="ti ti-file-pdf me-1"></i>PDF
         </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -1189,6 +1224,101 @@ $hasPendingMigrations = count($pendingMigrations) > 0;
                 </div>
                 <?php endif; ?>
             </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PDF Tab -->
+    <div class="tab-pane fade" id="pdf" role="tabpanel" aria-labelledby="pdf-tab">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">PDF Generation Settings</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <input type="hidden" name="action" value="update_pdf_settings">
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Company Name for PDFs</label>
+                                <input type="text" class="form-control" name="pdf_company_name" value="<?php echo htmlspecialchars($pdfCompanyName); ?>">
+                                <small class="form-hint">This name will appear on generated PDF documents</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Header Text</label>
+                                <input type="text" class="form-control" name="pdf_header_text" value="<?php echo htmlspecialchars($pdfHeaderText); ?>" placeholder="Optional header text">
+                                <small class="form-hint">Text to display at the top of each page</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Footer Text</label>
+                                <input type="text" class="form-control" name="pdf_footer_text" value="<?php echo htmlspecialchars($pdfFooterText); ?>" placeholder="Optional footer text">
+                                <small class="form-hint">Text to display at the bottom of each page</small>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Page Orientation</label>
+                                    <select class="form-select" name="pdf_page_orientation">
+                                        <option value="portrait" <?php echo $pdfPageOrientation === 'portrait' ? 'selected' : ''; ?>>Portrait</option>
+                                        <option value="landscape" <?php echo $pdfPageOrientation === 'landscape' ? 'selected' : ''; ?>>Landscape</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Page Size</label>
+                                    <select class="form-select" name="pdf_page_size">
+                                        <option value="LETTER" <?php echo $pdfPageSize === 'LETTER' ? 'selected' : ''; ?>>Letter (8.5" x 11")</option>
+                                        <option value="LEGAL" <?php echo $pdfPageSize === 'LEGAL' ? 'selected' : ''; ?>>Legal (8.5" x 14")</option>
+                                        <option value="A4" <?php echo $pdfPageSize === 'A4' ? 'selected' : ''; ?>>A4 (210mm x 297mm)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Top Margin (mm)</label>
+                                    <input type="number" class="form-control" name="pdf_margin_top" value="<?php echo htmlspecialchars($pdfMarginTop); ?>" min="0" max="50">
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Bottom Margin (mm)</label>
+                                    <input type="number" class="form-control" name="pdf_margin_bottom" value="<?php echo htmlspecialchars($pdfMarginBottom); ?>" min="0" max="50">
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Left Margin (mm)</label>
+                                    <input type="number" class="form-control" name="pdf_margin_left" value="<?php echo htmlspecialchars($pdfMarginLeft); ?>" min="0" max="50">
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Right Margin (mm)</label>
+                                    <input type="number" class="form-control" name="pdf_margin_right" value="<?php echo htmlspecialchars($pdfMarginRight); ?>" min="0" max="50">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Font Size (pt)</label>
+                                <input type="number" class="form-control" name="pdf_font_size" value="<?php echo htmlspecialchars($pdfFontSize); ?>" min="8" max="16" step="0.5">
+                                <small class="form-hint">Default font size for PDF content (8-16 points)</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-check">
+                                    <input type="checkbox" class="form-check-input" name="pdf_show_logo" <?php echo $pdfShowLogo === '1' ? 'checked' : ''; ?>>
+                                    <span class="form-check-label">Show logo on PDFs</span>
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ti ti-device-floppy icon"></i>
+                                Save PDF Settings
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
