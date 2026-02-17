@@ -130,7 +130,7 @@ if ($selectedShowId) {
                     
                     <div class="col-md-2">
                         <label class="form-label">&nbsp;</label>
-                        <a href="paperwork.php?show_id=<?php echo $selectedShowId; ?>" class="btn btn-secondary w-100">Clear Filters</a>
+                        <a href="/tools/paperwork?show_id=<?php echo $selectedShowId; ?>" class="btn btn-secondary w-100">Clear Filters</a>
                     </div>
                     <?php endif; ?>
                 </form>

@@ -143,7 +143,7 @@ $allItems = getAllItems();
             </div>
             <div class="col-md-4">
                 <label class="form-label">&nbsp;</label>
-                <a href="repairs" class="btn btn-secondary w-100">Clear Filters</a>
+                <a href="/repairs/" class="btn btn-secondary w-100">Clear Filters</a>
             </div>
         </form>
     </div>
