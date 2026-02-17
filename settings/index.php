@@ -599,7 +599,35 @@ $supportEmail = getSetting('support_email', 'support@example.com');
 $appUrl = getSetting('app_url', '');
 $bannerRotationInterval = getSetting('banner_rotation_interval', '5000');
 $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_order, uploaded_at DESC");
+
+// Check for pending migrations
+$pendingMigrations = getPendingMigrations();
+$hasPendingMigrations = count($pendingMigrations) > 0;
 ?>
+
+<?php if ($hasPendingMigrations): ?>
+<div class="alert alert-warning alert-dismissible mb-4" role="alert">
+    <div class="d-flex">
+        <div>
+            <i class="ti ti-alert-circle icon alert-icon"></i>
+        </div>
+        <div>
+            <h4 class="alert-title">Database Migrations Pending</h4>
+            <div class="text-muted">
+                There are <?php echo count($pendingMigrations); ?> pending database migration(s) that need to be run.
+                Running migrations ensures your database schema is up to date.
+            </div>
+            <div class="mt-3">
+                <a href="#maintenance" class="btn btn-warning btn-sm" onclick="document.getElementById('maintenance-tab').click();">
+                    <i class="ti ti-player-play me-1"></i>
+                    Run Migrations Now
+                </a>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="close"></button>
+</div>
+<?php endif; ?>
 
 <!-- Settings Navigation Tabs -->
 <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">

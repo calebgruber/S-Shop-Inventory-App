@@ -1342,3 +1342,41 @@ function getStatusBadge($item) {
     $status = $item['status'] ?? 'draft';
     return $statusMap[$status] ?? ['class' => 'bg-secondary', 'text' => ucfirst($status)];
 }
+
+/**
+ * Get list of pending migrations
+ * Returns array of migration names that haven't been run yet
+ */
+function getPendingMigrations() {
+    try {
+        $db = getDB();
+        
+        // List of all migrations (keep in sync with run_migrations.php)
+        $allMigrations = [
+            '001_add_password_reset_fields',
+            '002_add_approval_status',
+            '003_add_notifications_title',
+            '004_ensure_app_url_setting',
+            '005_create_login_banners_table',
+            '006_add_banner_rotation_interval_setting'
+        ];
+        
+        // Get completed migrations
+        $completed = $db->fetchAll("SELECT migration_name FROM migrations");
+        $completedNames = array_column($completed, 'migration_name');
+        
+        // Return pending migrations
+        return array_diff($allMigrations, $completedNames);
+    } catch (Exception $e) {
+        // If migrations table doesn't exist yet, all migrations are pending
+        return [];
+    }
+}
+
+/**
+ * Check if there are any pending migrations
+ */
+function hasPendingMigrations() {
+    $pending = getPendingMigrations();
+    return count($pending) > 0;
+}
