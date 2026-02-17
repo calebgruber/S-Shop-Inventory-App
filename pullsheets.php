@@ -136,10 +136,11 @@ foreach ($pullsheets as $pullsheet) {
 }
 ?>
 
+<!-- Action Buttons -->
 <div class="row mb-3">
-    <div class="col-md-8">
+    <div class="col-12">
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPullsheetModal">
-            <i class="ti ti-plus"></i> Create New Pullsheet
+            <i class="ti ti-plus"></i> Create New Shop Order
         </button>
         <button type="button" class="btn btn-success ms-2" data-bs-toggle="modal" data-bs-target="#importCSVModal">
             <i class="ti ti-file-import"></i> Import from CSV
@@ -228,14 +229,14 @@ foreach ($pullsheets as $pullsheet) {
         <div class="modal-content">
             <form method="POST">
                 <div class="modal-header">
-                    <h5 class="modal-title">Create New Pullsheet</h5>
+                    <h5 class="modal-title">Create New Shop Order</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Show (Optional)</label>
                         <select name="show_id" class="form-select">
-                            <option value="">No Show (Standalone Pullsheet)</option>
+                            <option value="">No Show (Standalone Shop Order)</option>
                             <?php foreach ($shows as $show): ?>
                                 <option value="<?php echo $show['id']; ?>"><?php echo htmlspecialchars($show['name']); ?></option>
                             <?php endforeach; ?>
@@ -245,7 +246,7 @@ foreach ($pullsheets as $pullsheet) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="create_pullsheet" class="btn btn-primary">Create Pullsheet</button>
+                    <button type="submit" name="create_pullsheet" class="btn btn-primary">Create Shop Order</button>
                 </div>
             </form>
         </div>
@@ -257,170 +258,315 @@ foreach ($pullsheets as $pullsheet) {
         <div class="empty-icon">
             <i class="ti ti-file-text icon"></i>
         </div>
-        <p class="empty-title">No pullsheets yet</p>
-        <p class="empty-subtitle text-muted">Click "Create New Pullsheet" to get started</p>
+        <p class="empty-title">No shop orders yet</p>
+        <p class="empty-subtitle text-muted">Click "Create New Shop Order" to get started</p>
     </div>
 <?php else: ?>
-    <div class="card">
+    <!-- Search and Filter Bar -->
+    <div class="card mb-3">
         <div class="card-body">
-            <div class="accordion" id="pullsheetsAccordion">
-                <?php 
-                $accordionIndex = 0;
-                
-                // Show pullsheets grouped by show
-                foreach ($pullsheetsByShow as $showId => $showData): 
-                    $accordionIndex++;
-                ?>
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading-show-<?php echo $showId; ?>">
-                            <button class="accordion-button <?php echo $accordionIndex > 1 ? 'collapsed' : ''; ?>" type="button" 
-                                    data-bs-toggle="collapse" data-bs-target="#collapse-show-<?php echo $showId; ?>" 
-                                    aria-expanded="<?php echo $accordionIndex === 1 ? 'true' : 'false'; ?>">
-                                <strong><?php echo htmlspecialchars($showData['show_name']); ?></strong>
-                                <span class="badge bg-primary ms-2"><?php echo count($showData['pullsheets']); ?> pullsheet<?php echo count($showData['pullsheets']) !== 1 ? 's' : ''; ?></span>
-                            </button>
-                        </h2>
-                        <div id="collapse-show-<?php echo $showId; ?>" 
-                             class="accordion-collapse collapse <?php echo $accordionIndex === 1 ? 'show' : ''; ?>" 
-                             data-bs-parent="#pullsheetsAccordion">
-                            <div class="accordion-body">
-                                <div class="row">
-                                    <?php foreach ($showData['pullsheets'] as $pullsheet): ?>
-                                        <div class="col-md-6 col-lg-4 mb-3">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h3 class="card-title">Shop Order</h3>
-                                                    <div class="card-actions">
-                                                        <?php $badge = getStatusBadge($pullsheet); ?>
-
-                                                        <span class="badge <?php echo $badge['class']; ?>">
-
-                                                            <?php echo $badge['text']; ?>
-
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Created by:</small>
-                                                        <div><?php echo htmlspecialchars($pullsheet['created_by'] ?? 'N/A'); ?></div>
-                                                    </div>
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Created:</small>
-                                                        <div><?php echo date('m/d/Y g:i A', strtotime($pullsheet['created_at'])); ?></div>
-                                                    </div>
-                                                    <?php if ($pullsheet['picked_by']): ?>
-                                                        <div class="mb-2">
-                                                            <small class="text-muted">Picked by:</small>
-                                                            <div><?php echo htmlspecialchars($pullsheet['picked_by']); ?></div>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <div class="card-footer">
-                                                    <div class="d-flex gap-2">
-                                                        <a href="pullsheet_view?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-primary">
-                                                            <i class="ti ti-eye"></i> View
-                                                        </a>
-                                                        <?php if ($pullsheet['status'] === 'draft'): ?>
-                                                            <a href="pullsheet_edit?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
-                                                                <i class="ti ti-edit"></i> Edit
-                                                            </a>
-                                                        <?php endif; ?>
-                                                        <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this pullsheet? This cannot be undone.');">
-                                                            <input type="hidden" name="delete_id" value="<?php echo $pullsheet['id']; ?>">
-                                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                                                <i class="ti ti-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        </div>
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <div class="input-icon">
+                        <span class="input-icon-addon">
+                            <i class="ti ti-search"></i>
+                        </span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search by barcode or creator...">
                     </div>
-                <?php endforeach; ?>
-                
-                <!-- Pullsheets not attached to any show -->
-                <?php if (!empty($pullsheetsNoShow)): 
-                    $accordionIndex++;
-                ?>
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading-no-show">
-                            <button class="accordion-button <?php echo $accordionIndex > 1 ? 'collapsed' : ''; ?>" type="button" 
-                                    data-bs-toggle="collapse" data-bs-target="#collapse-no-show" 
-                                    aria-expanded="<?php echo $accordionIndex === 1 ? 'true' : 'false'; ?>">
-                                <strong>Not Attached to Show</strong>
-                                <span class="badge bg-secondary ms-2"><?php echo count($pullsheetsNoShow); ?> pullsheet<?php echo count($pullsheetsNoShow) !== 1 ? 's' : ''; ?></span>
-                            </button>
-                        </h2>
-                        <div id="collapse-no-show" 
-                             class="accordion-collapse collapse <?php echo $accordionIndex === 1 ? 'show' : ''; ?>" 
-                             data-bs-parent="#pullsheetsAccordion">
-                            <div class="accordion-body">
-                                <div class="row">
-                                    <?php foreach ($pullsheetsNoShow as $pullsheet): ?>
-                                        <div class="col-md-6 col-lg-4 mb-3">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h3 class="card-title">Shop Order</h3>
-                                                    <div class="card-actions">
-                                                        <?php $badge = getStatusBadge($pullsheet); ?>
-
-                                                        <span class="badge <?php echo $badge['class']; ?>">
-
-                                                            <?php echo $badge['text']; ?>
-
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Created by:</small>
-                                                        <div><?php echo htmlspecialchars($pullsheet['created_by'] ?? 'N/A'); ?></div>
-                                                    </div>
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Created:</small>
-                                                        <div><?php echo date('m/d/Y g:i A', strtotime($pullsheet['created_at'])); ?></div>
-                                                    </div>
-                                                    <?php if ($pullsheet['picked_by']): ?>
-                                                        <div class="mb-2">
-                                                            <small class="text-muted">Picked by:</small>
-                                                            <div><?php echo htmlspecialchars($pullsheet['picked_by']); ?></div>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <div class="card-footer">
-                                                    <div class="d-flex gap-2">
-                                                        <a href="pullsheet_view?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-primary">
-                                                            <i class="ti ti-eye"></i> View
-                                                        </a>
-                                                        <?php if ($pullsheet['status'] === 'draft'): ?>
-                                                            <a href="pullsheet_edit?id=<?php echo $pullsheet['id']; ?>" class="btn btn-sm btn-info">
-                                                                <i class="ti ti-edit"></i> Edit
-                                                            </a>
-                                                        <?php endif; ?>
-                                                        <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this pullsheet? This cannot be undone.');">
-                                                            <input type="hidden" name="delete_id" value="<?php echo $pullsheet['id']; ?>">
-                                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                                                <i class="ti ti-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
+                </div>
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="pending_approval">Pending Approval</option>
+                        <option value="approved">Approved</option>
+                        <option value="finalized">Finalized</option>
+                        <option value="picked">Picked</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="showFilter" class="form-select">
+                        <option value="">All Shows</option>
+                        <?php foreach ($pullsheetsByShow as $showId => $showData): ?>
+                            <option value="<?php echo $showId; ?>"><?php echo htmlspecialchars($showData['show_name']); ?></option>
+                        <?php endforeach; ?>
+                        <?php if (!empty($pullsheetsNoShow)): ?>
+                            <option value="no-show">Not Attached to Show</option>
+                        <?php endif; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" id="clearFilters" class="btn btn-secondary w-100">
+                        <i class="ti ti-x"></i> Clear
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Desktop Table View -->
+    <div class="card d-none d-md-block" id="desktopTableCard">
+        <div class="table-responsive">
+            <table class="table table-vcenter table-hover card-table">
+                <thead>
+                    <tr>
+                        <th>Barcode</th>
+                        <th>Show</th>
+                        <th>Status</th>
+                        <th>Created By</th>
+                        <th>Created Date</th>
+                        <th class="w-1">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="pullsheetsTableBody">
+                    <?php foreach ($pullsheets as $ps): ?>
+                        <tr class="pullsheet-row" 
+                            data-barcode="<?php echo htmlspecialchars($ps['barcode']); ?>"
+                            data-creator="<?php echo htmlspecialchars($ps['created_by'] ?? ''); ?>"
+                            data-status="<?php echo htmlspecialchars($ps['status']); ?>"
+                            data-show-id="<?php echo $ps['show_id'] ?: 'no-show'; ?>">
+                            <td>
+                                <span class="text-muted">
+                                    <i class="ti ti-barcode"></i>
+                                    <?php echo htmlspecialchars($ps['barcode']); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <?php if ($ps['show_name']): ?>
+                                    <span class="badge bg-blue-lt"><?php echo htmlspecialchars($ps['show_name']); ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php $badge = getStatusBadge($ps); ?>
+                                <span class="badge <?php echo $badge['class']; ?>">
+                                    <?php echo $badge['text']; ?>
+                                </span>
+                            </td>
+                            <td><?php echo htmlspecialchars($ps['created_by'] ?? 'N/A'); ?></td>
+                            <td>
+                                <span class="text-muted">
+                                    <?php echo date('M d, Y', strtotime($ps['created_at'])); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-list flex-nowrap">
+                                    <?php if ($ps['status'] === 'draft'): ?>
+                                        <a href="pullsheet_edit?id=<?php echo $ps['id']; ?>" 
+                                           class="btn btn-sm btn-primary" 
+                                           title="Edit">
+                                            <i class="ti ti-edit"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <a href="pullsheet_view?id=<?php echo $ps['id']; ?>" 
+                                           class="btn btn-sm btn-info" 
+                                           title="View">
+                                            <i class="ti ti-eye"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                    <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this shop order? This cannot be undone.');">
+                                        <input type="hidden" name="delete_id" value="<?php echo $ps['id']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="d-md-none" id="mobilePullsheets">
+        <?php foreach ($pullsheets as $ps): ?>
+            <div class="card mb-3 pullsheet-card" 
+                 data-barcode="<?php echo htmlspecialchars($ps['barcode']); ?>"
+                 data-creator="<?php echo htmlspecialchars($ps['created_by'] ?? ''); ?>"
+                 data-status="<?php echo htmlspecialchars($ps['status']); ?>"
+                 data-show-id="<?php echo $ps['show_id'] ?: 'no-show'; ?>">
+                <div class="card-body">
+                    <div class="row align-items-center mb-2">
+                        <div class="col">
+                            <h3 class="card-title mb-1">
+                                <i class="ti ti-barcode"></i> <?php echo htmlspecialchars($ps['barcode']); ?>
+                            </h3>
+                            <?php if ($ps['show_name']): ?>
+                                <div class="text-muted small">
+                                    <span class="badge bg-blue-lt"><?php echo htmlspecialchars($ps['show_name']); ?></span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-auto">
+                            <?php $badge = getStatusBadge($ps); ?>
+                            <span class="badge <?php echo $badge['class']; ?>">
+                                <?php echo $badge['text']; ?>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Created by: <?php echo htmlspecialchars($ps['created_by'] ?? 'N/A'); ?></small>
+                        <small class="text-muted d-block">Date: <?php echo date('M d, Y', strtotime($ps['created_at'])); ?></small>
+                    </div>
+                    <div class="btn-list">
+                        <?php if ($ps['status'] === 'draft'): ?>
+                            <a href="pullsheet_edit?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-primary">
+                                <i class="ti ti-edit"></i> Edit
+                            </a>
+                        <?php else: ?>
+                            <a href="pullsheet_view?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-info">
+                                <i class="ti ti-eye"></i> View
+                            </a>
+                        <?php endif; ?>
+                        <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this shop order? This cannot be undone.');">
+                            <input type="hidden" name="delete_id" value="<?php echo $ps['id']; ?>">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="ti ti-trash"></i> Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- No Results Message -->
+    <div id="noResults" class="card d-none">
+        <div class="empty">
+            <div class="empty-icon">
+                <i class="ti ti-search"></i>
+            </div>
+            <p class="empty-title">No shop orders found</p>
+            <p class="empty-subtitle text-muted">Try adjusting your search or filters</p>
+        </div>
+    </div>
 <?php endif; ?>
+
+<style>
+.table-hover tbody tr:hover {
+    background-color: rgba(32, 107, 196, 0.06);
+    cursor: pointer;
+}
+
+.btn-list {
+    gap: 0.25rem;
+}
+
+.pullsheet-card {
+    transition: all 0.2s ease-in-out;
+}
+
+.pullsheet-card:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.input-icon .form-control:focus {
+    border-color: #206bc4;
+}
+
+@media (max-width: 767.98px) {
+    .btn-list {
+        display: flex;
+        gap: 0.5rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const showFilter = document.getElementById('showFilter');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    
+    const tableRows = document.querySelectorAll('.pullsheet-row');
+    const mobileCards = document.querySelectorAll('.pullsheet-card');
+    const noResults = document.getElementById('noResults');
+    const desktopTable = document.getElementById('desktopTableCard');
+    const mobileContainer = document.getElementById('mobilePullsheets');
+
+    function filterPullsheets() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const statusValue = statusFilter.value.toLowerCase();
+        const showValue = showFilter.value;
+        
+        let visibleCount = 0;
+
+        // Filter desktop table rows
+        tableRows.forEach(row => {
+            const barcode = row.dataset.barcode.toLowerCase();
+            const creator = (row.dataset.creator || '').toLowerCase();
+            const status = row.dataset.status.toLowerCase();
+            const showId = row.dataset.showId;
+            
+            const matchesSearch = !searchTerm || barcode.includes(searchTerm) || creator.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+            const matchesShow = !showValue || showId === showValue;
+            
+            if (matchesSearch && matchesStatus && matchesShow) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Filter mobile cards
+        mobileCards.forEach(card => {
+            const barcode = card.dataset.barcode.toLowerCase();
+            const creator = (card.dataset.creator || '').toLowerCase();
+            const status = card.dataset.status.toLowerCase();
+            const showId = card.dataset.showId;
+            
+            const matchesSearch = !searchTerm || barcode.includes(searchTerm) || creator.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+            const matchesShow = !showValue || showId === showValue;
+            
+            if (matchesSearch && matchesStatus && matchesShow) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Show/hide no results message
+        if (visibleCount === 0) {
+            noResults.classList.remove('d-none');
+            if (desktopTable) {
+                desktopTable.classList.add('d-none');
+                desktopTable.classList.remove('d-md-block');
+            }
+            if (mobileContainer) {
+                mobileContainer.classList.add('d-none');
+            }
+        } else {
+            noResults.classList.add('d-none');
+            if (desktopTable) {
+                desktopTable.classList.remove('d-none');
+                desktopTable.classList.add('d-md-block');
+            }
+            if (mobileContainer) {
+                mobileContainer.classList.remove('d-none');
+            }
+        }
+    }
+
+    function clearFilters() {
+        searchInput.value = '';
+        statusFilter.value = '';
+        showFilter.value = '';
+        filterPullsheets();
+    }
+
+    searchInput.addEventListener('input', filterPullsheets);
+    statusFilter.addEventListener('change', filterPullsheets);
+    showFilter.addEventListener('change', filterPullsheets);
+    clearFiltersBtn.addEventListener('click', clearFilters);
+});
+</script>
 
 <?php require_once 'includes/footer.php'; ?>
