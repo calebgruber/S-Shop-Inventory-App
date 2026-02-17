@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 requirePermission('pullsheets');
 
 // Validate and check permissions
@@ -31,7 +31,7 @@ if ($showId) {
 }
 
 $pageTitle = 'Create Shop Order';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 // Get shows filtered by permission
 if ($isDesigner) {
@@ -118,4 +118,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Repairs';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 requirePermission('repairs');
 
 $db = getDB();
@@ -484,4 +484,4 @@ document.getElementById('createRepairForm')?.addEventListener('submit', function
 });
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

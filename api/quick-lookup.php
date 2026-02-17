@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 
 // Start session for authentication
 if (session_status() === PHP_SESSION_NONE) {

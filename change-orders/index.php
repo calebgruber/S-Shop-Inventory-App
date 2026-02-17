@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Change Orders';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 requirePermission('change_orders');
 
 $currentUser = getCurrentUser();
@@ -413,4 +413,4 @@ foreach ($changeOrders as $changeOrder) {
     </div>
 <?php endif; ?>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

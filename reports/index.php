@@ -1,11 +1,11 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 
 // Only admins can view reports
 requireRole('admin');
 
 $pageTitle = 'Reports';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 $reportType = $_GET['type'] ?? 'inventory';
 $categoryFilter = $_GET['category'] ?? 'all';
@@ -275,4 +275,4 @@ if ($categoryFilter !== 'all') {
     </div>
 <?php endif; ?>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 requirePermission('change_orders');
 
 // Validate show and permissions
@@ -22,7 +22,7 @@ if ($isDesigner && !canAccessShow($currentUser['id'], $showId)) {
 }
 
 $pageTitle = 'Create Change Order';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
@@ -62,4 +62,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

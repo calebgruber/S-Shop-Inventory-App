@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Shop Orders';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 requirePermission('pullsheets');
 
 $currentUser = getCurrentUser();
@@ -423,4 +423,4 @@ foreach ($pullsheets as $pullsheet) {
     </div>
 <?php endif; ?>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

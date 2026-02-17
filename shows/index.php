@@ -1,11 +1,11 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 
 // Check permissions - only admins can view shows
 requireRole('admin');
 
 $pageTitle = 'Shows';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 // Handle delete request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
@@ -104,4 +104,4 @@ $shows = getDB()->fetchAll("SELECT s.*, t.name as theatre_space_name
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

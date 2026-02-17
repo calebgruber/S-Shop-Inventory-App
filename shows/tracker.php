@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 requirePermission('shows');
 
 // Validate show
@@ -15,7 +15,7 @@ if (!$show) {
 }
 
 $pageTitle = 'Show Tracker';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 // Get pullsheet status
 $pullsheet = getDB()->fetchOne(
@@ -298,4 +298,4 @@ $stages = [
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

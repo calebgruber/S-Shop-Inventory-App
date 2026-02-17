@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'User Management';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 // Only admins can access this page
 requireRole('admin');
@@ -690,4 +690,4 @@ function bulkInactivate() {
 }
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Edit Item';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 requirePermission('items');
 
 // Only admins can edit items
@@ -259,4 +259,4 @@ document.getElementById('category-select').addEventListener('change', function()
 document.getElementById('category-select').dispatchEvent(new Event('change'));
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

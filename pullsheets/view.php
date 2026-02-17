@@ -19,7 +19,7 @@ if (isset($_GET['download_pdf']) && isset($_GET['id'])) {
     }
 }
 
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 
 // Check permissions
 if (!hasPermission('pullsheets')) {
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isAdmin()) {
 }
 
 $pageTitle = 'View Pullsheet';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 $pullsheetId = $_GET['id'] ?? null;
 if (!$pullsheetId) {
@@ -228,4 +228,4 @@ $items = getPullsheetItems($pullsheetId);
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

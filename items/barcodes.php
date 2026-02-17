@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 
 // Validate item BEFORE including header
 $itemId = $_GET['id'] ?? null;
@@ -14,7 +14,7 @@ if (!$item) {
 }
 
 $pageTitle = 'Print Barcodes';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 $quantity = $_GET['quantity'] ?? 30;
 ?>
@@ -106,4 +106,4 @@ $quantity = $_GET['quantity'] ?? 30;
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

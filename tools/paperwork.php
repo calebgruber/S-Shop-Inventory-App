@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Paperwork';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 requirePermission('paperwork');
 
 $db = getDB();
@@ -360,4 +360,4 @@ function printChangeOrder(id) {
 }
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

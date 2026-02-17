@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Student Requests';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 requirePermission('student_requests');
 
 $db = getDB();
@@ -752,4 +752,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <?php endforeach; ?>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

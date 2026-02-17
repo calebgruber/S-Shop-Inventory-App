@@ -1,7 +1,7 @@
 <?php
 // Login check is handled by header.php
 $pageTitle = 'User Settings';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 $db = getDB();
 $currentUser = getCurrentUser();
@@ -230,4 +230,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

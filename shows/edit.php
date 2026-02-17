@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 requirePermission('shows');
 
 // Validate show
@@ -15,7 +15,7 @@ if (!$show) {
 }
 
 $pageTitle = 'Edit Show';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 $theatreSpaces = getAllTheatreSpaces();
 
@@ -186,4 +186,4 @@ $changeOrders = getDB()->fetchAll("SELECT * FROM change_orders WHERE show_id = ?
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

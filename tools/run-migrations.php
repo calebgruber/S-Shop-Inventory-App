@@ -5,8 +5,8 @@
  * Can be executed via CLI or web interface
  */
 
-require_once 'includes/config.php';
-require_once 'includes/functions.php';
+require_once '../includes/config.php';
+require_once '../includes/functions.php';
 
 // Check if running from CLI or web
 $isCLI = php_sapi_name() === 'cli';

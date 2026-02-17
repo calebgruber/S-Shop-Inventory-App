@@ -2,7 +2,7 @@
 // Start output buffering to catch any warnings/errors for AJAX requests
 ob_start();
 
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 requirePermission('change_orders');
 
 $coId = $_GET['id'] ?? null;
@@ -318,7 +318,7 @@ if (ob_get_level()) {
 }
 
 $pageTitle = 'Edit Change Order';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';
@@ -715,4 +715,4 @@ document.querySelectorAll('.remove-item-btn').forEach(btn => {
 </script>
 <?php endif; ?>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

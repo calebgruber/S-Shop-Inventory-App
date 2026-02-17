@@ -1,11 +1,11 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 
 // Only admins can create shows
 requireRole('admin');
 
 $pageTitle = 'Create Show';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 $theatreSpaces = getAllTheatreSpaces();
 
@@ -73,4 +73,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

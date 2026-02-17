@@ -1,11 +1,11 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 
 // Only admins can access settings
 requireRole('admin');
 
 $pageTitle = 'Settings';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -1282,4 +1282,4 @@ function toggleBannerActive(bannerId) {
 }
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

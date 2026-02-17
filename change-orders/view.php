@@ -19,7 +19,7 @@ if (isset($_GET['download_pdf']) && isset($_GET['id'])) {
     }
 }
 
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 
 // Check permissions
 if (!hasPermission('change_orders')) {
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isAdmin()) {
 }
 
 $pageTitle = 'View Change Order';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 $changeOrderId = $_GET['id'] ?? null;
 if (!$changeOrderId) {
@@ -243,4 +243,4 @@ $items = getChangeOrderItems($changeOrderId);
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

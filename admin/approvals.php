@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/config.php';
-require_once 'includes/functions.php';
+require_once '../includes/config.php';
+require_once '../includes/functions.php';
 
 requireLogin();
 requireRole('admin'); // Only admins can access this page
@@ -99,7 +99,7 @@ $pendingChangeOrders = $db->fetchAll(
      ORDER BY co.processed_at DESC"
 );
 
-include 'includes/header.php';
+include '../includes/header.php';
 ?>
 
 <div class="page-header d-print-none">
@@ -393,4 +393,4 @@ include 'includes/header.php';
     });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

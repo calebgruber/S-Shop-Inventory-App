@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 
 // Only authorized users can import
 requirePermission('pullsheets'); // or change_orders

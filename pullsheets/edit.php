@@ -2,7 +2,7 @@
 // Start output buffering to catch any warnings/errors for AJAX requests
 ob_start();
 
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 requirePermission('pullsheets');
 
 $pullsheetId = $_GET['id'] ?? null;
@@ -254,7 +254,7 @@ if (ob_get_level()) {
 }
 
 $pageTitle = 'Edit Shop Order';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';
@@ -651,4 +651,4 @@ document.getElementById('finalizeBtn').addEventListener('click', function() {
 }); // End DOMContentLoaded
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

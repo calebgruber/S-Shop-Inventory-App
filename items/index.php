@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'Items';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 requirePermission('items');
 
 $currentUser = getCurrentUser();
@@ -211,4 +211,4 @@ categoryFilter.addEventListener('change', function() {
 updateSubcategoryOptions();
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>

@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/functions.php';
+require_once '../includes/functions.php';
 
 // Only admins can view production calendar
 requireRole('admin');
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Production Calendar';
-require_once 'includes/header.php';
+require_once '../includes/header.php';
 
 // Get all shows with colors
 $shows = $db->fetchAll(
@@ -460,4 +460,4 @@ function showAlert(message, type) {
 }
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../includes/footer.php'; ?>
