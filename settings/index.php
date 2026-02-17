@@ -57,14 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 );
                 
                 if ($banner) {
-                    // Cast to boolean for reliable negation
-                    $newStatus = !(bool)$banner['is_active'];
+                    // Cast to boolean for reliable negation, then to int for database
+                    $newStatus = (int)(!(bool)$banner['is_active']);
                     getDB()->query(
                         "UPDATE login_banners SET is_active = ? WHERE id = ?",
                         [$newStatus, $_POST['banner_id']]
                     );
                     
-                    echo json_encode(['success' => true, 'active' => $newStatus]);
+                    echo json_encode(['success' => true, 'active' => (bool)$newStatus]);
                 } else {
                     echo json_encode(['success' => false, 'message' => 'Banner not found']);
                 }
