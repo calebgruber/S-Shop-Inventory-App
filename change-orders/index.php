@@ -258,6 +258,7 @@ foreach ($changeOrders as $changeOrder) {
     </div>
 </div>
 
+
 <?php if (empty($changeOrders)): ?>
     <div class="empty">
         <div class="empty-icon">
@@ -267,150 +268,272 @@ foreach ($changeOrders as $changeOrder) {
         <p class="empty-subtitle text-muted">Click "Create New Change Order" to get started</p>
     </div>
 <?php else: ?>
-    <div class="card">
+    <!-- Search and Filter Bar -->
+    <div class="card mb-3">
         <div class="card-body">
-            <div class="accordion" id="changeOrdersAccordion">
-                <?php 
-                $accordionIndex = 0;
-                
-                // Show change orders grouped by show
-                foreach ($changeOrdersByShow as $showId => $showData): 
-                    $accordionIndex++;
-                ?>
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading-show-<?php echo $showId; ?>">
-                            <button class="accordion-button <?php echo $accordionIndex > 1 ? 'collapsed' : ''; ?>" type="button" 
-                                    data-bs-toggle="collapse" data-bs-target="#collapse-show-<?php echo $showId; ?>" 
-                                    aria-expanded="<?php echo $accordionIndex === 1 ? 'true' : 'false'; ?>">
-                                <strong><?php echo htmlspecialchars($showData['show_name']); ?></strong>
-                                <span class="badge bg-primary ms-2"><?php echo count($showData['change_orders']); ?> change order<?php echo count($showData['change_orders']) !== 1 ? 's' : ''; ?></span>
-                            </button>
-                        </h2>
-                        <div id="collapse-show-<?php echo $showId; ?>" 
-                             class="accordion-collapse collapse <?php echo $accordionIndex === 1 ? 'show' : ''; ?>" 
-                             data-bs-parent="#changeOrdersAccordion">
-                            <div class="accordion-body">
-                                <div class="row">
-                                    <?php foreach ($showData['change_orders'] as $co): ?>
-                                        <div class="col-md-6 col-lg-4 mb-3">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h3 class="card-title">Change Order</h3>
-                                                    <div class="card-actions">
-                                                        <?php $badge = getStatusBadge($co); ?>
-                                                        <span class="badge <?php echo $badge['class']; ?>">
-                                                            <?php echo $badge['text']; ?>
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Created by:</small>
-                                                        <div><?php echo htmlspecialchars($co['created_by'] ?? 'N/A'); ?></div>
-                                                    </div>
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Created:</small>
-                                                        <div><?php echo date('m/d/Y', strtotime($co['created_at'])); ?></div>
-                                                    </div>
-                                                </div>
-                                                <div class="card-footer">
-                                                    <div class="d-flex gap-2">
-                                                        <?php if ($co['status'] === 'draft'): ?>
-                                                            <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
-                                                                <i class="ti ti-edit"></i> Edit
-                                                            </a>
-                                                        <?php else: ?>
-                                                            <a href="change_order_view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info">
-                                                                <i class="ti ti-eye"></i> View
-                                                            </a>
-                                                        <?php endif; ?>
-                                                        <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this change order? This cannot be undone.');">
-                                                            <input type="hidden" name="delete_id" value="<?php echo $co['id']; ?>">
-                                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                                                <i class="ti ti-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        </div>
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <div class="input-icon">
+                        <span class="input-icon-addon">
+                            <i class="ti ti-search"></i>
+                        </span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search by barcode or creator...">
                     </div>
-                <?php endforeach; ?>
-                
-                <!-- Change orders not attached to any show -->
-                <?php if (!empty($changeOrdersNoShow)): 
-                    $accordionIndex++;
-                ?>
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading-no-show">
-                            <button class="accordion-button <?php echo $accordionIndex > 1 ? 'collapsed' : ''; ?>" type="button" 
-                                    data-bs-toggle="collapse" data-bs-target="#collapse-no-show" 
-                                    aria-expanded="<?php echo $accordionIndex === 1 ? 'true' : 'false'; ?>">
-                                <strong>Not Attached to Show</strong>
-                                <span class="badge bg-secondary ms-2"><?php echo count($changeOrdersNoShow); ?> change order<?php echo count($changeOrdersNoShow) !== 1 ? 's' : ''; ?></span>
-                            </button>
-                        </h2>
-                        <div id="collapse-no-show" 
-                             class="accordion-collapse collapse <?php echo $accordionIndex === 1 ? 'show' : ''; ?>" 
-                             data-bs-parent="#changeOrdersAccordion">
-                            <div class="accordion-body">
-                                <div class="row">
-                                    <?php foreach ($changeOrdersNoShow as $co): ?>
-                                        <div class="col-md-6 col-lg-4 mb-3">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h3 class="card-title">Change Order</h3>
-                                                    <div class="card-actions">
-                                                        <?php $badge = getStatusBadge($co); ?>
-                                                        <span class="badge <?php echo $badge['class']; ?>">
-                                                            <?php echo $badge['text']; ?>
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Created by:</small>
-                                                        <div><?php echo htmlspecialchars($co['created_by'] ?? 'N/A'); ?></div>
-                                                    </div>
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Created:</small>
-                                                        <div><?php echo date('m/d/Y', strtotime($co['created_at'])); ?></div>
-                                                    </div>
-                                                </div>
-                                                <div class="card-footer">
-                                                    <div class="d-flex gap-2">
-                                                        <?php if ($co['status'] === 'draft'): ?>
-                                                            <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
-                                                                <i class="ti ti-edit"></i> Edit
-                                                            </a>
-                                                        <?php else: ?>
-                                                            <a href="change_order_view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info">
-                                                                <i class="ti ti-eye"></i> View
-                                                            </a>
-                                                        <?php endif; ?>
-                                                        <form method="POST" class="d-inline ms-auto" onsubmit="return confirm('Are you sure you want to delete this change order? This cannot be undone.');">
-                                                            <input type="hidden" name="delete_id" value="<?php echo $co['id']; ?>">
-                                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                                                <i class="ti ti-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
+                </div>
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="finalized">Finalized</option>
+                        <option value="picked">Picked</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="showFilter" class="form-select">
+                        <option value="">All Shows</option>
+                        <?php foreach ($changeOrdersByShow as $showId => $showData): ?>
+                            <option value="<?php echo $showId; ?>"><?php echo htmlspecialchars($showData['show_name']); ?></option>
+                        <?php endforeach; ?>
+                        <?php if (!empty($changeOrdersNoShow)): ?>
+                            <option value="no-show">Not Attached to Show</option>
+                        <?php endif; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" id="clearFilters" class="btn btn-secondary w-100">
+                        <i class="ti ti-x"></i> Clear
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Desktop Table View -->
+    <div class="card d-none d-md-block" id="desktopTableCard">
+        <div class="table-responsive">
+            <table class="table table-vcenter table-hover card-table">
+                <thead>
+                    <tr>
+                        <th>Barcode</th>
+                        <th>Show</th>
+                        <th>Status</th>
+                        <th>Created By</th>
+                        <th>Created Date</th>
+                        <th class="w-1">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="changeOrdersTableBody">
+                    <?php foreach ($changeOrders as $co): ?>
+                        <tr class="change-order-row" 
+                            data-barcode="<?php echo htmlspecialchars($co['barcode']); ?>"
+                            data-creator="<?php echo htmlspecialchars($co['created_by'] ?? ''); ?>"
+                            data-status="<?php echo htmlspecialchars($co['status']); ?>"
+                            data-show-id="<?php echo $co['show_id'] ?: 'no-show'; ?>">
+                            <td>
+                                <span class="text-muted">
+                                    <i class="ti ti-barcode"></i>
+                                    <?php echo htmlspecialchars($co['barcode']); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <?php if ($co['show_name']): ?>
+                                    <span class="badge bg-blue-lt"><?php echo htmlspecialchars($co['show_name']); ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php $badge = getStatusBadge($co); ?>
+                                <span class="badge <?php echo $badge['class']; ?>">
+                                    <?php echo $badge['text']; ?>
+                                </span>
+                            </td>
+                            <td><?php echo htmlspecialchars($co['created_by'] ?? 'N/A'); ?></td>
+                            <td><?php echo date('m/d/Y', strtotime($co['created_at'])); ?></td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <?php if ($co['status'] === 'draft'): ?>
+                                        <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary" title="Edit">
+                                            <i class="ti ti-edit"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <a href="change_order_view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info" title="View">
+                                            <i class="ti ti-eye"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                    <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this change order? This cannot be undone.');">
+                                        <input type="hidden" name="delete_id" value="<?php echo $co['id']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="d-md-none" id="mobileCardsContainer">
+        <?php foreach ($changeOrders as $co): ?>
+            <div class="card mb-3 change-order-card" 
+                 data-barcode="<?php echo htmlspecialchars($co['barcode']); ?>"
+                 data-creator="<?php echo htmlspecialchars($co['created_by'] ?? ''); ?>"
+                 data-status="<?php echo htmlspecialchars($co['status']); ?>"
+                 data-show-id="<?php echo $co['show_id'] ?: 'no-show'; ?>">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <div class="text-muted small">Barcode</div>
+                            <strong><i class="ti ti-barcode"></i> <?php echo htmlspecialchars($co['barcode']); ?></strong>
+                        </div>
+                        <div>
+                            <?php $badge = getStatusBadge($co); ?>
+                            <span class="badge <?php echo $badge['class']; ?>">
+                                <?php echo $badge['text']; ?>
+                            </span>
+                        </div>
+                    </div>
+                    <?php if ($co['show_name']): ?>
+                        <div class="mb-2">
+                            <span class="badge bg-blue-lt"><?php echo htmlspecialchars($co['show_name']); ?></span>
+                        </div>
+                    <?php endif; ?>
+                    <div class="text-muted small mb-1">
+                        Created by: <?php echo htmlspecialchars($co['created_by'] ?? 'N/A'); ?>
+                    </div>
+                    <div class="text-muted small mb-3">
+                        Created: <?php echo date('m/d/Y', strtotime($co['created_at'])); ?>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <?php if ($co['status'] === 'draft'): ?>
+                            <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary flex-fill">
+                                <i class="ti ti-edit"></i> Edit
+                            </a>
+                        <?php else: ?>
+                            <a href="change_order_view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info flex-fill">
+                                <i class="ti ti-eye"></i> View
+                            </a>
+                        <?php endif; ?>
+                        <form method="POST" class="flex-fill" onsubmit="return confirm('Are you sure you want to delete this change order? This cannot be undone.');">
+                            <input type="hidden" name="delete_id" value="<?php echo $co['id']; ?>">
+                            <button type="submit" class="btn btn-sm btn-danger w-100">
+                                <i class="ti ti-trash"></i> Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- No Results Message -->
+    <div id="noResults" class="empty" style="display: none;">
+        <div class="empty-icon">
+            <i class="ti ti-search icon"></i>
+        </div>
+        <p class="empty-title">No change orders found</p>
+        <p class="empty-subtitle text-muted">Try adjusting your filters</p>
+    </div>
+
+    <script>
+    function filterChangeOrders() {
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const showFilter = document.getElementById('showFilter');
+        
+        if (!searchInput || !statusFilter || !showFilter) return;
+        
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value.toLowerCase();
+        const showValue = showFilter.value;
+        
+        // Desktop table rows
+        const desktopRows = document.querySelectorAll('.change-order-row');
+        // Mobile cards
+        const mobileCards = document.querySelectorAll('.change-order-card');
+        
+        let visibleCount = 0;
+        
+        // Filter desktop rows
+        desktopRows.forEach(row => {
+            const barcode = (row.dataset.barcode || '').toLowerCase();
+            const creator = (row.dataset.creator || '').toLowerCase();
+            const status = (row.dataset.status || '').toLowerCase();
+            const showId = row.dataset.showId || '';
+            
+            const matchesSearch = barcode.includes(searchTerm) || creator.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+            const matchesShow = !showValue || showId === showValue;
+            
+            if (matchesSearch && matchesStatus && matchesShow) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Filter mobile cards
+        mobileCards.forEach(card => {
+            const barcode = (card.dataset.barcode || '').toLowerCase();
+            const creator = (card.dataset.creator || '').toLowerCase();
+            const status = (card.dataset.status || '').toLowerCase();
+            const showId = card.dataset.showId || '';
+            
+            const matchesSearch = barcode.includes(searchTerm) || creator.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+            const matchesShow = !showValue || showId === showValue;
+            
+            if (matchesSearch && matchesStatus && matchesShow) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Show/hide no results message
+        const noResults = document.getElementById('noResults');
+        const desktopCard = document.getElementById('desktopTableCard');
+        const mobileCards = document.getElementById('mobileCardsContainer');
+        
+        if (visibleCount === 0) {
+            if (noResults) noResults.style.display = 'block';
+            if (desktopCard) desktopCard.style.display = 'none';
+            if (mobileCards) mobileCards.style.display = 'none';
+        } else {
+            if (noResults) noResults.style.display = 'none';
+            if (desktopCard) desktopCard.classList.remove('d-none');
+            desktopCard.classList.add('d-md-block');
+            if (mobileCards) mobileCards.classList.remove('d-none');
+            mobileCards.classList.add('d-md-none');
+        }
+    }
+    
+    // Initialize event listeners when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const showFilter = document.getElementById('showFilter');
+        const clearButton = document.getElementById('clearFilters');
+        
+        if (searchInput) searchInput.addEventListener('input', filterChangeOrders);
+        if (statusFilter) statusFilter.addEventListener('change', filterChangeOrders);
+        if (showFilter) showFilter.addEventListener('change', filterChangeOrders);
+        if (clearButton) {
+            clearButton.addEventListener('click', function() {
+                if (searchInput) searchInput.value = '';
+                if (statusFilter) statusFilter.value = '';
+                if (showFilter) showFilter.value = '';
+                filterChangeOrders();
+            });
+        }
+    });
+    </script>
 <?php endif; ?>
 
 <?php require_once '../includes/footer.php'; ?>
