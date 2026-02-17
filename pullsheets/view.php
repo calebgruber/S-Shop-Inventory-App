@@ -1,9 +1,9 @@
 <?php
 // Handle PDF download BEFORE any output
 if (isset($_GET['download_pdf']) && isset($_GET['id'])) {
-    require_once __DIR__ . '/includes/functions.php';
+    require_once __DIR__ . '/../includes/functions.php';
     requirePermission('pullsheets');
-    require_once __DIR__ . '/includes/config.php';
+    require_once __DIR__ . '/../includes/config.php';
     
     $pullsheetId = $_GET['id'];
     $pullsheet = getPullsheetById($pullsheetId);
