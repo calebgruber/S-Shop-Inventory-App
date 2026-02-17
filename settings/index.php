@@ -441,9 +441,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         redirect();
                     }
                     
-                    $uploadDir = '../uploads/banners/';
-                    if (!is_dir($uploadDir)) {
-                        mkdir($uploadDir, 0755, true);
+                    // Use absolute path for file operations
+                    $uploadDirPath = __DIR__ . '/../uploads/banners/';
+                    if (!is_dir($uploadDirPath)) {
+                        mkdir($uploadDirPath, 0755, true);
                     }
                     
                     $uploadedCount = 0;
@@ -474,13 +475,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             // Generate unique filename
                             $filename = 'banner_' . time() . '_' . $i . '.' . $ext;
-                            $filepath = $uploadDir . $filename;
+                            $fileSystemPath = $uploadDirPath . $filename;
+                            $webPath = '/uploads/banners/' . $filename;
                             
-                            if (move_uploaded_file($files['tmp_name'][$i], $filepath)) {
-                                // Save to database
+                            if (move_uploaded_file($files['tmp_name'][$i], $fileSystemPath)) {
+                                // Save web-relative path to database
                                 getDB()->query(
                                     "INSERT INTO login_banners (file_path, uploaded_by, display_order) VALUES (?, ?, ?)",
-                                    [$filepath, getCurrentUser()['id'], $i]
+                                    [$webPath, getCurrentUser()['id'], $i]
                                 );
                                 $uploadedCount++;
                             }
@@ -503,9 +505,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         );
                         
                         if ($banner) {
-                            // Delete file
-                            if (file_exists($banner['file_path'])) {
-                                unlink($banner['file_path']);
+                            // Convert web path to file system path
+                            $filePath = __DIR__ . '/..' . $banner['file_path'];
+                            
+                            // Delete file if it exists
+                            if (file_exists($filePath)) {
+                                unlink($filePath);
                             }
                             
                             // Delete from database
