@@ -7,7 +7,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Require login for all pages except login.php
-if (basename($_SERVER['PHP_SELF']) !== 'login.php') {
+$authPages = ['login.php', 'logout.php'];
+$currentFile = basename($_SERVER['PHP_SELF']);
+if (!in_array($currentFile, $authPages)) {
     requireLogin();
 }
 
@@ -609,7 +611,7 @@ $currentUser = getCurrentUser();
                             </a></li>
                             <?php endif; ?>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/logout">
+                            <li><a class="dropdown-item" href="/auth/logout">
                                 <i class="ti ti-logout icon me-2"></i>
                                 Logout
                             </a></li>

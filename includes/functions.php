@@ -422,7 +422,7 @@ function requireLogin() {
     }
     
     if (!isset($_SESSION['user_id'])) {
-        header('Location: login');
+        header('Location: /auth/login');
         exit;
     }
 }
@@ -467,7 +467,7 @@ function isProductionAudio() {
 function requireRole($role) {
     $user = getCurrentUser();
     if (!$user) {
-        header('Location: login');
+        header('Location: /auth/login');
         exit;
     }
     
@@ -482,7 +482,7 @@ function requireRole($role) {
 function requirePermission($permissionKey) {
     $user = getCurrentUser();
     if (!$user) {
-        header('Location: login');
+        header('Location: /auth/login');
         exit;
     }
     
