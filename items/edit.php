@@ -1,0 +1,262 @@
+<?php
+$pageTitle = 'Edit Item';
+require_once 'includes/header.php';
+requirePermission('items');
+
+// Only admins can edit items
+if (!isAdmin()) {
+    setAlert('You do not have permission to edit items', 'danger');
+    redirect('items');
+    exit;
+}
+
+$itemId = $_GET['id'] ?? null;
+$item = $itemId ? getItemById($itemId) : null;
+$categories = getAllCategories();
+$subcategories = getAllSubcategories();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $name = $_POST['name'];
+        $description = $_POST['description'];
+        $categoryId = $_POST['category_id'] ?: null;
+        $subcategoryId = $_POST['subcategory_id'] ?: null;
+        $trackingType = $_POST['tracking_type'];
+        $totalQuantity = (int)$_POST['total_quantity'];
+        $inStockQuantity = (int)$_POST['in_stock_quantity'];
+        $barcode = trim($_POST['barcode'] ?? '');
+        $location = trim($_POST['location'] ?? '');
+        
+        // Handle photo upload
+        $photoPath = $item['photo_path'] ?? null;
+        if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/uploads/items/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            
+            $fileExt = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION));
+            $allowedExts = ['jpg', 'jpeg', 'png', 'gif'];
+            
+            if (in_array($fileExt, $allowedExts)) {
+                $fileName = uniqid('item_') . '.' . $fileExt;
+                $uploadPath = $uploadDir . $fileName;
+                
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], $uploadPath)) {
+                    // Delete old photo if exists
+                    if ($photoPath && file_exists($uploadDir . $photoPath)) {
+                        unlink($uploadDir . $photoPath);
+                    }
+                    $photoPath = $fileName;
+                    logMessage("Photo uploaded successfully: $fileName", 'INFO');
+                } else {
+                    logMessage("Failed to move uploaded file to: $uploadPath", 'ERROR');
+                    throw new Exception("Failed to upload photo file");
+                }
+            } else {
+                throw new Exception("Invalid file type. Only JPG, PNG, and GIF are allowed.");
+            }
+        } elseif (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+            // File upload error occurred
+            $uploadErrors = [
+                UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize',
+                UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'File upload stopped by extension'
+            ];
+            $errorMsg = $uploadErrors[$_FILES['photo']['error']] ?? 'Unknown upload error';
+            logMessage("Photo upload error: $errorMsg (code: {$_FILES['photo']['error']})", 'ERROR');
+            throw new Exception("Photo upload failed: $errorMsg");
+        }
+        
+        if ($itemId) {
+            // Update existing item - barcode can't be changed once set
+            getDB()->query(
+                "UPDATE items SET name = ?, description = ?, category_id = ?, subcategory_id = ?, tracking_type = ?, 
+                 total_quantity = ?, in_stock_quantity = ?, location = ?, photo_path = ? WHERE id = ?",
+                [$name, $description, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location, $photoPath, $itemId]
+            );
+            logMessage("Item updated successfully (ID: $itemId, photo_path: " . ($photoPath ?: 'NULL') . ")", 'INFO');
+            setAlert('Item updated successfully');
+        } else {
+            // Create new item - use custom barcode or generate one
+            if (empty($barcode)) {
+                $barcode = generateUniqueBarcode('ITEM');
+            } else {
+                // Check if barcode already exists
+                $existing = getDB()->fetchOne("SELECT id FROM items WHERE barcode = ?", [$barcode]);
+                if ($existing) {
+                    throw new Exception("Barcode already exists");
+                }
+            }
+            
+            getDB()->query(
+                "INSERT INTO items (name, description, barcode, category_id, subcategory_id, tracking_type, total_quantity, in_stock_quantity, location, photo_path) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$name, $description, $barcode, $categoryId, $subcategoryId, $trackingType, $totalQuantity, $inStockQuantity, $location, $photoPath]
+            );
+            $newItemId = getDB()->lastInsertId();
+            logMessage("Item created successfully (ID: $newItemId, barcode: $barcode, photo_path: " . ($photoPath ?: 'NULL') . ")", 'INFO');
+            setAlert('Item created successfully');
+        }
+        
+        redirect();
+    } catch (Exception $e) {
+        setAlert($e->getMessage(), 'danger');
+    }
+}
+?>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><?php echo $item ? 'Edit' : 'Add New'; ?> Item</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label required">Name</label>
+                        <input type="text" class="form-control" name="name" value="<?php echo htmlspecialchars($item['name'] ?? ''); ?>" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3"><?php echo htmlspecialchars($item['description'] ?? ''); ?></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Location in Shop</label>
+                        <input type="text" class="form-control" name="location" value="<?php echo htmlspecialchars($item['location'] ?? ''); ?>" placeholder="e.g., Shelf A-3, Cabinet 2">
+                        <small class="form-hint">Where this item is physically located in the shop</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Item Photo</label>
+                        <?php if ($item && $item['photo_path']): ?>
+                        <div class="mb-2">
+                            <img src="uploads/items/<?php echo htmlspecialchars($item['photo_path']); ?>" 
+                                 alt="<?php echo htmlspecialchars($item['name']); ?>" 
+                                 class="img-thumbnail" style="max-height: 200px;">
+                        </div>
+                        <?php endif; ?>
+                        <input type="file" class="form-control" name="photo" accept="image/*">
+                        <small class="form-hint">Upload a photo of the item (JPG, PNG, or GIF)</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Barcode</label>
+                        <?php if ($item): ?>
+                            <input type="text" class="form-control" value="<?php echo htmlspecialchars($item['barcode']); ?>" readonly>
+                            <small class="form-hint">Barcode cannot be changed after creation</small>
+                        <?php else: ?>
+                            <input type="text" class="form-control" name="barcode" placeholder="Leave blank to auto-generate">
+                            <small class="form-hint">Leave blank to auto-generate a unique barcode</small>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" name="category_id" id="category-select">
+                            <option value="">-- No Category --</option>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo $category['id']; ?>" 
+                                    <?php echo ($item && $item['category_id'] == $category['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($category['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Subcategory</label>
+                        <select class="form-select" name="subcategory_id" id="subcategory-select">
+                            <option value="">-- No Subcategory --</option>
+                            <?php foreach ($subcategories as $sub): ?>
+                                <option value="<?php echo $sub['id']; ?>" 
+                                    data-category-id="<?php echo $sub['category_id']; ?>"
+                                    <?php echo ($item && $item['subcategory_id'] == $sub['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($sub['name']); ?>
+                                    <?php if ($sub['category_name']): ?>
+                                        (<?php echo htmlspecialchars($sub['category_name']); ?>)
+                                    <?php endif; ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label required">Tracking Type</label>
+                        <select class="form-select" name="tracking_type" required>
+                            <option value="quantity" <?php echo ($item && $item['tracking_type'] === 'quantity') ? 'selected' : ''; ?>>Quantity</option>
+                            <option value="serial" <?php echo ($item && $item['tracking_type'] === 'serial') ? 'selected' : ''; ?>>Serial Number</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required">Total Quantity</label>
+                            <input type="number" class="form-control" name="total_quantity" 
+                                   value="<?php echo $item['total_quantity'] ?? 0; ?>" min="0" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required">In Stock Quantity</label>
+                            <input type="number" class="form-control" name="in_stock_quantity" 
+                                   value="<?php echo $item['in_stock_quantity'] ?? 0; ?>" min="0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-check"></i> Save Item
+                        </button>
+                        <a href="items" class="btn btn-secondary">Cancel</a>
+                        
+                        <?php if ($item): ?>
+                            <a href="item_barcodes.php?id=<?php echo $item['id']; ?>" class="btn btn-info ms-auto">
+                                <i class="ti ti-barcode"></i> Print Barcodes
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter subcategories based on selected category
+document.getElementById('category-select').addEventListener('change', function() {
+    const categoryId = this.value;
+    const subcategorySelect = document.getElementById('subcategory-select');
+    const options = subcategorySelect.querySelectorAll('option');
+    
+    options.forEach(option => {
+        if (option.value === '') {
+            option.style.display = '';
+            return;
+        }
+        
+        const optionCategoryId = option.getAttribute('data-category-id');
+        if (!categoryId || optionCategoryId === categoryId) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    });
+    
+    // Reset subcategory selection if hidden
+    const selectedOption = subcategorySelect.options[subcategorySelect.selectedIndex];
+    if (selectedOption && selectedOption.style.display === 'none') {
+        subcategorySelect.value = '';
+    }
+});
+
+// Trigger on page load to filter based on pre-selected category
+document.getElementById('category-select').dispatchEvent(new Event('change'));
+</script>
+
+<?php require_once 'includes/footer.php'; ?>
