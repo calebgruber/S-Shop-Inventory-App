@@ -589,12 +589,45 @@ $appUrl = getSetting('app_url', '');
 $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_order, uploaded_at DESC");
 ?>
 
-<div class="row">
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Application Settings</h3>
-            </div>
+<!-- Settings Navigation Tabs -->
+<ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">
+            <i class="ti ti-settings me-1"></i>General
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button" role="tab" aria-controls="inventory" aria-selected="false">
+            <i class="ti ti-package me-1"></i>Inventory
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button" role="tab" aria-controls="data" aria-selected="false">
+            <i class="ti ti-database me-1"></i>Data
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab" aria-controls="media" aria-selected="false">
+            <i class="ti ti-photo me-1"></i>Media
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance" type="button" role="tab" aria-controls="maintenance" aria-selected="false">
+            <i class="ti ti-tool me-1"></i>Maintenance
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="settingsTabContent">
+    <!-- General Tab -->
+    <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Application Settings</h3>
+                    </div>
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="update_app_settings">
@@ -653,14 +686,18 @@ $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_
                 </form>
             </div>
         </div>
+            </div>
+        </div>
     </div>
     
-    <!-- Collapsible Inventory Management Section -->
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Inventory Management</h3>
-            </div>
+    <!-- Inventory Tab -->
+    <div class="tab-pane fade" id="inventory" role="tabpanel" aria-labelledby="inventory-tab">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Inventory Management</h3>
+                    </div>
             <div class="card-body">
                 <div class="accordion" id="inventoryAccordion">
                     <!-- Categories Accordion Item -->
@@ -830,13 +867,18 @@ $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_
                 </div>
             </div>
         </div>
+            </div>
+        </div>
     </div>
     
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Order CSV Templates</h3>
-            </div>
+    <!-- Data Tab -->
+    <div class="tab-pane fade" id="data" role="tabpanel" aria-labelledby="data-tab">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Order CSV Templates</h3>
+                    </div>
             <div class="card-body">
                 <div class="alert alert-info">
                     <h4 class="alert-title">CSV Order Import</h4>
@@ -1010,12 +1052,19 @@ $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_
                 </div>
             </div>
         </div>
-        
-        <!-- Login Banners Card -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h3 class="card-title">Login Banners</h3>
             </div>
+        </div>
+    </div>
+    
+    <!-- Media Tab -->
+    <div class="tab-pane fade" id="media" role="tabpanel" aria-labelledby="media-tab">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <!-- Login Banners Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Login Banners</h3>
+                    </div>
             <div class="card-body">
                 <p class="text-muted mb-3">
                     Upload multiple banner images for the login page. Active banners will rotate every 5 seconds. 
@@ -1091,12 +1140,19 @@ $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_
                 </div>
                 <?php endif; ?>
             </div>
+                </div>
+            </div>
         </div>
-        
-        <!-- Database Migrations Card -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h3 class="card-title">Database Migrations</h3>
+    </div>
+    
+    <!-- Maintenance Tab -->
+    <div class="tab-pane fade" id="maintenance" role="tabpanel" aria-labelledby="maintenance-tab">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <!-- Database Migrations Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Database Migrations</h3>
             </div>
             <div class="card-body">
                 <p class="text-muted mb-3">
@@ -1119,8 +1175,13 @@ $loginBanners = getDB()->fetchAll("SELECT * FROM login_banners ORDER BY display_
                 </div>
             </div>
         </div>
+            </div>
+        </div>
     </div>
 </div>
+
+</div>
+<!-- End Tab Content -->
 
 <script>
 function runMigrations() {
