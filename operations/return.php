@@ -3,7 +3,7 @@
 ob_start();
 
 session_start();
-require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 $returnSession = $_SESSION['return_session'] ?? null;
 

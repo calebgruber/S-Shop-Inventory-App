@@ -13,7 +13,44 @@ if (basename($_SERVER['PHP_SELF']) !== 'login.php') {
 
 $pageTitle = $pageTitle ?? 'Dashboard';
 $appName = getSetting('app_name', 'Sound Shop Inventory');
-$currentPage = basename($_SERVER['PHP_SELF'], '.php');
+
+// Determine current page based on directory structure
+$scriptName = $_SERVER['PHP_SELF'];
+$pathParts = explode('/', trim($scriptName, '/'));
+
+// Check if we're in a subdirectory
+if (count($pathParts) >= 2) {
+    // Get the directory name (e.g., "items", "pullsheets", "operations")
+    $directory = $pathParts[count($pathParts) - 2];
+    $fileName = basename($scriptName, '.php');
+    
+    // Map directory/file combinations to page identifiers
+    if ($directory === 'operations') {
+        $currentPage = ($fileName === 'pick') ? 'pick_mode' : (($fileName === 'return') ? 'return_mode' : $fileName);
+    } elseif ($directory === 'change-orders') {
+        $currentPage = ($fileName === 'index') ? 'change_orders' : 'change_order_' . $fileName;
+    } elseif ($directory === 'admin') {
+        $currentPage = $fileName; // settings or approvals
+    } elseif ($directory === 'tools') {
+        $currentPage = str_replace('-', '_', $fileName);
+    } elseif ($directory === 'api') {
+        $currentPage = str_replace('-', '_', $fileName);
+    } elseif ($directory === 'auth') {
+        $currentPage = str_replace('-', '_', $fileName);
+    } else {
+        // For other directories (items, shows, pullsheets, etc.)
+        if ($fileName === 'index') {
+            $currentPage = $directory;
+        } else {
+            // For create, edit, view pages
+            $currentPage = rtrim($directory, 's') . '_' . $fileName;
+        }
+    }
+} else {
+    // Root level file
+    $currentPage = basename($scriptName, '.php');
+}
+
 $currentUser = getCurrentUser();
 ?>
 <!DOCTYPE html>
