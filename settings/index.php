@@ -214,6 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     
                     setAlert('Settings updated successfully');
+                    redirect('/settings/');
                     break;
                     
                 case 'remove_logo':

@@ -148,9 +148,9 @@ try {
             'description' => 'Add maintenance mode setting',
             'callback' => function($db, &$output) {
                 // Check if maintenance_mode setting exists
-                $result = $db->fetchOne("SELECT name FROM settings WHERE name = 'maintenance_mode'");
-                if (!$result) {
-                    $db->query("INSERT INTO settings (name, value) VALUES ('maintenance_mode', '0')");
+                $result = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'maintenance_mode'");
+                if ($result === null) {
+                    $db->query("INSERT INTO settings (setting_key, setting_value) VALUES ('maintenance_mode', '0')");
                     $output[] = "  ✓ Created maintenance_mode setting (disabled by default)";
                 } else {
                     $output[] = "  ✓ maintenance_mode setting already exists";

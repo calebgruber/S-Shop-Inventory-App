@@ -807,6 +807,29 @@ $currentUser = getCurrentUser();
             </div>
         </header>
         
+        <?php
+        // Show migration alert banner if there are pending migrations (admin only)
+        if (isAdmin() && hasPendingMigrations()):
+        ?>
+        <div class="alert alert-warning alert-important mb-0" role="alert" style="border-radius: 0;">
+            <div class="container-xl">
+                <div class="d-flex align-items-center">
+                    <div class="me-auto">
+                        <i class="ti ti-database-import icon me-2"></i>
+                        <strong>Database migrations pending!</strong> 
+                        Your database needs to be updated to work properly with the latest version.
+                    </div>
+                    <div class="btn-list">
+                        <a href="/run_migrations.php" class="btn btn-warning" onclick="return confirm('Run pending database migrations now?')">
+                            <i class="ti ti-database-import icon me-1"></i>
+                            Run Migrations
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        
         <div class="page-wrapper">
             <div class="page-header d-print-none">
                 <div class="container-xl">
