@@ -737,6 +737,11 @@ $currentUser = getCurrentUser();
                                     <?php if (hasPermission('return_mode')): ?>
                                     <li><a class="dropdown-item" href="/operations/return">Return Mode</a></li>
                                     <?php endif; ?>
+                                    <?php if (hasPermission('returns')): ?>
+                                    <li><a class="dropdown-item" href="/operations/partial-return">
+                                        <i class="ti ti-corner-down-left me-2"></i>Partial Return
+                                    </a></li>
+                                    <?php endif; ?>
                                     <?php if (isAdmin()): ?>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="/admin/approvals">

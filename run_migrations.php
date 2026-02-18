@@ -156,6 +156,76 @@ try {
                     $output[] = "  ✓ maintenance_mode setting already exists";
                 }
             }
+        ],
+        [
+            'name' => '010_make_pullsheet_show_unique',
+            'description' => 'Enforce one shop order per show - add unique constraint',
+            'callback' => function($db, &$output) {
+                // First check for duplicate pullsheets
+                $duplicates = $db->query("
+                    SELECT show_id, COUNT(*) as count 
+                    FROM pullsheets 
+                    GROUP BY show_id 
+                    HAVING count > 1
+                ");
+                
+                if ($duplicates && $duplicates->num_rows > 0) {
+                    $output[] = "  ⚠ Warning: Found shows with multiple pullsheets";
+                    while ($dup = $duplicates->fetch_assoc()) {
+                        $output[] = "    Show ID {$dup['show_id']} has {$dup['count']} pullsheets";
+                        
+                        // Keep the most recent pullsheet, delete others
+                        $db->query("
+                            DELETE FROM pullsheets 
+                            WHERE show_id = ? 
+                            AND id NOT IN (
+                                SELECT * FROM (
+                                    SELECT id FROM pullsheets 
+                                    WHERE show_id = ? 
+                                    ORDER BY created_at DESC 
+                                    LIMIT 1
+                                ) AS temp
+                            )
+                        ", [$dup['show_id'], $dup['show_id']]);
+                        $output[] = "    Kept most recent pullsheet for show {$dup['show_id']}";
+                    }
+                }
+                
+                // Add unique constraint
+                try {
+                    $db->query("ALTER TABLE pullsheets ADD UNIQUE KEY unique_show_id (show_id)");
+                    $output[] = "  ✓ Added unique constraint to pullsheets.show_id";
+                } catch (Exception $e) {
+                    if (strpos($e->getMessage(), 'Duplicate key name') !== false) {
+                        $output[] = "  ✓ Unique constraint already exists";
+                    } else {
+                        throw $e;
+                    }
+                }
+            }
+        ],
+        [
+            'name' => '011_link_change_orders_to_pullsheets',
+            'description' => 'Add pullsheet_id to change_orders and change_order_id to pullsheet_items',
+            'sql' => [
+                "ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS pullsheet_id INT NULL AFTER show_id",
+                "ALTER TABLE change_orders ADD CONSTRAINT IF NOT EXISTS fk_change_orders_pullsheet FOREIGN KEY (pullsheet_id) REFERENCES pullsheets(id) ON DELETE SET NULL",
+                "ALTER TABLE pullsheet_items ADD COLUMN IF NOT EXISTS change_order_id INT NULL AFTER pullsheet_id",
+                "ALTER TABLE pullsheet_items ADD CONSTRAINT IF NOT EXISTS fk_pullsheet_items_change_order FOREIGN KEY (change_order_id) REFERENCES change_orders(id) ON DELETE SET NULL",
+                "CREATE INDEX IF NOT EXISTS idx_change_orders_pullsheet ON change_orders(pullsheet_id)",
+                "CREATE INDEX IF NOT EXISTS idx_pullsheet_items_change_order ON pullsheet_items(change_order_id)"
+            ]
+        ],
+        [
+            'name' => '012_add_partial_return_fields',
+            'description' => 'Add fields for partial return system',
+            'sql' => [
+                "ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS is_partial_return BOOLEAN DEFAULT FALSE AFTER pullsheet_id",
+                "ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS source_pullsheet_id INT NULL AFTER is_partial_return",
+                "ALTER TABLE change_orders ADD CONSTRAINT IF NOT EXISTS fk_change_orders_source_pullsheet FOREIGN KEY (source_pullsheet_id) REFERENCES pullsheets(id) ON DELETE SET NULL",
+                "CREATE INDEX IF NOT EXISTS idx_change_orders_partial_return ON change_orders(is_partial_return)",
+                "CREATE INDEX IF NOT EXISTS idx_change_orders_source_pullsheet ON change_orders(source_pullsheet_id)"
+            ]
         ]
     ];
     

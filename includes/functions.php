@@ -1344,7 +1344,13 @@ function getPendingMigrations() {
             '003_add_notifications_title',
             '004_ensure_app_url_setting',
             '005_create_login_banners_table',
-            '006_add_banner_rotation_interval_setting'
+            '006_add_banner_rotation_interval_setting',
+            '007_remove_hotkeys_table',
+            '008_add_favicon_setting',
+            '009_add_maintenance_mode_setting',
+            '010_make_pullsheet_show_unique',
+            '011_link_change_orders_to_pullsheets',
+            '012_add_partial_return_fields'
         ];
         
         // Get completed migrations
@@ -1365,4 +1371,173 @@ function getPendingMigrations() {
 function hasPendingMigrations() {
     $pending = getPendingMigrations();
     return count($pending) > 0;
+}
+
+/**
+ * Get pullsheet by show ID
+ * Returns pullsheet data or null if not found
+ */
+function getPullsheetByShowId($showId) {
+    $db = getDB();
+    return $db->fetchOne(
+        "SELECT * FROM pullsheets WHERE show_id = ?",
+        [$showId]
+    );
+}
+
+/**
+ * Update pullsheet from finalized change order
+ * Automatically adds/removes items based on change order
+ */
+function updatePullsheetFromChangeOrder($changeOrderId) {
+    $db = getDB();
+    
+    try {
+        $db->query("START TRANSACTION");
+        
+        // Get change order details
+        $changeOrder = $db->fetchOne(
+            "SELECT * FROM change_orders WHERE id = ?",
+            [$changeOrderId]
+        );
+        
+        if (!$changeOrder) {
+            throw new Exception("Change order not found");
+        }
+        
+        // Get or create pullsheet for this show
+        $pullsheet = getPullsheetByShowId($changeOrder['show_id']);
+        
+        if (!$pullsheet) {
+            // Create new pullsheet if doesn't exist
+            $db->query(
+                "INSERT INTO pullsheets (show_id, status, created_by, created_at) VALUES (?, 'draft', ?, NOW())",
+                [$changeOrder['show_id'], $changeOrder['created_by']]
+            );
+            $pullsheetId = $db->insert_id;
+        } else {
+            $pullsheetId = $pullsheet['id'];
+        }
+        
+        // Link change order to pullsheet
+        $db->query(
+            "UPDATE change_orders SET pullsheet_id = ? WHERE id = ?",
+            [$pullsheetId, $changeOrderId]
+        );
+        
+        // Get all change order items
+        $changeOrderItems = $db->fetchAll(
+            "SELECT * FROM change_order_items WHERE change_order_id = ?",
+            [$changeOrderId]
+        );
+        
+        foreach ($changeOrderItems as $item) {
+            if ($item['type'] === 'add') {
+                // Add or increase quantity in pullsheet
+                $existing = $db->fetchOne(
+                    "SELECT * FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                    [$pullsheetId, $item['item_id']]
+                );
+                
+                if ($existing) {
+                    // Increase quantity
+                    $db->query(
+                        "UPDATE pullsheet_items SET quantity = quantity + ? WHERE id = ?",
+                        [$item['quantity'], $existing['id']]
+                    );
+                } else {
+                    // Add new item
+                    $db->query(
+                        "INSERT INTO pullsheet_items (pullsheet_id, item_id, quantity, change_order_id) VALUES (?, ?, ?, ?)",
+                        [$pullsheetId, $item['item_id'], $item['quantity'], $changeOrderId]
+                    );
+                }
+            } elseif ($item['type'] === 'remove') {
+                // Remove or decrease quantity in pullsheet
+                $existing = $db->fetchOne(
+                    "SELECT * FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                    [$pullsheetId, $item['item_id']]
+                );
+                
+                if ($existing) {
+                    if ($existing['quantity'] <= $item['quantity']) {
+                        // Remove completely
+                        $db->query(
+                            "DELETE FROM pullsheet_items WHERE id = ?",
+                            [$existing['id']]
+                        );
+                    } else {
+                        // Decrease quantity
+                        $db->query(
+                            "UPDATE pullsheet_items SET quantity = quantity - ? WHERE id = ?",
+                            [$item['quantity'], $existing['id']]
+                        );
+                    }
+                }
+            }
+        }
+        
+        $db->query("COMMIT");
+        return true;
+        
+    } catch (Exception $e) {
+        $db->query("ROLLBACK");
+        error_log("Error updating pullsheet from change order: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Process partial return
+ * Creates a change order documenting the return and updates inventory
+ */
+function processPartialReturn($pullsheetId, $items, $userId) {
+    $db = getDB();
+    
+    try {
+        $db->query("START TRANSACTION");
+        
+        // Get pullsheet details
+        $pullsheet = $db->fetchOne(
+            "SELECT * FROM pullsheets WHERE id = ?",
+            [$pullsheetId]
+        );
+        
+        if (!$pullsheet) {
+            throw new Exception("Pullsheet not found");
+        }
+        
+        // Create change order for the return
+        $db->query(
+            "INSERT INTO change_orders (show_id, status, created_by, is_partial_return, source_pullsheet_id, pullsheet_id, created_at) 
+             VALUES (?, 'finalized', ?, TRUE, ?, ?, NOW())",
+            [$pullsheet['show_id'], $userId, $pullsheetId, $pullsheetId]
+        );
+        $changeOrderId = $db->insert_id;
+        
+        // Add items to change order as 'remove' type
+        foreach ($items as $item) {
+            $db->query(
+                "INSERT INTO change_order_items (change_order_id, item_id, quantity, type) VALUES (?, ?, ?, 'remove')",
+                [$changeOrderId, $item['item_id'], $item['quantity']]
+            );
+            
+            // Return items to inventory
+            $db->query(
+                "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
+                [$item['quantity'], $item['item_id']]
+            );
+        }
+        
+        // Update pullsheet using the change order
+        updatePullsheetFromChangeOrder($changeOrderId);
+        
+        $db->query("COMMIT");
+        return $changeOrderId;
+        
+    } catch (Exception $e) {
+        $db->query("ROLLBACK");
+        error_log("Error processing partial return: " . $e->getMessage());
+        return false;
+    }
 }

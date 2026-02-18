@@ -81,9 +81,19 @@ $shows = getDB()->fetchAll("SELECT s.*, t.name as theatre_space_name
                                         <a href="/shows/edit?id=<?php echo $show['id']; ?>" class="btn btn-sm btn-primary">
                                             <i class="ti ti-edit"></i>
                                         </a>
-                                        <a href="/pullsheets/create?show_id=<?php echo $show['id']; ?>" class="btn btn-sm btn-info" title="Create Pullsheet">
-                                            <i class="ti ti-file-text"></i>
-                                        </a>
+                                        <?php
+                                        // Check if pullsheet exists for this show
+                                        $existingPullsheet = getPullsheetByShowId($show['id']);
+                                        if ($existingPullsheet):
+                                        ?>
+                                            <a href="/pullsheets/edit?id=<?php echo $existingPullsheet['id']; ?>" class="btn btn-sm btn-info" title="Edit Shop Order">
+                                                <i class="ti ti-file-text"></i>
+                                            </a>
+                                        <?php else: ?>
+                                            <a href="/pullsheets/create?show_id=<?php echo $show['id']; ?>" class="btn btn-sm btn-info" title="Create Shop Order">
+                                                <i class="ti ti-file-plus"></i>
+                                            </a>
+                                        <?php endif; ?>
                                         <a href="/change-orders/create?show_id=<?php echo $show['id']; ?>" class="btn btn-sm btn-warning" title="Create Change Order">
                                             <i class="ti ti-exchange"></i>
                                         </a>

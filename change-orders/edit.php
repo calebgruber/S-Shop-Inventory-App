@@ -274,6 +274,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     [$coId]
                 );
                 
+                // Update pullsheet from change order
+                updatePullsheetFromChangeOrder($coId);
+                
                 // Notify admins for approval
                 createNotificationForAdmins(
                     'change_order_pending_approval',
@@ -285,6 +288,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             } else {
                 // Admin doesn't need approval
                 getDB()->query("UPDATE change_orders SET status = 'finalized', finalized_at = NOW() WHERE id = ?", [$coId]);
+                
+                // Update pullsheet from change order
+                updatePullsheetFromChangeOrder($coId);
                 
                 // Create notification for all operations users
                 createNotificationForOperations(
