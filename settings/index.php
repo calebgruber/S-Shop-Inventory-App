@@ -108,14 +108,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $maxSize = 5 * 1024 * 1024; // 5MB
                         if ($_FILES['logo']['size'] > $maxSize) {
                             setAlert('Logo file is too large. Maximum size is 5MB.', 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                         
                         // Validate file is an actual image
                         $imageInfo = getimagesize($_FILES['logo']['tmp_name']);
                         if ($imageInfo === false) {
                             setAlert('Invalid image file. Please upload a valid image.', 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                         
                         // Validate extension matches MIME type
@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
                         if (!in_array($ext, $allowedExtensions)) {
                             setAlert('Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions), 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                         
                         // Validate MIME type
@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
                         if (!in_array($mimeType, $allowedMimeTypes)) {
                             setAlert('Invalid image type. File MIME type does not match extension.', 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                         
                         // Generate unique filename and move file
@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             setSetting('logo_path', $filename);
                         } else {
                             setAlert('Failed to upload logo file.', 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                     }
                     
@@ -150,14 +150,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $maxSize = 5 * 1024 * 1024; // 5MB
                         if ($_FILES['login_illustration']['size'] > $maxSize) {
                             setAlert('Login illustration file is too large. Maximum size is 5MB.', 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                         
                         // Validate file is an actual image
                         $imageInfo = getimagesize($_FILES['login_illustration']['tmp_name']);
                         if ($imageInfo === false) {
                             setAlert('Invalid image file. Please upload a valid image.', 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                         
                         // Validate extension matches MIME type
@@ -165,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
                         if (!in_array($ext, $allowedExtensions)) {
                             setAlert('Invalid file type. Allowed types: ' . implode(', ', $allowedExtensions), 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                         
                         // Validate MIME type
@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $allowedMimeTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
                         if (!in_array($mimeType, $allowedMimeTypes)) {
                             setAlert('Invalid image type. File MIME type does not match extension.', 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                         
                         // Generate unique filename and move file
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             setSetting('login_illustration_path', $filename);
                         } else {
                             setAlert('Failed to upload login illustration file.', 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                     }
                     
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $maxSize = 1 * 1024 * 1024; // 1MB
                         if ($_FILES['favicon']['size'] > $maxSize) {
                             setAlert('Favicon file is too large. Maximum size is 1MB.', 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                         
                         // Validate file extension
@@ -200,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $allowedExtensions = ['ico', 'png', 'jpg', 'jpeg', 'gif', 'svg'];
                         if (!in_array($ext, $allowedExtensions)) {
                             setAlert('Invalid favicon type. Allowed types: ' . implode(', ', $allowedExtensions), 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                         
                         // Generate unique filename and move file
@@ -209,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             setSetting('favicon_path', $filename);
                         } else {
                             setAlert('Failed to upload favicon file.', 'danger');
-                            redirect();
+                            redirect('/settings/');
                         }
                     }
                     
