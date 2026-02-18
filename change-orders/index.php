@@ -359,7 +359,7 @@ foreach ($changeOrders as $changeOrder) {
                             <td>
                                 <div class="btn-group" role="group">
                                     <?php if ($co['status'] === 'draft'): ?>
-                                        <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary" title="Edit">
+                                        <a href="/change-orders/edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary" title="Edit">
                                             <i class="ti ti-edit"></i>
                                         </a>
                                     <?php else: ?>
@@ -416,7 +416,7 @@ foreach ($changeOrders as $changeOrder) {
                     </div>
                     <div class="d-flex gap-2">
                         <?php if ($co['status'] === 'draft'): ?>
-                            <a href="change_order_edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary flex-fill">
+                            <a href="/change-orders/edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary flex-fill">
                                 <i class="ti ti-edit"></i> Edit
                             </a>
                         <?php else: ?>

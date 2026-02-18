@@ -359,7 +359,7 @@ foreach ($pullsheets as $pullsheet) {
                             <td>
                                 <div class="btn-list flex-nowrap">
                                     <?php if ($ps['status'] === 'draft'): ?>
-                                        <a href="pullsheet_edit?id=<?php echo $ps['id']; ?>" 
+                                        <a href="/pullsheets/edit?id=<?php echo $ps['id']; ?>" 
                                            class="btn btn-sm btn-primary" 
                                            title="Edit">
                                             <i class="ti ti-edit"></i>
@@ -419,7 +419,7 @@ foreach ($pullsheets as $pullsheet) {
                     </div>
                     <div class="btn-list">
                         <?php if ($ps['status'] === 'draft'): ?>
-                            <a href="pullsheet_edit?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-primary">
+                            <a href="/pullsheets/edit?id=<?php echo $ps['id']; ?>" class="btn btn-sm btn-primary">
                                 <i class="ti ti-edit"></i> Edit
                             </a>
                         <?php else: ?>
