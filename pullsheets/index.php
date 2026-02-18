@@ -315,6 +315,7 @@ foreach ($pullsheets as $pullsheet) {
                         <th>Status</th>
                         <th>Created By</th>
                         <th>Created Date</th>
+                        <th>Last Modified</th>
                         <th class="w-1">Actions</th>
                     </tr>
                 </thead>
@@ -348,6 +349,11 @@ foreach ($pullsheets as $pullsheet) {
                             <td>
                                 <span class="text-muted">
                                     <?php echo date('M d, Y', strtotime($ps['created_at'])); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-muted small" title="<?php echo date('M d, Y g:i A', strtotime($ps['updated_at'])); ?>">
+                                    <?php echo timeAgo($ps['updated_at']); ?>
                                 </span>
                             </td>
                             <td>

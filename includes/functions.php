@@ -983,20 +983,6 @@ function markAllNotificationsAsRead($userId) {
 }
 
 // Hotkey functions
-function getUserHotkeys($userId) {
-    $db = getDB();
-    $hotkeys = $db->fetchAll(
-        "SELECT action, hotkey FROM user_hotkeys WHERE user_id = ?",
-        [$userId]
-    );
-    
-    $result = [];
-    foreach ($hotkeys as $row) {
-        $result[$row['action']] = $row['hotkey'];
-    }
-    
-    return $result;
-}
 
 // Time formatting helper
 function timeAgo($datetime) {

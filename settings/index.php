@@ -186,6 +186,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                     
+                    // Handle favicon upload
+                    if (isset($_FILES['favicon']) && $_FILES['favicon']['error'] === UPLOAD_ERR_OK) {
+                        // Validate file size (max 1MB for favicon)
+                        $maxSize = 1 * 1024 * 1024; // 1MB
+                        if ($_FILES['favicon']['size'] > $maxSize) {
+                            setAlert('Favicon file is too large. Maximum size is 1MB.', 'danger');
+                            redirect();
+                        }
+                        
+                        // Validate file extension
+                        $ext = strtolower(pathinfo($_FILES['favicon']['name'], PATHINFO_EXTENSION));
+                        $allowedExtensions = ['ico', 'png', 'jpg', 'jpeg', 'gif', 'svg'];
+                        if (!in_array($ext, $allowedExtensions)) {
+                            setAlert('Invalid favicon type. Allowed types: ' . implode(', ', $allowedExtensions), 'danger');
+                            redirect();
+                        }
+                        
+                        // Generate unique filename and move file
+                        $filename = 'favicon_' . time() . '.' . $ext;
+                        if (move_uploaded_file($_FILES['favicon']['tmp_name'], UPLOAD_DIR . $filename)) {
+                            setSetting('favicon_path', $filename);
+                        } else {
+                            setAlert('Failed to upload favicon file.', 'danger');
+                            redirect();
+                        }
+                    }
+                    
                     setAlert('Settings updated successfully');
                     break;
                     
@@ -202,6 +229,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         setAlert('Logo removed successfully. App name will now be displayed as text.');
                     } else {
                         setAlert('No logo to remove.', 'info');
+                    }
+                    redirect();
+                    break;
+                    
+                case 'remove_favicon':
+                    $faviconPath = getSetting('favicon_path');
+                    if ($faviconPath) {
+                        // Delete the favicon file if it exists
+                        $faviconFile = UPLOAD_DIR . basename($faviconPath);
+                        if (file_exists($faviconFile)) {
+                            unlink($faviconFile);
+                        }
+                        // Clear the favicon_path setting
+                        setSetting('favicon_path', '');
+                        setAlert('Favicon removed successfully.');
+                    } else {
+                        setAlert('No favicon to remove.', 'info');
                     }
                     redirect();
                     break;
@@ -611,6 +655,7 @@ $subcategories = getAllSubcategories();
 $theatreSpaces = getAllTheatreSpaces();
 $appName = getSetting('app_name');
 $logoPath = getSetting('logo_path');
+$faviconPath = getSetting('favicon_path');
 $loginIllustrationPath = getSetting('login_illustration_path');
 $supportEmail = getSetting('support_email', 'support@example.com');
 $appUrl = getSetting('app_url', '');
@@ -734,7 +779,7 @@ $hasPendingMigrations = count($pendingMigrations) > 0;
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Logo (for Header & PDFs)</label>
                             <?php if ($logoPath && file_exists(UPLOAD_DIR . $logoPath)): ?>
                                 <div class="mb-2 d-flex align-items-center gap-2">
@@ -751,7 +796,24 @@ $hasPendingMigrations = count($pendingMigrations) > 0;
                             <small class="form-hint">Upload a logo to appear in header and on PDFs (PNG, JPG, GIF, WebP - max 5MB). Without a logo, the app name will be displayed as text.</small>
                         </div>
                         
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Favicon (Browser Tab Icon)</label>
+                            <?php if ($faviconPath && file_exists(UPLOAD_DIR . $faviconPath)): ?>
+                                <div class="mb-2 d-flex align-items-center gap-2">
+                                    <img src="/uploads/<?php echo htmlspecialchars($faviconPath); ?>" alt="Favicon" style="max-height: 32px; border: 1px solid #ddd; padding: 5px;">
+                                    <form method="POST" style="display: inline;" onsubmit="showLoading()">
+                                        <input type="hidden" name="action" value="remove_favicon">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove custom favicon?')">
+                                            <i class="ti ti-trash"></i> Remove
+                                        </button>
+                                    </form>
+                                </div>
+                            <?php endif; ?>
+                            <input type="file" class="form-control" name="favicon" accept=".ico,image/png,image/jpeg,image/jpg,image/gif,image/svg+xml">
+                            <small class="form-hint">Upload a favicon for browser tabs (.ico, PNG, JPG, GIF, SVG - max 1MB)</small>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Default Login Banner</label>
                             <?php if ($loginIllustrationPath && file_exists(UPLOAD_DIR . $loginIllustrationPath)): ?>
                                 <div class="mb-2">

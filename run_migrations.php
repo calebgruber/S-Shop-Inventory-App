@@ -116,6 +116,32 @@ try {
                     $output[] = "  ✓ banner_rotation_interval setting already exists";
                 }
             }
+        ],
+        [
+            'name' => '007_remove_hotkeys_table',
+            'description' => 'Remove user_hotkeys table as hotkey feature is discontinued',
+            'sql' => [
+                "DROP TABLE IF EXISTS user_hotkeys"
+            ]
+        ],
+        [
+            'name' => '008_add_favicon_setting',
+            'description' => 'Add setting for custom favicon',
+            'callback' => function($db, &$output) {
+                // Check if favicon_path setting exists
+                $result = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'favicon_path'");
+                
+                if ($result === null) {
+                    // Insert default favicon_path setting (empty)
+                    $db->query(
+                        "INSERT INTO settings (setting_key, setting_value) VALUES ('favicon_path', '')",
+                        []
+                    );
+                    $output[] = "  ✓ Created favicon_path setting";
+                } else {
+                    $output[] = "  ✓ favicon_path setting already exists";
+                }
+            }
         ]
     ];
     

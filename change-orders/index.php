@@ -319,6 +319,7 @@ foreach ($changeOrders as $changeOrder) {
                         <th>Status</th>
                         <th>Created By</th>
                         <th>Created Date</th>
+                        <th>Last Modified</th>
                         <th class="w-1">Actions</th>
                     </tr>
                 </thead>
@@ -350,6 +351,11 @@ foreach ($changeOrders as $changeOrder) {
                             </td>
                             <td><?php echo htmlspecialchars($co['created_by'] ?? 'N/A'); ?></td>
                             <td><?php echo date('m/d/Y', strtotime($co['created_at'])); ?></td>
+                            <td>
+                                <span class="text-muted small" title="<?php echo date('M d, Y g:i A', strtotime($co['updated_at'])); ?>">
+                                    <?php echo timeAgo($co['updated_at']); ?>
+                                </span>
+                            </td>
                             <td>
                                 <div class="btn-group" role="group">
                                     <?php if ($co['status'] === 'draft'): ?>

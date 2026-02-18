@@ -123,12 +123,12 @@ try {
           <div class="text-center mb-4">
             <?php if ($logoPath): 
                 $logoFile = basename($logoPath);
-                $logoFullPath = __DIR__ . '/uploads/' . $logoFile;
+                $logoFullPath = __DIR__ . '/../uploads/' . $logoFile;
                 if (file_exists($logoFullPath)): 
                     $logoExt = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
                     if (in_array($logoExt, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'])): ?>
                         <a href="." class="navbar-brand navbar-brand-autodark">
-                          <img src="uploads/<?php echo htmlspecialchars($logoFile); ?>" height="36" alt="<?php echo htmlspecialchars($appName); ?>">
+                          <img src="/uploads/<?php echo htmlspecialchars($logoFile); ?>" height="56" alt="<?php echo htmlspecialchars($appName); ?>">
                         </a>
             <?php endif; endif; endif; ?>
           </div>

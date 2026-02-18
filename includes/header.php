@@ -62,6 +62,18 @@ $currentUser = getCurrentUser();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle . ' - ' . $appName); ?></title>
     
+    <?php 
+    // Add favicon if configured
+    $faviconPath = getSetting('favicon_path');
+    if ($faviconPath) {
+        $faviconFile = basename($faviconPath);
+        $faviconFullPath = UPLOAD_DIR . $faviconFile;
+        if (file_exists($faviconFullPath)) {
+            echo '<link rel="icon" type="image/x-icon" href="/uploads/' . htmlspecialchars($faviconFile) . '">';
+        }
+    }
+    ?>
+    
     <!-- Apply theme immediately to prevent flash -->
     <script>
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -526,7 +538,7 @@ $currentUser = getCurrentUser();
                         
                         if ($showLogo):
                         ?>
-                            <img src="<?php echo $logoSrc; ?>" height="32" alt="<?php echo htmlspecialchars($appName); ?>">
+                            <img src="/<?php echo $logoSrc; ?>" height="56" alt="<?php echo htmlspecialchars($appName); ?>">
                         <?php else: ?>
                             <?php echo htmlspecialchars($appName); ?>
                         <?php endif; ?>
