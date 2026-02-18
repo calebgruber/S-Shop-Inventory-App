@@ -142,6 +142,20 @@ try {
                     $output[] = "  ✓ favicon_path setting already exists";
                 }
             }
+        ],
+        [
+            'name' => '009_add_maintenance_mode_setting',
+            'description' => 'Add maintenance mode setting',
+            'callback' => function($db, &$output) {
+                // Check if maintenance_mode setting exists
+                $result = $db->fetchOne("SELECT name FROM settings WHERE name = 'maintenance_mode'");
+                if (!$result) {
+                    $db->query("INSERT INTO settings (name, value) VALUES ('maintenance_mode', '0')");
+                    $output[] = "  ✓ Created maintenance_mode setting (disabled by default)";
+                } else {
+                    $output[] = "  ✓ maintenance_mode setting already exists";
+                }
+            }
         ]
     ];
     

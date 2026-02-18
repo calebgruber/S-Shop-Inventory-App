@@ -642,6 +642,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     setAlert('PDF settings updated successfully', 'success');
                     redirect();
                     break;
+                    
+                case 'toggle_maintenance':
+                    $mode = $_POST['mode'] ?? '0';
+                    setSetting('maintenance_mode', $mode === '1' ? '1' : '0');
+                    if ($mode === '1') {
+                        setAlert('Maintenance mode enabled. Only admins can access the application.', 'warning');
+                    } else {
+                        setAlert('Maintenance mode disabled. All users can now access the application.', 'success');
+                    }
+                    redirect();
+                    break;
+                    
+                case 'clear_logs':
+                    $logsDir = __DIR__ . '/../logs/';
+                    $filesCleared = 0;
+                    
+                    if (is_dir($logsDir)) {
+                        $files = glob($logsDir . '*.log');
+                        foreach ($files as $file) {
+                            if (is_file($file)) {
+                                // Clear file content instead of deleting
+                                file_put_contents($file, '');
+                                $filesCleared++;
+                            }
+                        }
+                    }
+                    
+                    setAlert("Cleared {$filesCleared} log file(s) successfully.", 'success');
+                    redirect();
+                    break;
             }
         }
         redirect();
@@ -1422,6 +1452,70 @@ $hasPendingMigrations = count($pendingMigrations) > 0;
                 </div>
             </div>
         </div>
+                
+                <!-- Maintenance Mode Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title">Maintenance Mode</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            Enable maintenance mode to prevent non-admin users from accessing the application. 
+                            A maintenance message will be displayed to users during this time.
+                        </p>
+                        
+                        <?php 
+                        $maintenanceMode = getSetting('maintenance_mode', '0');
+                        $isMaintenanceOn = $maintenanceMode === '1';
+                        ?>
+                        
+                        <form method="POST" onsubmit="showLoading()">
+                            <input type="hidden" name="action" value="toggle_maintenance">
+                            <input type="hidden" name="mode" value="<?php echo $isMaintenanceOn ? '0' : '1'; ?>">
+                            
+                            <?php if ($isMaintenanceOn): ?>
+                                <div class="alert alert-warning mb-3">
+                                    <i class="ti ti-alert-triangle me-2"></i>
+                                    <strong>Maintenance Mode is ENABLED</strong> - Only admins can access the application.
+                                </div>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="ti ti-check icon"></i>
+                                    Disable Maintenance Mode
+                                </button>
+                            <?php else: ?>
+                                <div class="alert alert-info mb-3">
+                                    <i class="ti ti-info-circle me-2"></i>
+                                    Maintenance mode is currently disabled. All users can access the application.
+                                </div>
+                                <button type="submit" class="btn btn-warning" onclick="return confirm('Enable maintenance mode? Only admins will be able to access the application.')">
+                                    <i class="ti ti-alert-triangle icon"></i>
+                                    Enable Maintenance Mode
+                                </button>
+                            <?php endif; ?>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Clear Logs Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Clear Log Files</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            Clear all log files in the /logs/ directory to free up disk space. 
+                            This will permanently delete all log entries.
+                        </p>
+                        
+                        <form method="POST" onsubmit="return confirm('Are you sure you want to clear all log files? This action cannot be undone.')">
+                            <input type="hidden" name="action" value="clear_logs">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="ti ti-trash icon"></i>
+                                Clear All Logs
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

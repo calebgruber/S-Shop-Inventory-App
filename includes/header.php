@@ -11,6 +11,15 @@ $authPages = ['login.php', 'logout.php'];
 $currentFile = basename($_SERVER['PHP_SELF']);
 if (!in_array($currentFile, $authPages)) {
     requireLogin();
+    
+    // Check maintenance mode (only admins can access when enabled)
+    $maintenanceMode = getSetting('maintenance_mode', '0');
+    if ($maintenanceMode === '1' && !isAdmin()) {
+        // Non-admin user trying to access during maintenance
+        session_destroy();
+        header('Location: /maintenance.php');
+        exit;
+    }
 }
 
 $pageTitle = $pageTitle ?? 'Dashboard';

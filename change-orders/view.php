@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isAdmin()) {
                 setAlert('Error rejecting change order', 'danger');
             }
         }
-        redirect('change_order_view.php?id=' . $changeOrderId);
+        redirect('/change-orders/view?id=' . $changeOrderId);
     }
 }
 
@@ -82,7 +82,7 @@ $items = getChangeOrderItems($changeOrderId);
 
 <div class="row mb-3">
     <div class="col">
-        <a href="change_orders" class="btn btn-secondary">
+        <a href="/change-orders/" class="btn btn-secondary">
             <i class="ti ti-arrow-left"></i> Back to Change Orders
         </a>
         <?php if ($changeOrder['status'] === 'finalized' || $changeOrder['status'] === 'processed' || $changeOrder['status'] === 'completed'): ?>

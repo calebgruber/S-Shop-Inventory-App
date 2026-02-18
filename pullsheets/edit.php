@@ -610,7 +610,7 @@ document.getElementById('saveDraftBtn').addEventListener('click', function() {
     .then(data => {
         if (data.success) {
             playSuccessSound();
-            window.location.href = 'pullsheets.php?saved=1';
+            window.location.href = '/pullsheets/?saved=1';
         } else {
             alert(data.message || 'Error saving draft');
             playErrorSound();

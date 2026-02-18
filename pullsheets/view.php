@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isAdmin()) {
                 setAlert('Error rejecting pullsheet', 'danger');
             }
         }
-        redirect('pullsheet_view.php?id=' . $pullsheetId);
+        redirect('/pullsheets/view?id=' . $pullsheetId);
     }
 }
 
@@ -82,7 +82,7 @@ $items = getPullsheetItems($pullsheetId);
 
 <div class="row mb-3">
     <div class="col">
-        <a href="pullsheets" class="btn btn-secondary">
+        <a href="/pullsheets/" class="btn btn-secondary">
             <i class="ti ti-arrow-left"></i> Back to Pullsheets
         </a>
         <?php if ($pullsheet['status'] === 'finalized'): ?>
