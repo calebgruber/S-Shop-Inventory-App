@@ -26,7 +26,7 @@ if ($showId) {
     $existing = getDB()->fetchOne("SELECT id FROM pullsheets WHERE show_id = ?", [$showId]);
     if ($existing) {
         setAlert('A shop order already exists for this show', 'warning');
-        redirect('pullsheet_edit.php?id=' . $existing['id']);
+        redirect('/pullsheets/edit?id=' . $existing['id']);
     }
 }
 
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $existing = getDB()->fetchOne("SELECT id FROM pullsheets WHERE show_id = ?", [$postShowId]);
         if ($existing) {
             setAlert('A shop order already exists for this show', 'warning');
-            redirect('pullsheet_edit.php?id=' . $existing['id']);
+            redirect('/pullsheets/edit?id=' . $existing['id']);
         }
         
         getDB()->query(
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pullsheetId = getDB()->lastInsertId();
         
         setAlert('Shop Order created successfully');
-        redirect('pullsheet_edit.php?id=' . $pullsheetId);
+        redirect('/pullsheets/edit?id=' . $pullsheetId);
     } catch (Exception $e) {
         setAlert($e->getMessage(), 'danger');
     }

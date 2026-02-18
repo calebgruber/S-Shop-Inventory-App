@@ -651,7 +651,7 @@ if (ob_get_level()) {
                         } else {
                             alert('Return completed successfully!');
                         }
-                        location.href = 'index.php';
+                        location.href = '/operations/';
                     } else {
                         playError();
                         alert(data.message || 'Failed to complete');
@@ -666,7 +666,7 @@ if (ob_get_level()) {
                     if (data.success) {
                         playSuccess();
                         alert('Draft saved successfully!');
-                        location.href = 'index.php';
+                        location.href = '/operations/';
                     } else {
                         playError();
                         alert(data.message || 'Failed to save draft');

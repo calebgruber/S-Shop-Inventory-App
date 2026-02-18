@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         
         setAlert('Change order created');
-        redirect('change_order_edit.php?id=' . getDB()->lastInsertId());
+        redirect('/change-orders/edit?id=' . getDB()->lastInsertId());
     } catch (Exception $e) {
         setAlert($e->getMessage(), 'danger');
     }

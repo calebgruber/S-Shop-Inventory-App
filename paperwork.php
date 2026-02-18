@@ -4,19 +4,34 @@ require_once 'includes/header.php';
 requirePermission('paperwork');
 
 $db = getDB();
+$currentUser = getCurrentUser();
+$isDesigner = $currentUser['role'] === 'designer' || $currentUser['role'] === 'pa';
 
 // Get selected show
 $selectedShowId = $_GET['show_id'] ?? null;
 $categoryFilter = $_GET['category'] ?? 'all';
 $typeFilter = $_GET['type'] ?? 'all';
 
-// Get all shows for dropdown
-$shows = $db->fetchAll(
-    "SELECT s.*, t.name as theatre_space_name 
-     FROM shows s 
-     LEFT JOIN theatre_spaces t ON s.theatre_space_id = t.id 
-     ORDER BY s.created_at DESC"
-);
+// Get shows - filter for designers/PA to only their assigned shows
+if ($isDesigner) {
+    $shows = $db->fetchAll(
+        "SELECT s.*, t.name as theatre_space_name 
+         FROM shows s 
+         LEFT JOIN theatre_spaces t ON s.theatre_space_id = t.id 
+         INNER JOIN show_assignments sa ON s.id = sa.show_id
+         WHERE sa.user_id = ?
+         ORDER BY s.created_at DESC",
+        [$currentUser['id']]
+    );
+} else {
+    // Admins see all shows
+    $shows = $db->fetchAll(
+        "SELECT s.*, t.name as theatre_space_name 
+         FROM shows s 
+         LEFT JOIN theatre_spaces t ON s.theatre_space_id = t.id 
+         ORDER BY s.created_at DESC"
+    );
+}
 
 $pullsheets = [];
 $changeOrders = [];

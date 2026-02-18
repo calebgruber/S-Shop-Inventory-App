@@ -33,7 +33,7 @@ $items = getAllItemsFiltered($filterCategory, $filterSubcategory);
 <?php if ($canEdit): ?>
 <div class="row mb-3">
     <div class="col">
-        <a href="item_edit" class="btn btn-primary">
+        <a href="/items/edit" class="btn btn-primary">
             <i class="ti ti-plus"></i> Add New Item
         </a>
     </div>
@@ -50,7 +50,7 @@ $items = getAllItemsFiltered($filterCategory, $filterSubcategory);
                 </h4>
             </div>
             <div class="card-body">
-                <form method="GET" action="items" id="filterForm">
+                <form method="GET" action="/items/" id="filterForm">
                     <div class="row">
                         <div class="col-md-4">
                             <label class="form-label">Category</label>
@@ -81,7 +81,7 @@ $items = getAllItemsFiltered($filterCategory, $filterSubcategory);
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="ti ti-search"></i> Apply Filters
                             </button>
-                            <a href="items" class="btn btn-secondary">
+                            <a href="/items/" class="btn btn-secondary">
                                 <i class="ti ti-x"></i> Clear
                             </a>
                         </div>
