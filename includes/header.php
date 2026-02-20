@@ -617,10 +617,6 @@ $currentUser = getCurrentUser();
                             </div>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="/users/settings">
-                                <i class="ti ti-settings icon me-2"></i>
-                                Settings
-                            </a></li>
                             <li><a class="dropdown-item" href="#" id="theme-toggle-dropdown">
                                 <i class="ti ti-moon icon me-2"></i>
                                 Toggle Dark Mode

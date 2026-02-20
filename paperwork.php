@@ -193,6 +193,11 @@ foreach ($shows as $show) {
                     </dd>
                 </dl>
             </div>
+            <div class="card-footer">
+                <button class="btn btn-info" disabled style="cursor: not-allowed;" title="Coming Soon">
+                    <i class="ti ti-report-analytics icon"></i> Shop Reports
+                </button>
+            </div>
         </div>
     </div>
 </div>
