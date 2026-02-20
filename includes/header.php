@@ -694,13 +694,24 @@ $currentUser = getCurrentUser();
                             <?php endif; ?>
                             
                             <?php if (hasPermission('pullsheets') && !isStudent()): ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo in_array($currentPage, ['pullsheets', 'pullsheet_create', 'pullsheet_edit', 'pullsheet_view']) ? 'active' : ''; ?>" href="/pullsheets/">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle <?php echo in_array($currentPage, ['pullsheets', 'pullsheet_create', 'pullsheet_edit', 'pullsheet_view', 'change-orders', 'change_order_create', 'change_order_edit', 'change_order_view']) ? 'active' : ''; ?>" 
+                                   href="#" data-bs-toggle="dropdown" aria-expanded="false" role="button">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-clipboard-list"></i>
                                     </span>
                                     <span class="nav-link-title">Shop Orders</span>
                                 </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="/pullsheets/">
+                                        <i class="ti ti-clipboard-list me-2"></i>
+                                        Shop Orders
+                                    </a>
+                                    <a class="dropdown-item" href="/change-orders/">
+                                        <i class="ti ti-edit me-2"></i>
+                                        Change Orders
+                                    </a>
+                                </div>
                             </li>
                             <?php endif; ?>
                             
