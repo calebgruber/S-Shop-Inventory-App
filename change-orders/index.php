@@ -27,22 +27,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         // Start transaction
         $db->query("START TRANSACTION");
         
-        // Return ALL items to stock regardless of status (draft, pending, finalized, picked, etc.)
-        $items = getChangeOrderItems($deleteId);
-        foreach ($items as $item) {
-            // Return items based on type
-            if ($item['type'] === 'add') {
-                // Items that were added (removed from stock) - return them
-                $quantityToReturn = abs($item['quantity_change'] ?? $item['quantity'] ?? 0);
-                if ($quantityToReturn > 0) {
+        // If change order was finalized and linked to a pullsheet, reverse those changes
+        if ($changeOrder['status'] === 'finalized' && $changeOrder['pullsheet_id']) {
+            $items = getChangeOrderItems($deleteId);
+            foreach ($items as $item) {
+                $quantity = abs($item['quantity_change'] ?? $item['quantity'] ?? 0);
+                
+                if ($item['type'] === 'add') {
+                    // Items were ADDED to pullsheet - now REMOVE them
+                    $existing = $db->fetchOne(
+                        "SELECT quantity_needed FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                        [$changeOrder['pullsheet_id'], $item['item_id']]
+                    );
+                    
+                    if ($existing) {
+                        $newQty = max(0, $existing['quantity_needed'] - $quantity);
+                        if ($newQty > 0) {
+                            $db->query(
+                                "UPDATE pullsheet_items SET quantity_needed = ? WHERE pullsheet_id = ? AND item_id = ?",
+                                [$newQty, $changeOrder['pullsheet_id'], $item['item_id']]
+                            );
+                        } else {
+                            // Remove from pullsheet if quantity reaches 0
+                            $db->query(
+                                "DELETE FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                                [$changeOrder['pullsheet_id'], $item['item_id']]
+                            );
+                        }
+                    }
+                    
+                    // Return items to general stock
                     $db->query(
                         "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
-                        [$quantityToReturn, $item['item_id']]
+                        [$quantity, $item['item_id']]
                     );
-                    logMessage("Returned {$quantityToReturn} of item ID {$item['item_id']} to stock from change order ID $deleteId (status: {$changeOrder['status']})", 'INFO');
+                    logMessage("Reversed add: Removed {$quantity} of item ID {$item['item_id']} from pullsheet and returned to stock", 'INFO');
+                    
+                } elseif ($item['type'] === 'remove') {
+                    // Items were REMOVED from pullsheet - now ADD them back
+                    $existing = $db->fetchOne(
+                        "SELECT quantity_needed FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                        [$changeOrder['pullsheet_id'], $item['item_id']]
+                    );
+                    
+                    if ($existing) {
+                        $db->query(
+                            "UPDATE pullsheet_items SET quantity_needed = quantity_needed + ? WHERE pullsheet_id = ? AND item_id = ?",
+                            [$quantity, $changeOrder['pullsheet_id'], $item['item_id']]
+                        );
+                    } else {
+                        // Add back to pullsheet
+                        $db->query(
+                            "INSERT INTO pullsheet_items (pullsheet_id, item_id, quantity_needed) VALUES (?, ?, ?)",
+                            [$changeOrder['pullsheet_id'], $item['item_id'], $quantity]
+                        );
+                    }
+                    logMessage("Reversed remove: Added {$quantity} of item ID {$item['item_id']} back to pullsheet", 'INFO');
                 }
             }
-            // Items with type='remove' were being returned, so no stock adjustment needed
+        } else {
+            // For draft/pending change orders, just return items to stock
+            $items = getChangeOrderItems($deleteId);
+            foreach ($items as $item) {
+                // Return items based on type
+                if ($item['type'] === 'add') {
+                    // Items that were added (removed from stock) - return them
+                    $quantityToReturn = abs($item['quantity_change'] ?? $item['quantity'] ?? 0);
+                    if ($quantityToReturn > 0) {
+                        $db->query(
+                            "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
+                            [$quantityToReturn, $item['item_id']]
+                        );
+                        logMessage("Returned {$quantityToReturn} of item ID {$item['item_id']} to stock from change order ID $deleteId (status: {$changeOrder['status']})", 'INFO');
+                    }
+                }
+                // Items with type='remove' were being returned, so no stock adjustment needed
+            }
         }
         
         // Note: pending_picks and pending_returns tables removed - not needed
