@@ -13,7 +13,7 @@ $selectedItems = [];
 if (isset($_GET['pullsheet_barcode'])) {
     $barcode = $_GET['pullsheet_barcode'];
     $pullsheet = getDB()->fetchOne(
-        "SELECT p.*, s.title as show_title FROM pullsheets p 
+        "SELECT p.*, s.name as show_title FROM pullsheets p 
          LEFT JOIN shows s ON p.show_id = s.id 
          WHERE p.barcode = ?",
         [$barcode]
@@ -22,9 +22,12 @@ if (isset($_GET['pullsheet_barcode'])) {
     if ($pullsheet) {
         // Get all items in this pullsheet
         $pullsheetItems = getDB()->fetchAll(
-            "SELECT pi.*, i.name as item_name, i.barcode as item_barcode, i.category, i.subcategory 
+            "SELECT pi.*, i.name as item_name, i.barcode as item_barcode,
+                    c.name as category, sc.name as subcategory 
              FROM pullsheet_items pi
              JOIN items i ON pi.item_id = i.id
+             LEFT JOIN categories c ON i.category_id = c.id
+             LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
              WHERE pi.pullsheet_id = ?
              ORDER BY i.name",
             [$pullsheet['id']]
@@ -163,14 +166,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_return'])) {
                                                         </small>
                                                     </td>
                                                     <td>
-                                                        <span class="badge bg-info"><?php echo $item['quantity']; ?></span>
+                                                        <span class="badge bg-info"><?php echo $item['quantity_needed']; ?></span>
                                                     </td>
                                                     <td>
                                                         <input type="number" 
                                                                name="return_items[<?php echo $item['item_id']; ?>]" 
                                                                class="form-control return-quantity" 
                                                                min="0" 
-                                                               max="<?php echo $item['quantity']; ?>" 
+                                                               max="<?php echo $item['quantity_needed']; ?>" 
                                                                value="0"
                                                                data-item-name="<?php echo htmlspecialchars($item['item_name']); ?>"
                                                                data-item-barcode="<?php echo htmlspecialchars($item['item_barcode']); ?>">

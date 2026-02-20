@@ -382,6 +382,30 @@ try {
                 "CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type)",
                 "CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read)"
             ]
+        ],
+        [
+            'name' => '015_fix_change_order_items_quantity',
+            'description' => 'Ensure change_order_items has a quantity column (rename from quantity_change if needed)',
+            'callback' => function($db, &$output) {
+                // Check if quantity column already exists
+                $col = $db->query("SHOW COLUMNS FROM change_order_items LIKE 'quantity'");
+                if ($col && $col->rowCount() > 0) {
+                    $output[] = "  ✓ quantity column already exists in change_order_items";
+                    return;
+                }
+
+                // Check if old column quantity_change exists
+                $col2 = $db->query("SHOW COLUMNS FROM change_order_items LIKE 'quantity_change'");
+                if ($col2 && $col2->rowCount() > 0) {
+                    // Rename quantity_change -> quantity preserving data
+                    $db->query("ALTER TABLE change_order_items CHANGE quantity_change quantity INT NOT NULL");
+                    $output[] = "  ✓ Renamed quantity_change to quantity in change_order_items";
+                } else {
+                    // Neither column exists; add quantity with a safe default
+                    $db->query("ALTER TABLE change_order_items ADD COLUMN quantity INT NOT NULL DEFAULT 0");
+                    $output[] = "  ✓ Added quantity column to change_order_items";
+                }
+            }
         ]
     ];
     

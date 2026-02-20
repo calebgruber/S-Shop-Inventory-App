@@ -296,13 +296,20 @@ function getChangeOrderByBarcode($barcode) {
 
 function getChangeOrderItems($changeOrderId) {
     $db = getDB();
-    return $db->fetchAll(
-        "SELECT coi.*, coi.quantity as quantity_change, i.name as item_name, i.barcode as item_barcode, i.in_stock_quantity 
+    $items = $db->fetchAll(
+        "SELECT coi.*, i.name as item_name, i.barcode as item_barcode, i.in_stock_quantity 
          FROM change_order_items coi 
          JOIN items i ON coi.item_id = i.id 
          WHERE coi.change_order_id = ?",
         [$changeOrderId]
     );
+    // Normalize: ensure 'quantity_change' key exists regardless of actual column name
+    foreach ($items as &$item) {
+        if (!isset($item['quantity_change'])) {
+            $item['quantity_change'] = $item['quantity'] ?? 0;
+        }
+    }
+    return $items;
 }
 
 function getAllChangeOrders() {
