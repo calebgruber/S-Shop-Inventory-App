@@ -27,25 +27,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         // Start transaction
         $db->query("START TRANSACTION");
         
-        // If change order was finalized, unreserve the items
-        if ($changeOrder['status'] === 'finalized' || $changeOrder['status'] === 'picked') {
-            $items = getChangeOrderItems($deleteId);
-            foreach ($items as $item) {
-                // Only unreserve items that were being added (removed from stock)
-                if ($item['type'] === 'add') {
-                    // Use quantity_change field (or quantity if that's the actual column name)
-                    $quantityToReturn = abs($item['quantity_change'] ?? $item['quantity'] ?? 0);
-                    if ($quantityToReturn > 0) {
-                        $db->query(
-                            "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
-                            [$quantityToReturn, $item['item_id']]
-                        );
-                        logMessage("Unreserved {$quantityToReturn} of item ID {$item['item_id']} from change order ID $deleteId", 'INFO');
-                    }
+        // Return ALL items to stock regardless of status (draft, pending, finalized, picked, etc.)
+        $items = getChangeOrderItems($deleteId);
+        foreach ($items as $item) {
+            // Return items based on type
+            if ($item['type'] === 'add') {
+                // Items that were added (removed from stock) - return them
+                $quantityToReturn = abs($item['quantity_change'] ?? $item['quantity'] ?? 0);
+                if ($quantityToReturn > 0) {
+                    $db->query(
+                        "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
+                        [$quantityToReturn, $item['item_id']]
+                    );
+                    logMessage("Returned {$quantityToReturn} of item ID {$item['item_id']} to stock from change order ID $deleteId (status: {$changeOrder['status']})", 'INFO');
                 }
-                // Items with type='remove' were being returned, so no stock adjustment needed
             }
+            // Items with type='remove' were being returned, so no stock adjustment needed
         }
+        
+        // Remove any pending picks/returns for this change order
+        $db->query("DELETE FROM pending_picks WHERE change_order_id = ?", [$deleteId]);
+        $db->query("DELETE FROM pending_returns WHERE change_order_id = ?", [$deleteId]);
         
         // Delete change order items and change order
         $db->query("DELETE FROM change_order_items WHERE change_order_id = ?", [$deleteId]);

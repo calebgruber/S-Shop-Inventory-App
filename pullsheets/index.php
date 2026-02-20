@@ -27,19 +27,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         // Start transaction
         $db->query("START TRANSACTION");
         
-        // If shop order was finalized, unreserve the items
-        if ($pullsheet['status'] === 'finalized' || $pullsheet['status'] === 'picked') {
-            $items = getPullsheetItems($deleteId);
-            foreach ($items as $item) {
-                // Return items to stock - use quantity_picked if available, otherwise quantity_needed
-                $quantityToReturn = ($pullsheet['status'] === 'picked') ? $item['quantity_picked'] : $item['quantity_needed'];
+        // Return ALL items to stock regardless of status (draft, pending, finalized, picked, etc.)
+        $items = getPullsheetItems($deleteId);
+        foreach ($items as $item) {
+            // Return items to stock - use quantity_picked if available, otherwise quantity_needed
+            $quantityToReturn = !empty($item['quantity_picked']) ? $item['quantity_picked'] : $item['quantity_needed'];
+            if ($quantityToReturn > 0) {
                 $db->query(
                     "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
                     [$quantityToReturn, $item['item_id']]
                 );
-                logMessage("Unreserved {$quantityToReturn} of item ID {$item['item_id']} from shop order ID $deleteId", 'INFO');
+                logMessage("Returned {$quantityToReturn} of item ID {$item['item_id']} to stock from shop order ID $deleteId (status: {$pullsheet['status']})", 'INFO');
             }
         }
+        
+        // Remove any pending picks/returns for this pullsheet
+        $db->query("DELETE FROM pending_picks WHERE pullsheet_id = ?", [$deleteId]);
+        $db->query("DELETE FROM pending_returns WHERE pullsheet_id = ?", [$deleteId]);
         
         // Delete shop order items and pullsheet
         $db->query("DELETE FROM pullsheet_items WHERE pullsheet_id = ?", [$deleteId]);

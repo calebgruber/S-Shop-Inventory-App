@@ -516,13 +516,18 @@ function hasPermission($permissionKey) {
         if ($user['role'] === 'designer') {
             // Designers can view dashboard, submit student requests (not approve), view pullsheets, change orders, and quick lookup
             $designerPermissions = ['dashboard', 'student_requests', 'pullsheets', 
-                                   'change_orders', 'quick_lookup', 'shows', 'items'];
+                                   'change_orders', 'quick_lookup', 'shows', 'items', 'paperwork'];
             return in_array($permissionKey, $designerPermissions);
+        } else if ($user['role'] === 'pa') {
+            // PA has same permissions as designers
+            $paPermissions = ['dashboard', 'student_requests', 'pullsheets', 
+                             'change_orders', 'quick_lookup', 'shows', 'items', 'paperwork'];
+            return in_array($permissionKey, $paPermissions);
         } else if ($user['role'] === 'production_audio') {
             // Production Audio: read-only inventory, create orders, assigned to shows, can pick/return (with signature)
             $productionAudioPermissions = ['dashboard', 'items', 'shows', 'pullsheets', 
                                           'change_orders', 'pick_mode', 'return_mode', 
-                                          'operations', 'student_requests', 'quick_lookup'];
+                                          'operations', 'student_requests', 'quick_lookup', 'paperwork'];
             return in_array($permissionKey, $productionAudioPermissions);
         } else if ($user['role'] === 'student') {
             // Students can only view dashboard, read-only inventory, and make requests
