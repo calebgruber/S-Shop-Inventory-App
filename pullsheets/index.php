@@ -41,9 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
             }
         }
         
-        // Remove any pending picks/returns for this pullsheet
-        $db->query("DELETE FROM pending_picks WHERE pullsheet_id = ?", [$deleteId]);
-        $db->query("DELETE FROM pending_returns WHERE pullsheet_id = ?", [$deleteId]);
+        // Note: pending_picks and pending_returns tables removed - not needed
         
         // Delete shop order items and pullsheet
         $db->query("DELETE FROM pullsheet_items WHERE pullsheet_id = ?", [$deleteId]);

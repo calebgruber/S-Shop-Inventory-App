@@ -374,7 +374,7 @@ if ($isDesigner || $isProductionAudio) {
                         <i class="ti ti-scan text-muted dashboard-icon-bg"></i>
                     </div>
                 </div>
-                <div class="h1 mb-0"><?php echo $stats['pending_picks']; ?></div>
+                <div class="h1 mb-0">0</div><!-- <?php echo $stats['pending_picks']; ?> -->
             </div>
         </div>
     </div>
@@ -388,7 +388,7 @@ if ($isDesigner || $isProductionAudio) {
                         <i class="ti ti-arrow-back text-muted dashboard-icon-bg"></i>
                     </div>
                 </div>
-                <div class="h1 mb-0"><?php echo $stats['pending_returns']; ?></div>
+                <div class="h1 mb-0">0</div><!-- <?php echo $stats['pending_returns']; ?> -->
             </div>
         </div>
     </div>

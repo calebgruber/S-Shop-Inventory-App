@@ -170,6 +170,7 @@ if ($categoryFilter !== 'all') {
                     <label class="form-label">Filter by Show</label>
                     <select class="form-select" name="show" onchange="this.form.submit()">
                         <option value="all" <?php echo $showFilter === 'all' ? 'selected' : ''; ?>>All Shows</option>
+                        <option value="null" <?php echo $showFilter === 'null' ? 'selected' : ''; ?>>No Show (General Inventory)</option>
                         <?php foreach ($shows as $show): ?>
                         <option value="<?php echo $show['id']; ?>" <?php echo $showFilter == $show['id'] ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($show['name']); ?>
@@ -221,17 +222,29 @@ if ($categoryFilter !== 'all') {
             <div class="accordion" id="showsAccordion">
             <?php 
             $showIndex = 0;
-            $showsList = ($showFilter === 'all') ? $shows : array_filter($shows, function($s) use ($showFilter) { return $s['id'] == $showFilter; });
+            $showsList = ($showFilter === 'all') ? $shows : ($showFilter === 'null' ? [['id' => null, 'name' => 'No Show (General Inventory)']] : array_filter($shows, function($s) use ($showFilter) { return $s['id'] == $showFilter; }));
             
             foreach ($showsList as $show): 
                 // Build query with filters
-                $query = "SELECT i.name, i.id as item_id, ia.quantity, ia.status, c.name as category_name, sc.name as subcategory_name
-                         FROM item_allocations ia 
-                         JOIN items i ON ia.item_id = i.id 
-                         LEFT JOIN categories c ON i.category_id = c.id
-                         LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
-                         WHERE ia.show_id = ?";
-                $params = [$show['id']];
+                if ($show['id'] === null) {
+                    // For items without a show, query pullsheet_items directly
+                    $query = "SELECT i.name, i.id as item_id, pi.quantity_needed as quantity, 'in_pullsheet' as status, c.name as category_name, sc.name as subcategory_name, ps.barcode as pullsheet_barcode
+                             FROM pullsheet_items pi
+                             JOIN pullsheets ps ON pi.pullsheet_id = ps.id
+                             JOIN items i ON pi.item_id = i.id 
+                             LEFT JOIN categories c ON i.category_id = c.id
+                             LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
+                             WHERE ps.show_id IS NULL";
+                    $params = [];
+                } else {
+                    $query = "SELECT i.name, i.id as item_id, ia.quantity, ia.status, c.name as category_name, sc.name as subcategory_name
+                             FROM item_allocations ia 
+                             JOIN items i ON ia.item_id = i.id 
+                             LEFT JOIN categories c ON i.category_id = c.id
+                             LEFT JOIN subcategories sc ON i.subcategory_id = sc.id
+                             WHERE ia.show_id = ?";
+                    $params = [$show['id']];
+                }
                 
                 // Add category filter
                 if ($categoryFilter !== 'all') {

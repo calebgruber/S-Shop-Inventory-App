@@ -45,9 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
             // Items with type='remove' were being returned, so no stock adjustment needed
         }
         
-        // Remove any pending picks/returns for this change order
-        $db->query("DELETE FROM pending_picks WHERE change_order_id = ?", [$deleteId]);
-        $db->query("DELETE FROM pending_returns WHERE change_order_id = ?", [$deleteId]);
+        // Note: pending_picks and pending_returns tables removed - not needed
         
         // Delete change order items and change order
         $db->query("DELETE FROM change_order_items WHERE change_order_id = ?", [$deleteId]);

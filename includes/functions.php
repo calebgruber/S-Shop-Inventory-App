@@ -343,19 +343,6 @@ function getDashboardStats() {
     
     $stats = [];
     
-    // Pending picks
-    $result = $db->fetchOne(
-        "SELECT COUNT(*) as count FROM pullsheets WHERE status = 'finalized'"
-    );
-    $stats['pending_picks'] = $result['count'];
-    
-    // Pending returns (completed shows with items still checked out)
-    $result = $db->fetchOne(
-        "SELECT COUNT(DISTINCT show_id) as count FROM item_allocations 
-         WHERE status = 'checked_out'"
-    );
-    $stats['pending_returns'] = $result['count'];
-    
     // Active shows
     $result = $db->fetchOne(
         "SELECT COUNT(*) as count FROM shows WHERE status = 'active'"
