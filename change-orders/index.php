@@ -129,18 +129,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_change_order'])) {
     try {
         $showId = !empty($_POST['show_id']) ? (int)$_POST['show_id'] : null;
+        $pullsheetId = !empty($_POST['pullsheet_id']) ? (int)$_POST['pullsheet_id'] : null;
         
         // Check permission for designers and production audio
         if (($isDesigner || $isProductionAudio) && $showId && !canAccessShow($currentUser['id'], $showId)) {
             throw new Exception('You do not have permission to create change order for this show');
         }
         
+        // If a pullsheet was selected, derive show_id from it
+        if ($pullsheetId) {
+            $selectedPullsheet = getDB()->fetchOne("SELECT id, show_id FROM pullsheets WHERE id = ?", [$pullsheetId]);
+            if ($selectedPullsheet) {
+                $showId = $selectedPullsheet['show_id'];
+                // Check permission for the derived show
+                if (($isDesigner || $isProductionAudio) && $showId && !canAccessShow($currentUser['id'], $showId)) {
+                    throw new Exception('You do not have permission to create change order for this shop order');
+                }
+            }
+        }
+        
         $createdBy = $currentUser['name'] ?? 'Unknown'; // Use logged-in user's name with fallback
         $barcode = generateUniqueBarcode('CO');
         
         getDB()->query(
-            "INSERT INTO change_orders (show_id, barcode, created_by, status) VALUES (?, ?, ?, 'draft')",
-            [$showId, $barcode, $createdBy]
+            "INSERT INTO change_orders (show_id, pullsheet_id, barcode, created_by, status) VALUES (?, ?, ?, ?, 'draft')",
+            [$showId, $pullsheetId, $barcode, $createdBy]
         );
         
         $changeOrderId = getDB()->lastInsertId();
@@ -201,6 +214,30 @@ foreach ($changeOrders as $changeOrder) {
     } else {
         $changeOrdersNoShow[] = $changeOrder;
     }
+}
+
+// Get pullsheets for the create change order dropdown
+if ($isDesigner || $isProductionAudio) {
+    if (empty($assignedShowIds)) {
+        $availablePullsheets = [];
+    } else {
+        $placeholders = implode(',', array_fill(0, count($assignedShowIds), '?'));
+        $availablePullsheets = getDB()->fetchAll(
+            "SELECT p.id, p.barcode, p.show_id, p.status, s.name as show_name 
+             FROM pullsheets p 
+             LEFT JOIN shows s ON p.show_id = s.id 
+             WHERE p.show_id IN ($placeholders)
+             ORDER BY s.name, p.barcode",
+            $assignedShowIds
+        );
+    }
+} else {
+    $availablePullsheets = getDB()->fetchAll(
+        "SELECT p.id, p.barcode, p.show_id, p.status, s.name as show_name 
+         FROM pullsheets p 
+         LEFT JOIN shows s ON p.show_id = s.id 
+         ORDER BY s.name, p.barcode"
+    );
 }
 ?>
 
@@ -309,6 +346,20 @@ foreach ($changeOrders as $changeOrder) {
                             <?php endforeach; ?>
                         </select>
                         <small class="form-hint">You can create a change order without a show if needed</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Shop Order (Optional)</label>
+                        <select name="pullsheet_id" class="form-select">
+                            <option value="">No Shop Order (Standalone Change Order)</option>
+                            <?php foreach ($availablePullsheets as $ps): ?>
+                                <option value="<?php echo $ps['id']; ?>">
+                                    <?php echo htmlspecialchars($ps['barcode']); ?>
+                                    <?php if ($ps['show_name']): ?> - <?php echo htmlspecialchars($ps['show_name']); ?><?php endif; ?>
+                                    (<?php echo htmlspecialchars($ps['status']); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="form-hint">Link this change order to an existing shop order</small>
                     </div>
                 </div>
                 <div class="modal-footer">

@@ -136,6 +136,23 @@ foreach ($pullsheets as $pullsheet) {
         $pullsheetsNoShow[] = $pullsheet;
     }
 }
+
+// Fetch change orders grouped by pullsheet_id for display
+$changeOrdersByPullsheet = [];
+if (!empty($pullsheets)) {
+    $pullsheetIds = array_column($pullsheets, 'id');
+    $placeholders = implode(',', array_fill(0, count($pullsheetIds), '?'));
+    $coRows = getDB()->fetchAll(
+        "SELECT co.id, co.barcode, co.status, co.pullsheet_id, co.created_at 
+         FROM change_orders co 
+         WHERE co.pullsheet_id IN ($placeholders) 
+         ORDER BY co.created_at DESC",
+        $pullsheetIds
+    );
+    foreach ($coRows as $co) {
+        $changeOrdersByPullsheet[$co['pullsheet_id']][] = $co;
+    }
+}
 ?>
 
 <!-- Action Buttons -->
@@ -373,6 +390,15 @@ foreach ($pullsheets as $pullsheet) {
                                             <i class="ti ti-eye"></i>
                                         </a>
                                     <?php endif; ?>
+                                    <?php if (!empty($changeOrdersByPullsheet[$ps['id']])): ?>
+                                        <button type="button" class="btn btn-sm btn-warning" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#co-row-<?php echo $ps['id']; ?>"
+                                                title="Toggle Change Orders">
+                                            <i class="ti ti-exchange"></i>
+                                            <span class="badge bg-red text-white ms-1"><?php echo count($changeOrdersByPullsheet[$ps['id']]); ?></span>
+                                        </button>
+                                    <?php endif; ?>
                                     <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this shop order? This cannot be undone.');">
                                         <input type="hidden" name="delete_id" value="<?php echo $ps['id']; ?>">
                                         <button type="submit" class="btn btn-sm btn-danger" title="Delete">
@@ -382,6 +408,58 @@ foreach ($pullsheets as $pullsheet) {
                                 </div>
                             </td>
                         </tr>
+                        <?php if (!empty($changeOrdersByPullsheet[$ps['id']])): ?>
+                        <tr class="collapse pullsheet-co-row" id="co-row-<?php echo $ps['id']; ?>"
+                            data-barcode="<?php echo htmlspecialchars($ps['barcode']); ?>"
+                            data-creator="<?php echo htmlspecialchars($ps['created_by'] ?? ''); ?>"
+                            data-status="<?php echo htmlspecialchars($ps['status']); ?>"
+                            data-show-id="<?php echo $ps['show_id'] ?: 'no-show'; ?>">
+                            <td colspan="7" class="bg-yellow-lt p-0">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr class="bg-yellow-lt">
+                                            <th class="ps-4" style="width:200px">Change Order</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                            <th class="w-1">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($changeOrdersByPullsheet[$ps['id']] as $co): ?>
+                                            <tr>
+                                                <td class="ps-4">
+                                                    <i class="ti ti-exchange text-warning"></i>
+                                                    <?php echo htmlspecialchars($co['barcode']); ?>
+                                                </td>
+                                                <td>
+                                                    <?php $coBadge = getStatusBadge($co); ?>
+                                                    <span class="badge <?php echo $coBadge['class']; ?>">
+                                                        <?php echo $coBadge['text']; ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="text-muted small">
+                                                        <?php echo date('M d, Y', strtotime($co['created_at'])); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <?php if ($co['status'] === 'draft'): ?>
+                                                        <a href="/change-orders/edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary" title="Edit">
+                                                            <i class="ti ti-edit"></i>
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <a href="/change-orders/view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info" title="View">
+                                                            <i class="ti ti-eye"></i>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </tbody>
             </table>
@@ -436,6 +514,32 @@ foreach ($pullsheets as $pullsheet) {
                             </button>
                         </form>
                     </div>
+                    <?php if (!empty($changeOrdersByPullsheet[$ps['id']])): ?>
+                        <div class="mt-2">
+                            <a class="btn btn-sm btn-warning w-100" data-bs-toggle="collapse" href="#mobile-co-<?php echo $ps['id']; ?>">
+                                <i class="ti ti-exchange"></i> Change Orders
+                                <span class="badge bg-red text-white ms-1"><?php echo count($changeOrdersByPullsheet[$ps['id']]); ?></span>
+                            </a>
+                            <div class="collapse mt-2" id="mobile-co-<?php echo $ps['id']; ?>">
+                                <?php foreach ($changeOrdersByPullsheet[$ps['id']] as $co): ?>
+                                    <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-1 bg-yellow-lt">
+                                        <div>
+                                            <small><i class="ti ti-exchange text-warning"></i> <?php echo htmlspecialchars($co['barcode']); ?></small><br>
+                                            <?php $coBadge = getStatusBadge($co); ?>
+                                            <span class="badge <?php echo $coBadge['class']; ?>"><?php echo $coBadge['text']; ?></span>
+                                        </div>
+                                        <div>
+                                            <?php if ($co['status'] === 'draft'): ?>
+                                                <a href="/change-orders/edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary"><i class="ti ti-edit"></i></a>
+                                            <?php else: ?>
+                                                <a href="/change-orders/view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info"><i class="ti ti-eye"></i></a>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         <?php endforeach; ?>
@@ -515,11 +619,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const matchesStatus = !statusValue || status === statusValue;
             const matchesShow = !showValue || showId === showValue;
             
+            const toggleBtn = row.querySelector('[data-bs-target]');
+            const coRowId = toggleBtn ? toggleBtn.getAttribute('data-bs-target') : null;
+            const coRow = coRowId ? document.querySelector(coRowId) : null;
+            
             if (matchesSearch && matchesStatus && matchesShow) {
                 row.style.display = '';
                 visibleCount++;
+                if (coRow) coRow.closest('tr').style.display = '';
             } else {
                 row.style.display = 'none';
+                if (coRow) coRow.closest('tr').style.display = 'none';
             }
         });
 
