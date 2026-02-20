@@ -207,25 +207,131 @@ try {
         [
             'name' => '011_link_change_orders_to_pullsheets',
             'description' => 'Add pullsheet_id to change_orders and change_order_id to pullsheet_items',
-            'sql' => [
-                "ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS pullsheet_id INT NULL AFTER show_id",
-                "ALTER TABLE change_orders ADD CONSTRAINT IF NOT EXISTS fk_change_orders_pullsheet FOREIGN KEY (pullsheet_id) REFERENCES pullsheets(id) ON DELETE SET NULL",
-                "ALTER TABLE pullsheet_items ADD COLUMN IF NOT EXISTS change_order_id INT NULL AFTER pullsheet_id",
-                "ALTER TABLE pullsheet_items ADD CONSTRAINT IF NOT EXISTS fk_pullsheet_items_change_order FOREIGN KEY (change_order_id) REFERENCES change_orders(id) ON DELETE SET NULL",
-                "CREATE INDEX IF NOT EXISTS idx_change_orders_pullsheet ON change_orders(pullsheet_id)",
-                "CREATE INDEX IF NOT EXISTS idx_pullsheet_items_change_order ON pullsheet_items(change_order_id)"
-            ]
+            'callback' => function($db, &$output) {
+                // Add pullsheet_id to change_orders
+                $columns = $db->query("SHOW COLUMNS FROM change_orders LIKE 'pullsheet_id'");
+                if (!$columns || $columns->num_rows == 0) {
+                    $db->query("ALTER TABLE change_orders ADD COLUMN pullsheet_id INT NULL AFTER show_id");
+                    $output[] = "  ✓ Added pullsheet_id column to change_orders";
+                } else {
+                    $output[] = "  ✓ pullsheet_id column already exists in change_orders";
+                }
+                
+                // Add foreign key for pullsheet_id
+                try {
+                    $db->query("ALTER TABLE change_orders ADD CONSTRAINT fk_change_orders_pullsheet FOREIGN KEY (pullsheet_id) REFERENCES pullsheets(id) ON DELETE SET NULL");
+                    $output[] = "  ✓ Added foreign key fk_change_orders_pullsheet";
+                } catch (Exception $e) {
+                    if (strpos($e->getMessage(), 'Duplicate key name') !== false || strpos($e->getMessage(), 'already exists') !== false) {
+                        $output[] = "  ✓ Foreign key fk_change_orders_pullsheet already exists";
+                    } else {
+                        $output[] = "  ⚠ Foreign key warning (may already exist): " . substr($e->getMessage(), 0, 100);
+                    }
+                }
+                
+                // Add change_order_id to pullsheet_items
+                $columns = $db->query("SHOW COLUMNS FROM pullsheet_items LIKE 'change_order_id'");
+                if (!$columns || $columns->num_rows == 0) {
+                    $db->query("ALTER TABLE pullsheet_items ADD COLUMN change_order_id INT NULL AFTER pullsheet_id");
+                    $output[] = "  ✓ Added change_order_id column to pullsheet_items";
+                } else {
+                    $output[] = "  ✓ change_order_id column already exists in pullsheet_items";
+                }
+                
+                // Add foreign key for change_order_id
+                try {
+                    $db->query("ALTER TABLE pullsheet_items ADD CONSTRAINT fk_pullsheet_items_change_order FOREIGN KEY (change_order_id) REFERENCES change_orders(id) ON DELETE SET NULL");
+                    $output[] = "  ✓ Added foreign key fk_pullsheet_items_change_order";
+                } catch (Exception $e) {
+                    if (strpos($e->getMessage(), 'Duplicate key name') !== false || strpos($e->getMessage(), 'already exists') !== false) {
+                        $output[] = "  ✓ Foreign key fk_pullsheet_items_change_order already exists";
+                    } else {
+                        $output[] = "  ⚠ Foreign key warning (may already exist): " . substr($e->getMessage(), 0, 100);
+                    }
+                }
+                
+                // Add indexes
+                try {
+                    $db->query("CREATE INDEX idx_change_orders_pullsheet ON change_orders(pullsheet_id)");
+                    $output[] = "  ✓ Created index idx_change_orders_pullsheet";
+                } catch (Exception $e) {
+                    if (strpos($e->getMessage(), 'Duplicate key name') !== false) {
+                        $output[] = "  ✓ Index idx_change_orders_pullsheet already exists";
+                    } else {
+                        $output[] = "  ⚠ Index warning: " . substr($e->getMessage(), 0, 100);
+                    }
+                }
+                
+                try {
+                    $db->query("CREATE INDEX idx_pullsheet_items_change_order ON pullsheet_items(change_order_id)");
+                    $output[] = "  ✓ Created index idx_pullsheet_items_change_order";
+                } catch (Exception $e) {
+                    if (strpos($e->getMessage(), 'Duplicate key name') !== false) {
+                        $output[] = "  ✓ Index idx_pullsheet_items_change_order already exists";
+                    } else {
+                        $output[] = "  ⚠ Index warning: " . substr($e->getMessage(), 0, 100);
+                    }
+                }
+            }
         ],
         [
             'name' => '012_add_partial_return_fields',
             'description' => 'Add fields for partial return system',
-            'sql' => [
-                "ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS is_partial_return BOOLEAN DEFAULT FALSE AFTER pullsheet_id",
-                "ALTER TABLE change_orders ADD COLUMN IF NOT EXISTS source_pullsheet_id INT NULL AFTER is_partial_return",
-                "ALTER TABLE change_orders ADD CONSTRAINT IF NOT EXISTS fk_change_orders_source_pullsheet FOREIGN KEY (source_pullsheet_id) REFERENCES pullsheets(id) ON DELETE SET NULL",
-                "CREATE INDEX IF NOT EXISTS idx_change_orders_partial_return ON change_orders(is_partial_return)",
-                "CREATE INDEX IF NOT EXISTS idx_change_orders_source_pullsheet ON change_orders(source_pullsheet_id)"
-            ]
+            'callback' => function($db, &$output) {
+                // Add is_partial_return column
+                $columns = $db->query("SHOW COLUMNS FROM change_orders LIKE 'is_partial_return'");
+                if (!$columns || $columns->num_rows == 0) {
+                    $db->query("ALTER TABLE change_orders ADD COLUMN is_partial_return BOOLEAN DEFAULT FALSE AFTER pullsheet_id");
+                    $output[] = "  ✓ Added is_partial_return column to change_orders";
+                } else {
+                    $output[] = "  ✓ is_partial_return column already exists in change_orders";
+                }
+                
+                // Add source_pullsheet_id column
+                $columns = $db->query("SHOW COLUMNS FROM change_orders LIKE 'source_pullsheet_id'");
+                if (!$columns || $columns->num_rows == 0) {
+                    $db->query("ALTER TABLE change_orders ADD COLUMN source_pullsheet_id INT NULL AFTER is_partial_return");
+                    $output[] = "  ✓ Added source_pullsheet_id column to change_orders";
+                } else {
+                    $output[] = "  ✓ source_pullsheet_id column already exists in change_orders";
+                }
+                
+                // Add foreign key for source_pullsheet_id
+                try {
+                    $db->query("ALTER TABLE change_orders ADD CONSTRAINT fk_change_orders_source_pullsheet FOREIGN KEY (source_pullsheet_id) REFERENCES pullsheets(id) ON DELETE SET NULL");
+                    $output[] = "  ✓ Added foreign key fk_change_orders_source_pullsheet";
+                } catch (Exception $e) {
+                    if (strpos($e->getMessage(), 'Duplicate key name') !== false || strpos($e->getMessage(), 'already exists') !== false) {
+                        $output[] = "  ✓ Foreign key fk_change_orders_source_pullsheet already exists";
+                    } else {
+                        $output[] = "  ⚠ Foreign key warning (may already exist): " . substr($e->getMessage(), 0, 100);
+                    }
+                }
+                
+                // Add index for is_partial_return
+                try {
+                    $db->query("CREATE INDEX idx_change_orders_partial_return ON change_orders(is_partial_return)");
+                    $output[] = "  ✓ Created index idx_change_orders_partial_return";
+                } catch (Exception $e) {
+                    if (strpos($e->getMessage(), 'Duplicate key name') !== false) {
+                        $output[] = "  ✓ Index idx_change_orders_partial_return already exists";
+                    } else {
+                        $output[] = "  ⚠ Index warning: " . substr($e->getMessage(), 0, 100);
+                    }
+                }
+                
+                // Add index for source_pullsheet_id
+                try {
+                    $db->query("CREATE INDEX idx_change_orders_source_pullsheet ON change_orders(source_pullsheet_id)");
+                    $output[] = "  ✓ Created index idx_change_orders_source_pullsheet";
+                } catch (Exception $e) {
+                    if (strpos($e->getMessage(), 'Duplicate key name') !== false) {
+                        $output[] = "  ✓ Index idx_change_orders_source_pullsheet already exists";
+                    } else {
+                        $output[] = "  ⚠ Index warning: " . substr($e->getMessage(), 0, 100);
+                    }
+                }
+            }
         ],
         [
             'name' => '013_create_pdf_templates_system',
