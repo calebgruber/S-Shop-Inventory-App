@@ -226,6 +226,54 @@ try {
                 "CREATE INDEX IF NOT EXISTS idx_change_orders_partial_return ON change_orders(is_partial_return)",
                 "CREATE INDEX IF NOT EXISTS idx_change_orders_source_pullsheet ON change_orders(source_pullsheet_id)"
             ]
+        ],
+        [
+            'name' => '013_create_pdf_templates_system',
+            'description' => 'Create PDF template system with visual editor support',
+            'sql' => [
+                "CREATE TABLE IF NOT EXISTS pdf_templates (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    description TEXT NULL,
+                    template_data LONGTEXT NOT NULL COMMENT 'JSON template definition',
+                    preview_image VARCHAR(255) NULL,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_by INT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+                    INDEX idx_name (name),
+                    INDEX idx_active (is_active)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+                "CREATE TABLE IF NOT EXISTS pdf_template_assignments (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    template_id INT NOT NULL,
+                    document_type ENUM(
+                        'pullsheet_created',
+                        'change_order_created',
+                        'order_picked',
+                        'order_returned',
+                        'partial_return',
+                        'out_of_stock',
+                        'repair_request',
+                        'student_request'
+                    ) NOT NULL,
+                    is_default BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (template_id) REFERENCES pdf_templates(id) ON DELETE CASCADE,
+                    UNIQUE KEY unique_default_per_type (document_type, is_default),
+                    INDEX idx_document_type (document_type)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            ]
+        ],
+        [
+            'name' => '014_fix_notifications_type_column',
+            'description' => 'Increase notifications type column size to prevent truncation errors',
+            'sql' => [
+                "ALTER TABLE notifications MODIFY COLUMN type VARCHAR(100) NOT NULL",
+                "CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type)",
+                "CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read)"
+            ]
         ]
     ];
     
