@@ -91,6 +91,12 @@ $items = getPullsheetItems($pullsheetId);
             </a>
         <?php endif; ?>
         
+        <?php if (hasPermission('change_orders')): ?>
+            <a href="/change-orders/create?pullsheet_id=<?php echo $pullsheetId; ?>" class="btn btn-warning">
+                <i class="ti ti-edit"></i> Create Change Order
+            </a>
+        <?php endif; ?>
+        
         <?php if (isAdmin() && $pullsheet['requires_approval'] && $pullsheet['approval_status'] === 'pending'): ?>
             <form method="POST" class="d-inline ms-2">
                 <input type="hidden" name="pullsheet_id" value="<?php echo $pullsheetId; ?>">

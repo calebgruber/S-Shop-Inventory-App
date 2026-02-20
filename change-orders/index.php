@@ -101,9 +101,10 @@ if ($isDesigner || $isProductionAudio) {
     } else {
         $placeholders = implode(',', array_fill(0, count($assignedShowIds), '?'));
         $changeOrders = getDB()->fetchAll(
-            "SELECT co.*, s.name as show_name 
+            "SELECT co.*, s.name as show_name, p.barcode as pullsheet_barcode
              FROM change_orders co 
              LEFT JOIN shows s ON co.show_id = s.id 
+             LEFT JOIN pullsheets p ON co.pullsheet_id = p.id
              WHERE co.show_id IN ($placeholders)
              ORDER BY co.created_at DESC",
             $assignedShowIds
@@ -114,9 +115,10 @@ if ($isDesigner || $isProductionAudio) {
     $shows = $assignedShows;
 } else {
     // Admins see all change orders and shows
-    $changeOrders = getDB()->fetchAll("SELECT co.*, s.name as show_name 
+    $changeOrders = getDB()->fetchAll("SELECT co.*, s.name as show_name, p.barcode as pullsheet_barcode
         FROM change_orders co 
         LEFT JOIN shows s ON co.show_id = s.id 
+        LEFT JOIN pullsheets p ON co.pullsheet_id = p.id
         ORDER BY co.created_at DESC");
     
     $shows = getDB()->fetchAll("SELECT id, name FROM shows ORDER BY name ASC");
@@ -316,6 +318,7 @@ foreach ($changeOrders as $changeOrder) {
                     <tr>
                         <th>Barcode</th>
                         <th>Show</th>
+                        <th>Shop Order</th>
                         <th>Status</th>
                         <th>Created By</th>
                         <th>Created Date</th>
@@ -341,6 +344,16 @@ foreach ($changeOrders as $changeOrder) {
                                     <span class="badge bg-blue-lt"><?php echo htmlspecialchars($co['show_name']); ?></span>
                                 <?php else: ?>
                                     <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($co['pullsheet_barcode']): ?>
+                                    <span class="badge bg-purple-lt">
+                                        <i class="ti ti-clipboard-list"></i>
+                                        <?php echo htmlspecialchars($co['pullsheet_barcode']); ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-muted">None</span>
                                 <?php endif; ?>
                             </td>
                             <td>

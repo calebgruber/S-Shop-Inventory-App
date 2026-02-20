@@ -65,6 +65,12 @@ if (!$changeOrder) {
     redirect('change_orders');
 }
 
+// Get pullsheet info if linked
+$pullsheet = null;
+if ($changeOrder['pullsheet_id']) {
+    $pullsheet = getDB()->fetchOne("SELECT barcode, show_id FROM pullsheets WHERE id = ?", [$changeOrder['pullsheet_id']]);
+}
+
 // Get approver name if approved
 $approverName = null;
 if ($changeOrder['approved_by']) {
@@ -105,6 +111,21 @@ $items = getChangeOrderItems($changeOrderId);
         <?php endif; ?>
     </div>
 </div>
+
+<?php if ($pullsheet): ?>
+<div class="row mb-3">
+    <div class="col">
+        <div class="alert alert-info">
+            <i class="ti ti-clipboard-list"></i>
+            <strong>Master Shop Order:</strong> 
+            <a href="/pullsheets/view?id=<?php echo $changeOrder['pullsheet_id']; ?>" class="alert-link">
+                <?php echo htmlspecialchars($pullsheet['barcode']); ?>
+            </a>
+            <small class="text-muted"> - This change order modifies this shop order</small>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php if ($changeOrder['requires_approval']): ?>
 <div class="row mb-3">
