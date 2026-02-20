@@ -234,4 +234,76 @@ $items = getPullsheetItems($pullsheetId);
     </div>
 </div>
 
+<?php
+// Get related change orders for this pullsheet
+$changeOrders = getDB()->fetchAll(
+    "SELECT co.*, s.name as show_name 
+     FROM change_orders co 
+     LEFT JOIN shows s ON co.show_id = s.id 
+     WHERE co.pullsheet_id = ? 
+     ORDER BY co.created_at DESC",
+    [$pullsheetId]
+);
+
+if (!empty($changeOrders)): ?>
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Related Change Orders</h3>
+                <p class="text-muted mb-0">Change orders that modify this shop order</p>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Barcode</th>
+                                <th>Status</th>
+                                <th>Created By</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($changeOrders as $co): ?>
+                                <tr>
+                                    <td><code><?php echo htmlspecialchars($co['barcode']); ?></code></td>
+                                    <td>
+                                        <?php
+                                        $statusBadge = [
+                                            'draft' => 'bg-secondary',
+                                            'pending' => 'bg-warning',
+                                            'finalized' => 'bg-success',
+                                            'processed' => 'bg-info'
+                                        ][$co['status']] ?? 'bg-secondary';
+                                        ?>
+                                        <span class="badge <?php echo $statusBadge; ?>">
+                                            <?php echo ucfirst($co['status']); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($co['created_by'] ?? 'N/A'); ?></td>
+                                    <td><?php echo date('m/d/Y g:i A', strtotime($co['created_at'])); ?></td>
+                                    <td>
+                                        <?php if ($co['status'] === 'draft' || $co['status'] === 'pending'): ?>
+                                            <a href="/change-orders/edit?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-primary">
+                                                <i class="ti ti-edit"></i> Edit
+                                            </a>
+                                        <?php else: ?>
+                                            <a href="/change-orders/view?id=<?php echo $co['id']; ?>" class="btn btn-sm btn-info">
+                                                <i class="ti ti-eye"></i> View
+                                            </a>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php require_once '../includes/footer.php'; ?>

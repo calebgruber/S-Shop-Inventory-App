@@ -693,22 +693,14 @@ $currentUser = getCurrentUser();
                             </li>
                             <?php endif; ?>
                             
-                            <?php if ((hasPermission('pullsheets') || hasPermission('change_orders')) && !isStudent()): ?>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle <?php echo in_array($currentPage, ['pullsheets', 'pullsheet_create', 'pullsheet_edit', 'pullsheet_view', 'change_orders', 'change_order_create', 'change_order_edit', 'change_order_view']) ? 'active' : ''; ?>" 
-                                   href="#" data-bs-toggle="dropdown" aria-expanded="false" role="button">
+                            <?php if (hasPermission('pullsheets') && !isStudent()): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo in_array($currentPage, ['pullsheets', 'pullsheet_create', 'pullsheet_edit', 'pullsheet_view']) ? 'active' : ''; ?>" href="/pullsheets/">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-clipboard-list"></i>
                                     </span>
-                                    <span class="nav-link-title">Orders</span>
+                                    <span class="nav-link-title">Shop Orders</span>
                                 </a>
-                                <ul class="dropdown-menu">
-                                    <?php if (hasPermission('pullsheets')): ?>
-                                    <li><a class="dropdown-item <?php echo in_array($currentPage, ['pullsheets', 'pullsheet_create', 'pullsheet_edit', 'pullsheet_view']) ? 'active' : ''; ?>" href="/pullsheets/">
-                                        <i class="ti ti-file-text me-2"></i>Shop Orders
-                                    </a></li>
-                                    <?php endif; ?>
-                                </ul>
                             </li>
                             <?php endif; ?>
                             

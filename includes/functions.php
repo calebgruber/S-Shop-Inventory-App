@@ -277,7 +277,7 @@ function getChangeOrderById($id) {
     return $db->fetchOne(
         "SELECT co.*, s.name as show_name, s.shop_lead, s.designer 
          FROM change_orders co 
-         JOIN shows s ON co.show_id = s.id 
+         LEFT JOIN shows s ON co.show_id = s.id 
          WHERE co.id = ?",
         [$id]
     );
