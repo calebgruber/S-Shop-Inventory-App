@@ -138,10 +138,10 @@ $items = getAllItemsFiltered($filterCategory, $filterSubcategory);
                                 <?php if ($canEdit): ?>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="item_edit?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-primary">
+                                        <a href="/items/edit?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-primary">
                                             <i class="ti ti-edit"></i>
                                         </a>
-                                        <a href="item_barcodes.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-info">
+                                        <a href="/items/barcodes?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-info">
                                             <i class="ti ti-barcode"></i>
                                         </a>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this item?');">

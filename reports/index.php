@@ -11,6 +11,7 @@ $reportType = $_GET['type'] ?? 'inventory';
 $categoryFilter = $_GET['category'] ?? 'all';
 $subcategoryFilter = $_GET['subcategory'] ?? 'all';
 $showFilter = $_GET['show'] ?? 'all';
+$stockFilter = $_GET['stock'] ?? 'all'; // New filter for stock status
 $items = getAllItems();
 $shows = getAllShows();
 $spaces = getAllTheatreSpaces();
@@ -40,7 +41,7 @@ if ($categoryFilter !== 'all') {
         <div class="card-body">
             <form method="GET" class="row g-3" id="filterForm">
                 <input type="hidden" name="type" value="inventory">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Filter by Category</label>
                     <select class="form-select" name="category" id="categorySelect" onchange="document.getElementById('filterForm').submit()">
                         <option value="all" <?php echo $categoryFilter === 'all' ? 'selected' : ''; ?>>All Categories</option>
@@ -52,7 +53,7 @@ if ($categoryFilter !== 'all') {
                     </select>
                 </div>
                 <?php if (!empty($subcategories)): ?>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Filter by Subcategory</label>
                     <select class="form-select" name="subcategory" onchange="this.form.submit()">
                         <option value="all" <?php echo $subcategoryFilter === 'all' ? 'selected' : ''; ?>>All Subcategories</option>
@@ -64,6 +65,15 @@ if ($categoryFilter !== 'all') {
                     </select>
                 </div>
                 <?php endif; ?>
+                <div class="col-md-3">
+                    <label class="form-label">Filter by Stock Status</label>
+                    <select class="form-select" name="stock" onchange="this.form.submit()">
+                        <option value="all" <?php echo $stockFilter === 'all' ? 'selected' : ''; ?>>All Items</option>
+                        <option value="in_stock" <?php echo $stockFilter === 'in_stock' ? 'selected' : ''; ?>>In Stock</option>
+                        <option value="out_of_stock" <?php echo $stockFilter === 'out_of_stock' ? 'selected' : ''; ?>>Out of Stock</option>
+                        <option value="low_stock" <?php echo $stockFilter === 'low_stock' ? 'selected' : ''; ?>>Low Stock (≤5)</option>
+                    </select>
+                </div>
                 <div class="col-md-2">
                     <label class="form-label">&nbsp;</label>
                     <a href="?type=inventory" class="btn btn-secondary w-100">Clear Filters</a>
@@ -107,6 +117,19 @@ if ($categoryFilter !== 'all') {
                         // Apply subcategory filter
                         if ($subcategoryFilter !== 'all' && $item['subcategory_id'] != $subcategoryFilter) {
                             continue;
+                        }
+                        // Apply stock filter
+                        if ($stockFilter !== 'all') {
+                            $inStock = (int)$item['in_stock_quantity'];
+                            if ($stockFilter === 'out_of_stock' && $inStock > 0) {
+                                continue;
+                            }
+                            if ($stockFilter === 'in_stock' && $inStock <= 0) {
+                                continue;
+                            }
+                            if ($stockFilter === 'low_stock' && $inStock > 5) {
+                                continue;
+                            }
                         }
                         $catName = $item['category_name'] ?? 'Uncategorized';
                         if (!isset($itemsByCategory[$catName])) {
