@@ -708,11 +708,6 @@ $currentUser = getCurrentUser();
                                         <i class="ti ti-file-text me-2"></i>Shop Orders
                                     </a></li>
                                     <?php endif; ?>
-                                    <?php if (hasPermission('change_orders')): ?>
-                                    <li><a class="dropdown-item <?php echo in_array($currentPage, ['change_orders', 'change_order_create', 'change_order_edit', 'change_order_view']) ? 'active' : ''; ?>" href="/change-orders/">
-                                        <i class="ti ti-exchange me-2"></i>Change Orders
-                                    </a></li>
-                                    <?php endif; ?>
                                 </ul>
                             </li>
                             <?php endif; ?>

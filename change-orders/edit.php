@@ -329,18 +329,18 @@ require_once '../includes/header.php';
 $currentUser = getCurrentUser();
 $isDesigner = $currentUser['role'] === 'designer';
 
-if (!$coId) redirect('change_orders');
+if (!$coId) redirect('/change-orders/');
 
 $co = getChangeOrderById($coId);
 if (!$co) {
     setAlert('Change order not found', 'danger');
-    redirect('change_orders');
+    redirect('/change-orders/');
 }
 
 // Check permission for designers
 if ($isDesigner && !canAccessShow($currentUser['id'], $co['show_id'])) {
     setAlert('You do not have permission to edit this change order', 'danger');
-    redirect('change_orders');
+    redirect('/change-orders/');
 }
 
 $items = getChangeOrderItems($coId);

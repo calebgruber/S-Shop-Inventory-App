@@ -24,7 +24,7 @@ require_once '../includes/functions.php';
 // Check permissions
 if (!hasPermission('change_orders')) {
     setAlert('You do not have permission to access change orders', 'danger');
-    redirect('index');
+    redirect('/');
 }
 
 // Handle approval actions (Admin only)
@@ -56,13 +56,13 @@ require_once '../includes/header.php';
 
 $changeOrderId = $_GET['id'] ?? null;
 if (!$changeOrderId) {
-    redirect('change_orders');
+    redirect('/change-orders/');
 }
 
 $changeOrder = getChangeOrderById($changeOrderId);
 if (!$changeOrder) {
     setAlert('Change order not found', 'danger');
-    redirect('change_orders');
+    redirect('/change-orders/');
 }
 
 // Get pullsheet info if linked
