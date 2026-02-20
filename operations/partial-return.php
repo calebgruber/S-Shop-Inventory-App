@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_return'])) {
         
         if ($changeOrderId) {
             setAlert('Partial return processed successfully. Change order #' . $changeOrderId . ' created.');
-            redirect('/change-orders/view?id=' . $changeOrderId);
+            redirect('/');
         } else {
             throw new Exception('Failed to process partial return');
         }
