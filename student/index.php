@@ -177,8 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             setAlert('Pullsheet created successfully: ' . $barcode, 'success');
-            header('Location: pullsheet_edit?id=' . $pullsheetId);
-            exit;
+            redirect('/pullsheets/edit?id=' . $pullsheetId);
         }
     }
 }

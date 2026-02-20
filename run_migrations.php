@@ -13,7 +13,9 @@ $isCLI = php_sapi_name() === 'cli';
 
 // If web request, require admin permission
 if (!$isCLI) {
-    session_start();
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     requireRole('admin');
     
     // Return JSON for AJAX requests
@@ -169,9 +171,9 @@ try {
                     HAVING count > 1
                 ");
                 
-                if ($duplicates && $duplicates->num_rows > 0) {
+                if ($duplicates && $duplicates->rowCount() > 0) {
                     $output[] = "  ⚠ Warning: Found shows with multiple pullsheets";
-                    while ($dup = $duplicates->fetch_assoc()) {
+                    while ($dup = $duplicates->fetch()) {
                         $output[] = "    Show ID {$dup['show_id']} has {$dup['count']} pullsheets";
                         
                         // Keep the most recent pullsheet, delete others
@@ -210,7 +212,7 @@ try {
             'callback' => function($db, &$output) {
                 // Add pullsheet_id to change_orders
                 $columns = $db->query("SHOW COLUMNS FROM change_orders LIKE 'pullsheet_id'");
-                if (!$columns || $columns->num_rows == 0) {
+                if (!$columns || $columns->rowCount() == 0) {
                     $db->query("ALTER TABLE change_orders ADD COLUMN pullsheet_id INT NULL AFTER show_id");
                     $output[] = "  ✓ Added pullsheet_id column to change_orders";
                 } else {
@@ -231,7 +233,7 @@ try {
                 
                 // Add change_order_id to pullsheet_items
                 $columns = $db->query("SHOW COLUMNS FROM pullsheet_items LIKE 'change_order_id'");
-                if (!$columns || $columns->num_rows == 0) {
+                if (!$columns || $columns->rowCount() == 0) {
                     $db->query("ALTER TABLE pullsheet_items ADD COLUMN change_order_id INT NULL AFTER pullsheet_id");
                     $output[] = "  ✓ Added change_order_id column to pullsheet_items";
                 } else {
@@ -280,7 +282,7 @@ try {
             'callback' => function($db, &$output) {
                 // Add is_partial_return column
                 $columns = $db->query("SHOW COLUMNS FROM change_orders LIKE 'is_partial_return'");
-                if (!$columns || $columns->num_rows == 0) {
+                if (!$columns || $columns->rowCount() == 0) {
                     $db->query("ALTER TABLE change_orders ADD COLUMN is_partial_return BOOLEAN DEFAULT FALSE AFTER pullsheet_id");
                     $output[] = "  ✓ Added is_partial_return column to change_orders";
                 } else {
@@ -289,7 +291,7 @@ try {
                 
                 // Add source_pullsheet_id column
                 $columns = $db->query("SHOW COLUMNS FROM change_orders LIKE 'source_pullsheet_id'");
-                if (!$columns || $columns->num_rows == 0) {
+                if (!$columns || $columns->rowCount() == 0) {
                     $db->query("ALTER TABLE change_orders ADD COLUMN source_pullsheet_id INT NULL AFTER is_partial_return");
                     $output[] = "  ✓ Added source_pullsheet_id column to change_orders";
                 } else {
