@@ -94,9 +94,9 @@ $pendingChangeOrders = $db->fetchAll(
     "SELECT co.*, s.name as show_name, u.full_name as user_name, u.email as user_email
      FROM change_orders co
      LEFT JOIN shows s ON co.show_id = s.id
-     LEFT JOIN users u ON co.processed_by = u.id
-     WHERE co.approval_status = 'pending' AND co.status = 'processed'
-     ORDER BY co.processed_at DESC"
+     LEFT JOIN users u ON co.created_by = u.id
+     WHERE co.requires_approval = 1 AND co.approval_status = 'pending'
+     ORDER BY co.created_at DESC"
 );
 
 include '../includes/header.php';
@@ -190,8 +190,9 @@ include '../includes/header.php';
                                 </div>
                                 <div class="text-muted">
                                     Barcode: <?php echo htmlspecialchars($co['barcode']); ?> • 
-                                    Processed by: <?php echo htmlspecialchars($co['processed_by']); ?> • 
-                                    <?php echo date('M j, Y g:i A', strtotime($co['processed_at'])); ?>
+                                    <?php echo !empty($co['is_partial_return']) ? '<span class="badge bg-orange-lt me-1">Partial Return</span>' : ''; ?>
+                                    Submitted by: <?php echo htmlspecialchars($co['user_name'] ?? $co['created_by'] ?? '—'); ?> • 
+                                    <?php echo date('M j, Y g:i A', strtotime($co['created_at'])); ?>
                                 </div>
                             </div>
                             <div class="col-auto">

@@ -71,17 +71,7 @@ $currentUser = getCurrentUser();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle . ' - ' . $appName); ?></title>
     
-    <?php 
-    // Add favicon if configured
-    $faviconPath = getSetting('favicon_path');
-    if ($faviconPath) {
-        $faviconFile = basename($faviconPath);
-        $faviconFullPath = UPLOAD_DIR . $faviconFile;
-        if (file_exists($faviconFullPath)) {
-            echo '<link rel="icon" type="image/x-icon" href="/uploads/' . htmlspecialchars($faviconFile) . '">';
-        }
-    }
-    ?>
+    <?php require_once __DIR__ . '/favicon.php'; ?>
     
     <!-- Apply theme immediately to prevent flash -->
     <script>

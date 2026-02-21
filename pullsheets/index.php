@@ -409,7 +409,7 @@ if (!empty($pullsheets)) {
                             </td>
                         </tr>
                         <?php if (!empty($changeOrdersByPullsheet[$ps['id']])): ?>
-                        <tr class="collapse pullsheet-co-row" id="co-row-<?php echo $ps['id']; ?>"
+                        <tr class="pullsheet-co-row" id="co-row-<?php echo $ps['id']; ?>"
                             data-barcode="<?php echo htmlspecialchars($ps['barcode']); ?>"
                             data-creator="<?php echo htmlspecialchars($ps['created_by'] ?? ''); ?>"
                             data-status="<?php echo htmlspecialchars($ps['status']); ?>"

@@ -89,6 +89,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
     <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     <title>Change Password - <?php echo htmlspecialchars($appName); ?></title>
+    <?php require_once __DIR__ . '/includes/favicon.php'; ?>
     
     <!-- Apply theme immediately to prevent flash -->
     <script>

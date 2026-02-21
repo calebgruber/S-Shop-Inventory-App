@@ -295,6 +295,7 @@ if (ob_get_level()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pick Mode - Sound Shop Inventory</title>
+    <?php require_once __DIR__ . '/../includes/favicon.php'; ?>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
 <?php $currentUser = getCurrentUser(); ?>

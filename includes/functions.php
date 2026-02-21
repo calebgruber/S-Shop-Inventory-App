@@ -521,7 +521,7 @@ function hasPermission($permissionKey) {
             // Production Audio: read-only inventory, create orders, assigned to shows, can pick/return (with signature)
             $productionAudioPermissions = ['dashboard', 'items', 'shows', 'pullsheets', 
                                           'change_orders', 'pick_mode', 'return_mode', 
-                                          'operations', 'student_requests', 'quick_lookup', 'paperwork'];
+                                          'operations', 'returns', 'student_requests', 'quick_lookup', 'paperwork'];
             return in_array($permissionKey, $productionAudioPermissions);
         } else if ($user['role'] === 'student') {
             // Students can only view dashboard, read-only inventory, and make requests
@@ -1441,14 +1441,14 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
                 if ($existing) {
                     // Increase quantity
                     $db->query(
-                        "UPDATE pullsheet_items SET quantity = quantity + ? WHERE id = ?",
+                        "UPDATE pullsheet_items SET quantity_needed = quantity_needed + ? WHERE id = ?",
                         [$item['quantity'], $existing['id']]
                     );
                 } else {
                     // Add new item
                     $db->query(
-                        "INSERT INTO pullsheet_items (pullsheet_id, item_id, quantity, change_order_id) VALUES (?, ?, ?, ?)",
-                        [$pullsheetId, $item['item_id'], $item['quantity'], $changeOrderId]
+                        "INSERT INTO pullsheet_items (pullsheet_id, item_id, quantity_needed) VALUES (?, ?, ?)",
+                        [$pullsheetId, $item['item_id'], $item['quantity']]
                     );
                 }
             } elseif ($item['type'] === 'remove') {
@@ -1459,7 +1459,7 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
                 );
                 
                 if ($existing) {
-                    if ($existing['quantity'] <= $item['quantity']) {
+                    if ($existing['quantity_needed'] <= $item['quantity']) {
                         // Remove completely
                         $db->query(
                             "DELETE FROM pullsheet_items WHERE id = ?",
@@ -1468,7 +1468,7 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
                     } else {
                         // Decrease quantity
                         $db->query(
-                            "UPDATE pullsheet_items SET quantity = quantity - ? WHERE id = ?",
+                            "UPDATE pullsheet_items SET quantity_needed = quantity_needed - ? WHERE id = ?",
                             [$item['quantity'], $existing['id']]
                         );
                     }
@@ -1488,7 +1488,8 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
 
 /**
  * Process partial return
- * Creates a change order documenting the return and updates inventory
+ * Creates a change order documenting the return and updates inventory + pullsheet counts.
+ * All operations run in one transaction — no nested transactions.
  */
 function processPartialReturn($pullsheetId, $items, $userId) {
     $db = getDB();
@@ -1506,37 +1507,83 @@ function processPartialReturn($pullsheetId, $items, $userId) {
             throw new Exception("Pullsheet not found");
         }
         
+        // Determine if PA user — always requires admin approval
+        $currentUser = getCurrentUser();
+        $isPA = $currentUser && $currentUser['role'] === 'production_audio';
+        
+        // Generate unique barcode for the change order (required NOT NULL)
+        $barcode = generateUniqueBarcode('CO');
+        if (empty($barcode)) {
+            throw new Exception('Failed to generate change order barcode');
+        }
+        
         // Create change order for the return
         $db->query(
-            "INSERT INTO change_orders (show_id, status, created_by, is_partial_return, source_pullsheet_id, pullsheet_id, created_at) 
-             VALUES (?, 'finalized', ?, TRUE, ?, ?, NOW())",
-            [$pullsheet['show_id'], $userId, $pullsheetId, $pullsheetId]
+            "INSERT INTO change_orders (show_id, barcode, status, created_by, requires_approval, approval_status, is_partial_return, source_pullsheet_id, pullsheet_id, created_at) 
+             VALUES (?, ?, 'finalized', ?, ?, ?, TRUE, ?, ?, NOW())",
+            [
+                $pullsheet['show_id'],
+                $barcode,
+                $userId,
+                $isPA ? 1 : 0,
+                $isPA ? 'pending' : null,
+                $pullsheetId,
+                $pullsheetId
+            ]
         );
-        $changeOrderId = $db->insert_id;
+        $changeOrderId = $db->lastInsertId();
         
-        // Add items to change order as 'remove' type
+        // Add items, return to inventory, and update pullsheet — all in this transaction
         foreach ($items as $item) {
+            $qty = (int)$item['quantity'];
+            if ($qty <= 0) continue;
+            
+            // Add to change order as 'remove' type
             $db->query(
                 "INSERT INTO change_order_items (change_order_id, item_id, quantity, type) VALUES (?, ?, ?, 'remove')",
-                [$changeOrderId, $item['item_id'], $item['quantity']]
+                [$changeOrderId, $item['item_id'], $qty]
             );
             
             // Return items to inventory
             $db->query(
                 "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
-                [$item['quantity'], $item['item_id']]
+                [$qty, $item['item_id']]
+            );
+            
+            // Decrease quantity_needed in the pullsheet (inline — avoids nested transaction)
+            $existingPi = $db->fetchOne(
+                "SELECT id, quantity_needed FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                [$pullsheetId, $item['item_id']]
+            );
+            if ($existingPi) {
+                $newQty = $existingPi['quantity_needed'] - $qty;
+                if ($newQty <= 0) {
+                    $db->query("DELETE FROM pullsheet_items WHERE id = ?", [$existingPi['id']]);
+                } else {
+                    $db->query(
+                        "UPDATE pullsheet_items SET quantity_needed = ? WHERE id = ?",
+                        [$newQty, $existingPi['id']]
+                    );
+                }
+            }
+        }
+        
+        $db->query("COMMIT");
+        
+        // Notify admins if PA needs approval (done after commit so IDs are valid)
+        if ($isPA) {
+            createNotificationForAdmins(
+                'partial_return_pending',
+                'Partial return from ' . ($currentUser['name'] ?? 'Unknown') . ' on shop order ' . $pullsheet['barcode'] . ' requires approval',
+                '/change-orders/view?id=' . $changeOrderId
             );
         }
         
-        // Update pullsheet using the change order
-        updatePullsheetFromChangeOrder($changeOrderId);
-        
-        $db->query("COMMIT");
         return $changeOrderId;
         
     } catch (Exception $e) {
         $db->query("ROLLBACK");
-        error_log("Error processing partial return: " . $e->getMessage());
+        logException($e, "Error processing partial return");
         return false;
     }
 }
