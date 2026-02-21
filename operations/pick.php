@@ -46,10 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             
             // Try shop order first
             $pullsheet = getPullsheetByBarcode($barcode);
-            if ($pullsheet && $pullsheet['status'] === 'finalized') {
+            if ($pullsheet && in_array($pullsheet['status'], ['draft', 'finalized'])) {
                 // Check if approval is required and approved
                 if ($pullsheet['requires_approval'] && $pullsheet['approval_status'] !== 'approved') {
-                    ob_end_clean(); // Clear any buffered output
+                    ob_end_clean();
                     echo json_encode(['success' => false, 'message' => 'This shop order requires admin approval before it can be picked']);
                     exit;
                 }
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     ];
                 }
                 
-                ob_end_clean(); // Clear any buffered output
+                ob_end_clean();
                 echo json_encode([
                     'success' => true,
                     'is_resuming_draft' => $pullsheet['is_partial'] ? true : false,
@@ -82,60 +82,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
-            // Try change order for picking
-            $changeOrder = getChangeOrderByBarcode($barcode);
-            if ($changeOrder && $changeOrder['status'] === 'finalized') {
-                // Check if approval is required and approved
-                if ($changeOrder['requires_approval'] && $changeOrder['approval_status'] !== 'approved') {
-                    ob_end_clean(); // Clear any buffered output
-                    echo json_encode(['success' => false, 'message' => 'This change order requires admin approval before it can be picked']);
-                    exit;
-                }
-                
-                // Check if this change order has items to add
-                $itemsToAdd = getDB()->fetchAll(
-                    "SELECT * FROM change_order_items WHERE change_order_id = ? AND type = 'add'",
-                    [$changeOrder['id']]
-                );
-                
-                if (empty($itemsToAdd)) {
-                    ob_end_clean(); // Clear any buffered output
-                    echo json_encode(['success' => false, 'message' => 'This change order has no items to pick']);
-                    exit;
-                }
-                
-                $_SESSION['pick_session'] = [
-                    'type' => 'change_order',
-                    'id' => $changeOrder['id'],
-                    'picker_name' => $pickerName,
-                    'show_name' => $changeOrder['show_name'],
-                    'items' => [],
-                    'is_resuming_draft' => $changeOrder['is_partial'] ? true : false,
-                    'draft_saved_at' => $changeOrder['partial_saved_at']
-                ];
-                
-                foreach (getChangeOrderItems($changeOrder['id']) as $item) {
-                    if ($item['type'] === 'add') {
-                        $_SESSION['pick_session']['items'][$item['item_id']] = [
-                            'name' => $item['item_name'],
-                            'barcode' => $item['item_barcode'],
-                            'needed' => $item['quantity_change'],
-                            'scanned' => $changeOrder['is_partial'] ? (int)$item['quantity_processed'] : 0
-                        ];
-                    }
-                }
-                
-                ob_end_clean(); // Clear any buffered output
-                echo json_encode([
-                    'success' => true,
-                    'is_resuming_draft' => $changeOrder['is_partial'] ? true : false,
-                    'draft_saved_at' => $changeOrder['partial_saved_at']
-                ]);
-                exit;
+            ob_end_clean();
+            if ($pullsheet) {
+                echo json_encode(['success' => false, 'message' => 'Shop order is not ready for picking (status: ' . $pullsheet['status'] . '). Must be Draft or Finalized.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Shop order barcode not found']);
             }
-            
-            ob_end_clean(); // Clear any buffered output
-            echo json_encode(['success' => false, 'message' => 'Shop Order or change order not found or not finalized']);
             exit;
         }
         
@@ -196,22 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     "UPDATE pullsheets SET is_partial = 1, partial_saved_at = NOW() WHERE id = ?",
                     [$sessionId]
                 );
-            } elseif ($sessionType === 'change_order') {
-                foreach ($_SESSION['pick_session']['items'] as $itemId => $data) {
-                    getDB()->query(
-                        "UPDATE change_order_items SET quantity_processed = ? WHERE change_order_id = ? AND item_id = ? AND type = 'add'",
-                        [$data['scanned'], $sessionId, $itemId]
-                    );
-                }
-                getDB()->query(
-                    "UPDATE change_orders SET is_partial = 1, partial_saved_at = NOW() WHERE id = ?",
-                    [$sessionId]
-                );
             }
             
-            // Don't clear session for draft - keep it alive for continued picking
-            // unset($_SESSION['pick_session']); // REMOVED - draft should keep session
-            ob_end_clean(); // Clear any buffered output
+            ob_end_clean();
             echo json_encode(['success' => true, 'message' => 'Draft saved successfully']);
             exit;
         }
@@ -242,24 +181,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     "UPDATE pullsheets SET status = 'picked', picked_at = NOW(), picked_by = ?, is_partial = 0, partial_saved_at = NULL, approval_status = ? WHERE id = ?",
                     [$_SESSION['pick_session']['picker_name'], $approvalStatus, $sessionId]
                 );
-            } elseif ($sessionType === 'change_order') {
-                foreach ($_SESSION['pick_session']['items'] as $itemId => $data) {
-                    getDB()->query(
-                        "UPDATE change_order_items SET quantity_processed = ? WHERE change_order_id = ? AND item_id = ? AND type = 'add'",
-                        [$data['scanned'], $sessionId, $itemId]
-                    );
-                }
-                
-                // Set approval status for production audio users
-                $approvalStatus = $needsApproval ? 'pending' : null;
-                getDB()->query(
-                    "UPDATE change_orders SET status = 'processed', processed_at = NOW(), processed_by = ?, is_partial = 0, partial_saved_at = NULL, approval_status = ? WHERE id = ?",
-                    [$_SESSION['pick_session']['picker_name'], $approvalStatus, $sessionId]
-                );
             }
             
             unset($_SESSION['pick_session']);
-            ob_end_clean(); // Clear any buffered output
+            ob_end_clean();
             echo json_encode(['success' => true]);
             exit;
         }
@@ -295,6 +220,7 @@ if (ob_get_level()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pick Mode - Sound Shop Inventory</title>
+    <?php require_once __DIR__ . '/../includes/favicon.php'; ?>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
 <?php $currentUser = getCurrentUser(); ?>

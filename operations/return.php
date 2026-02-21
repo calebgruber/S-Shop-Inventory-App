@@ -44,9 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             $barcode = trim($_POST['barcode']);
             $returnerName = $user['name'] ?? 'Unknown'; // Use logged-in user's name with fallback
             
-            // Try shop order first
+            // Try shop order
             $pullsheet = getPullsheetByBarcode($barcode);
-            if ($pullsheet && $pullsheet['status'] === 'picked') {
+            if ($pullsheet && in_array($pullsheet['status'], ['picked', 'finalized', 'draft'])) {
                 $_SESSION['return_session'] = [
                     'type' => 'pullsheet',
                     'id' => $pullsheet['id'],
@@ -61,12 +61,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     $_SESSION['return_session']['items'][$item['item_id']] = [
                         'name' => $item['item_name'],
                         'barcode' => $item['item_barcode'],
-                        'needed' => $item['quantity_picked'],
+                        'needed' => $item['quantity_picked'] !== null ? (int)$item['quantity_picked'] : (int)$item['quantity_needed'],
                         'scanned' => 0
                     ];
                 }
                 
-                ob_end_clean(); // Clear any buffered output
+                ob_end_clean();
                 echo json_encode([
                     'success' => true,
                     'is_resuming_draft' => $pullsheet['is_partial'] ? true : false,
@@ -75,53 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                 exit;
             }
             
-            // Try change order for return
-            $changeOrder = getChangeOrderByBarcode($barcode);
-            if ($changeOrder && ($changeOrder['status'] === 'processed' || $changeOrder['status'] === 'finalized')) {
-                // Check if this change order has items to remove
-                $itemsToRemove = getDB()->fetchAll(
-                    "SELECT * FROM change_order_items WHERE change_order_id = ? AND type = 'remove'",
-                    [$changeOrder['id']]
-                );
-                
-                if (empty($itemsToRemove)) {
-                    ob_end_clean(); // Clear any buffered output
-                    echo json_encode(['success' => false, 'message' => 'This change order has no items to return']);
-                    exit;
-                }
-                
-                $_SESSION['return_session'] = [
-                    'type' => 'change_order',
-                    'id' => $changeOrder['id'],
-                    'returner_name' => $returnerName,
-                    'show_name' => $changeOrder['show_name'],
-                    'items' => [],
-                    'is_resuming_draft' => $changeOrder['is_partial'] ? true : false,
-                    'draft_saved_at' => $changeOrder['partial_saved_at']
-                ];
-                
-                foreach (getChangeOrderItems($changeOrder['id']) as $item) {
-                    if ($item['type'] === 'remove') {
-                        $_SESSION['return_session']['items'][$item['item_id']] = [
-                            'name' => $item['item_name'],
-                            'barcode' => $item['item_barcode'],
-                            'needed' => abs($item['quantity_change']),
-                            'scanned' => 0
-                        ];
-                    }
-                }
-                
-                ob_end_clean(); // Clear any buffered output
-                echo json_encode([
-                    'success' => true,
-                    'is_resuming_draft' => $changeOrder['is_partial'] ? true : false,
-                    'draft_saved_at' => $changeOrder['partial_saved_at']
-                ]);
-                exit;
-            }
-            
-            ob_end_clean(); // Clear any buffered output
-            echo json_encode(['success' => false, 'message' => 'Shop Order or change order not found or not ready for return']);
+            ob_end_clean();
+            echo json_encode(['success' => false, 'message' => 'Shop order not found or has no items to return']);
             exit;
         }
         
@@ -172,23 +127,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             $sessionId = $_SESSION['return_session']['id'];
             
             if ($sessionType === 'pullsheet') {
-                // Note: For returns, we save the "to be returned" count
-                // The logic here depends on the return workflow
-                // Assuming we're tracking partial returns similarly to picks
                 getDB()->query(
                     "UPDATE pullsheets SET is_partial = 1, partial_saved_at = NOW() WHERE id = ?",
                     [$sessionId]
                 );
-            } elseif ($sessionType === 'change_order') {
-                getDB()->query(
-                    "UPDATE change_orders SET is_partial = 1, partial_saved_at = NOW() WHERE id = ?",
-                    [$sessionId]
-                );
             }
             
-            // Don't clear session for draft - keep it alive for continued returns
-            // unset($_SESSION['return_session']); // REMOVED - draft should keep session
-            ob_end_clean(); // Clear any buffered output
+            ob_end_clean();
             echo json_encode(['success' => true, 'message' => 'Draft saved successfully']);
             exit;
         }
@@ -219,22 +164,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
                     "UPDATE pullsheets SET status = 'completed', is_partial = 0, partial_saved_at = NULL, approval_status = ? WHERE id = ?",
                     [$approvalStatus, $sessionId]
                 );
-            } elseif ($sessionType === 'change_order') {
-                foreach ($_SESSION['return_session']['items'] as $itemId => $data) {
-                    // Return items to stock
-                    updateItemStock($itemId, $data['scanned']);
-                }
-                
-                // Set approval status for production audio users
-                $approvalStatus = $needsApproval ? 'pending' : null;
-                getDB()->query(
-                    "UPDATE change_orders SET status = 'completed', is_partial = 0, partial_saved_at = NULL, approval_status = ? WHERE id = ?",
-                    [$approvalStatus, $sessionId]
-                );
             }
             
             unset($_SESSION['return_session']);
-            ob_end_clean(); // Clear any buffered output
+            ob_end_clean();
             echo json_encode(['success' => true]);
             exit;
         }
@@ -270,6 +203,7 @@ if (ob_get_level()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Return Mode - Sound Shop Inventory</title>
+    <?php require_once __DIR__ . '/../includes/favicon.php'; ?>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet"/>
 <?php $currentUser = getCurrentUser(); ?>

@@ -94,9 +94,6 @@ $shows = getDB()->fetchAll("SELECT s.*, t.name as theatre_space_name
                                                 <i class="ti ti-file-plus"></i>
                                             </a>
                                         <?php endif; ?>
-                                        <a href="/change-orders/create?show_id=<?php echo $show['id']; ?>" class="btn btn-sm btn-warning" title="Create Change Order">
-                                            <i class="ti ti-exchange"></i>
-                                        </a>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this show? This cannot be undone.');">
                                             <input type="hidden" name="delete_id" value="<?php echo $show['id']; ?>">
                                             <button type="submit" class="btn btn-sm btn-danger" title="Delete Show">

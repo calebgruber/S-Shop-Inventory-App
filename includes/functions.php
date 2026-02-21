@@ -3,6 +3,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/barcode/Code128.php';
 require_once __DIR__ . '/barcode/PDF417.php';
 require_once __DIR__ . '/pdf/SimplePDF.php';
+require_once __DIR__ . '/tcpdf/tcpdf.php';
 
 // Error logging function
 function logMessage($message, $level = 'INFO') {
@@ -296,13 +297,20 @@ function getChangeOrderByBarcode($barcode) {
 
 function getChangeOrderItems($changeOrderId) {
     $db = getDB();
-    return $db->fetchAll(
-        "SELECT coi.*, coi.quantity as quantity_change, i.name as item_name, i.barcode as item_barcode, i.in_stock_quantity 
+    $items = $db->fetchAll(
+        "SELECT coi.*, i.name as item_name, i.barcode as item_barcode, i.in_stock_quantity 
          FROM change_order_items coi 
          JOIN items i ON coi.item_id = i.id 
          WHERE coi.change_order_id = ?",
         [$changeOrderId]
     );
+    // Normalize: ensure 'quantity_change' key exists regardless of actual column name
+    foreach ($items as &$item) {
+        if (!isset($item['quantity_change'])) {
+            $item['quantity_change'] = $item['quantity'] ?? 0;
+        }
+    }
+    return $items;
 }
 
 function getAllChangeOrders() {
@@ -514,7 +522,7 @@ function hasPermission($permissionKey) {
             // Production Audio: read-only inventory, create orders, assigned to shows, can pick/return (with signature)
             $productionAudioPermissions = ['dashboard', 'items', 'shows', 'pullsheets', 
                                           'change_orders', 'pick_mode', 'return_mode', 
-                                          'operations', 'student_requests', 'quick_lookup', 'paperwork'];
+                                          'operations', 'returns', 'student_requests', 'quick_lookup', 'paperwork'];
             return in_array($permissionKey, $productionAudioPermissions);
         } else if ($user['role'] === 'student') {
             // Students can only view dashboard, read-only inventory, and make requests
@@ -685,6 +693,215 @@ function generatePullsheetPDF($pullsheetId) {
     $pdf->addPageNumber($page, 1, $pdf->getPageCount());
     
     return $pdf->output('pullsheet_' . $pullsheetId . '.pdf', 'S');
+}
+
+/**
+ * Generate a Pick Receipt PDF (signed approval copy) using TCPDF.
+ * Embeds the admin signature image, all picked items with qty-needed vs qty-picked,
+ * and full approval metadata.  Returns PDF binary string or false on failure.
+ */
+function generatePickReceiptPDF($pullsheetId) {
+    $pullsheet = getPullsheetById($pullsheetId);
+    if (!$pullsheet) return false;
+
+    $items = getDB()->fetchAll(
+        "SELECT pi.*, i.name as item_name, i.barcode as item_barcode,
+                c.name as category_name
+         FROM pullsheet_items pi
+         JOIN items i ON pi.item_id = i.id
+         LEFT JOIN categories c ON i.category_id = c.id
+         WHERE pi.pullsheet_id = ?
+         ORDER BY c.name, i.name",
+        [$pullsheetId]
+    );
+
+    // Fetch the most recent admin approval signature
+    $signature = getDB()->fetchOne(
+        "SELECT sig.signature_data, sig.first_name, sig.last_name, sig.created_at
+         FROM signatures sig
+         WHERE sig.pullsheet_id = ?
+         ORDER BY sig.created_at DESC LIMIT 1",
+        [$pullsheetId]
+    );
+
+    $appName     = getSetting('app_name', 'Sound Shop Inventory');
+    $approvedAt  = $pullsheet['approved_at'] ?? ($signature['created_at'] ?? date('Y-m-d H:i:s'));
+    $approverName = $signature
+        ? trim(($signature['first_name'] ?? '') . ' ' . ($signature['last_name'] ?? ''))
+        : 'N/A';
+
+    // ── Create TCPDF instance ──────────────────────────────────────────
+    $pdf = new TCPDF('P', 'mm', 'LETTER', true, 'UTF-8', false);
+    $pdf->SetCreator($appName);
+    $pdf->SetAuthor($appName);
+    $pdf->SetTitle('Pick Receipt – ' . $pullsheet['barcode']);
+    $pdf->SetSubject('Approved Pick Receipt');
+    $pdf->SetPrintHeader(false);
+    $pdf->SetPrintFooter(false);
+    $pdf->SetMargins(15, 15, 15);
+    $pdf->SetAutoPageBreak(true, 20);
+    $pdf->AddPage();
+
+    // ── Title bar ─────────────────────────────────────────────────────
+    $pdf->SetFont('helvetica', 'B', 18);
+    $pdf->SetFillColor(32, 107, 196);
+    $pdf->SetTextColor(255, 255, 255);
+    $pdf->Cell(0, 12, 'PICK RECEIPT — APPROVED', 0, 1, 'C', true);
+
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->SetFont('helvetica', '', 9);
+    $pdf->Cell(0, 6, $appName, 0, 1, 'C');
+    $pdf->Ln(4);
+
+    // ── Info table ────────────────────────────────────────────────────
+    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFillColor(240, 240, 240);
+    $pdf->Cell(0, 7, 'Receipt Information', 'B', 1, 'L', true);
+    $pdf->SetFont('helvetica', '', 9);
+
+    $infoRows = [
+        ['Production',  $pullsheet['show_name']  ?? 'N/A'],
+        ['Barcode',     $pullsheet['barcode']     ?? 'N/A'],
+        ['Picked By',   $pullsheet['picked_by']   ?? 'N/A'],
+        ['Picked At',   $pullsheet['picked_at']   ? date('m/d/Y H:i', strtotime($pullsheet['picked_at'])) : 'N/A'],
+        ['Approved By', $approverName],
+        ['Approved At', date('m/d/Y H:i', strtotime($approvedAt))],
+    ];
+
+    foreach ($infoRows as [$label, $value]) {
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->Cell(40, 6, $label . ':', 0, 0, 'L');
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(0, 6, $value, 0, 1, 'L');
+    }
+    $pdf->Ln(5);
+
+    // ── Items table ──────────────────────────────────────────────────
+    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFillColor(240, 240, 240);
+    $pdf->Cell(0, 7, 'Picked Items', 'B', 1, 'L', true);
+    $pdf->Ln(2);
+
+    // Column widths (total ~180mm for LETTER with 15mm margins)
+    $colW = [8, 72, 35, 18, 18, 14, 30]; // #, Item, Barcode, Needed, Picked, +/-, Category
+
+    // Group by category
+    $byCategory = [];
+    foreach ($items as $item) {
+        $cat = $item['category_name'] ?? 'Uncategorized';
+        $byCategory[$cat][] = $item;
+    }
+
+    $itemNum = 1;
+    foreach ($byCategory as $catName => $catItems) {
+        // Category header
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->SetFillColor(200, 220, 255);
+        $pdf->Cell(0, 6, strtoupper($catName), 1, 1, 'L', true);
+
+        // Table header
+        $pdf->SetFillColor(230, 230, 230);
+        $pdf->SetFont('helvetica', 'B', 8);
+        $headers = ['#', 'Item', 'Barcode', 'Needed', 'Picked', '+/-', 'Category'];
+        foreach ($headers as $i => $h) {
+            $pdf->Cell($colW[$i], 6, $h, 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        // Table rows
+        $pdf->SetFont('helvetica', '', 8);
+        foreach ($catItems as $item) {
+            $needed   = (int)($item['quantity_needed'] ?? 0);
+            $picked   = (int)($item['quantity_picked'] ?? 0);
+            $variance = $picked - $needed;
+            $varStr   = ($variance >= 0 ? '+' : '') . $variance;
+
+            // Variance colour
+            if ($variance < 0) {
+                $pdf->SetTextColor(200, 30, 30);
+            } elseif ($variance > 0) {
+                $pdf->SetTextColor(200, 140, 0);
+            } else {
+                $pdf->SetTextColor(30, 150, 30);
+            }
+
+            $cells = [
+                [$colW[0], (string)$itemNum++, 'C'],
+                [$colW[1], $item['item_name'],  'L'],
+                [$colW[2], $item['item_barcode'], 'L'],
+                [$colW[3], (string)$needed,     'C'],
+                [$colW[4], (string)$picked,     'C'],
+            ];
+            foreach ($cells as [$w, $txt, $align]) {
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->Cell($w, 6, $txt, 1, 0, $align);
+            }
+            // Variance cell with colour
+            $pdf->Cell($colW[5], 6, $varStr, 1, 0, 'C');
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Cell($colW[6], 6, $catName, 1, 1, 'L');
+        }
+        $pdf->Ln(2);
+    }
+
+    // ── Signature section ────────────────────────────────────────────
+    $pdf->Ln(6);
+    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFillColor(240, 240, 240);
+    $pdf->Cell(0, 7, 'Approval Authorization', 'B', 1, 'L', true);
+    $pdf->Ln(3);
+
+    if ($signature && !empty($signature['signature_data'])) {
+        $sigRaw = $signature['signature_data'];
+        if (strpos($sigRaw, 'data:image/png;base64,') === 0) {
+            $sigRaw = substr($sigRaw, strlen('data:image/png;base64,'));
+        }
+        $sigBinary = base64_decode($sigRaw);
+        $sigFile   = sys_get_temp_dir() . '/sig_' . bin2hex(random_bytes(16)) . '.png';
+        file_put_contents($sigFile, $sigBinary);
+
+        // Signature image (right column)
+        $sigName = trim(($signature['first_name'] ?? '') . ' ' . ($signature['last_name'] ?? ''));
+        $sigDate = date('m/d/Y H:i', strtotime($signature['created_at']));
+
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(90, 6, 'Picked By:', 'B', 0, 'L');
+        $pdf->Cell(0,  6, 'Approved By: ' . $sigName, 'B', 1, 'L');
+        $pdf->Ln(2);
+
+        // Left: blank picked-by line
+        $pdf->Cell(90, 20, '', 0, 0, 'L');
+        // Right: signature image
+        if (file_exists($sigFile)) {
+            $pdf->Image($sigFile, $pdf->GetX(), $pdf->GetY(), 70, 20, 'PNG', '', '', false, 150);
+            unlink($sigFile);
+        }
+        $pdf->Ln(22);
+        $pdf->Cell(90, 5, '________________________________', 0, 0, 'L');
+        $pdf->Cell(0,  5, '________________________________', 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(90, 5, 'Signature / Date', 0, 0, 'L');
+        $pdf->Cell(0,  5, 'Signed: ' . $sigName . '  |  ' . $sigDate, 0, 1, 'L');
+    } else {
+        // No signature yet — blank lines
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(90, 6, 'Picked By:', 'B', 0, 'L');
+        $pdf->Cell(0,  6, 'Approved By:', 'B', 1, 'L');
+        $pdf->Ln(20);
+        $pdf->Cell(90, 5, '________________________________', 0, 0, 'L');
+        $pdf->Cell(0,  5, '________________________________', 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(90, 5, 'Signature / Date', 0, 0, 'L');
+        $pdf->Cell(0,  5, 'Signature / Date', 0, 1, 'L');
+    }
+
+    // ── Footer ────────────────────────────────────────────────────────
+    $pdf->Ln(6);
+    $pdf->SetFont('helvetica', 'I', 7);
+    $pdf->SetTextColor(120, 120, 120);
+    $pdf->Cell(0, 5, 'Generated by ' . $appName . ' on ' . date('m/d/Y H:i:s'), 0, 1, 'C');
+
+    return $pdf->Output('pick_receipt_' . $pullsheetId . '.pdf', 'S');
 }
 
 function generateChangeOrderPDF($changeOrderId) {
@@ -1342,7 +1559,10 @@ function getPendingMigrations() {
             '009_add_maintenance_mode_setting',
             '010_make_pullsheet_show_unique',
             '011_link_change_orders_to_pullsheets',
-            '012_add_partial_return_fields'
+            '012_add_partial_return_fields',
+            '016_add_signature_mode_setting',
+            '017_add_partial_return_tracking',
+            '018_add_student_request_id_to_pullsheets'
         ];
         
         // Get completed migrations
@@ -1379,7 +1599,8 @@ function getPullsheetByShowId($showId) {
 
 /**
  * Update pullsheet from finalized change order
- * Automatically adds/removes items based on change order
+ * Automatically adds/removes items based on change order.
+ * Uses the CO's own pullsheet_id when set; falls back to show's first pullsheet.
  */
 function updatePullsheetFromChangeOrder($changeOrderId) {
     $db = getDB();
@@ -1397,25 +1618,33 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
             throw new Exception("Change order not found");
         }
         
-        // Get or create pullsheet for this show
-        $pullsheet = getPullsheetByShowId($changeOrder['show_id']);
-        
-        if (!$pullsheet) {
-            // Create new pullsheet if doesn't exist
-            $db->query(
-                "INSERT INTO pullsheets (show_id, status, created_by, created_at) VALUES (?, 'draft', ?, NOW())",
-                [$changeOrder['show_id'], $changeOrder['created_by']]
-            );
-            $pullsheetId = $db->insert_id;
+        // Use the CO's linked pullsheet if set; otherwise fall back to show's first pullsheet
+        if (!empty($changeOrder['pullsheet_id'])) {
+            $pullsheetId = (int)$changeOrder['pullsheet_id'];
+            // Verify it exists
+            $ps = $db->fetchOne("SELECT id FROM pullsheets WHERE id = ?", [$pullsheetId]);
+            if (!$ps) {
+                throw new Exception("Linked pullsheet ID {$pullsheetId} not found");
+            }
         } else {
-            $pullsheetId = $pullsheet['id'];
+            $pullsheet = getPullsheetByShowId($changeOrder['show_id']);
+            if (!$pullsheet) {
+                // Create new pullsheet if none exists for this show
+                $barcode = generateUniqueBarcode('PS');
+                $db->query(
+                    "INSERT INTO pullsheets (show_id, barcode, status, created_by, created_at) VALUES (?, ?, 'draft', ?, NOW())",
+                    [$changeOrder['show_id'], $barcode, $changeOrder['created_by']]
+                );
+                $pullsheetId = $db->lastInsertId();
+            } else {
+                $pullsheetId = $pullsheet['id'];
+            }
+            // Link change order to this pullsheet for future reference
+            $db->query(
+                "UPDATE change_orders SET pullsheet_id = ? WHERE id = ?",
+                [$pullsheetId, $changeOrderId]
+            );
         }
-        
-        // Link change order to pullsheet
-        $db->query(
-            "UPDATE change_orders SET pullsheet_id = ? WHERE id = ?",
-            [$pullsheetId, $changeOrderId]
-        );
         
         // Get all change order items
         $changeOrderItems = $db->fetchAll(
@@ -1424,45 +1653,41 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
         );
         
         foreach ($changeOrderItems as $item) {
+            // 'quantity' is the current column name (migration 015 renamed quantity_change→quantity).
+            // The fallback to 'quantity_change' guards against old records written before that migration.
+            $qty = (int)($item['quantity'] ?? $item['quantity_change'] ?? 0);
+            if ($qty <= 0) continue;
+            
             if ($item['type'] === 'add') {
                 // Add or increase quantity in pullsheet
                 $existing = $db->fetchOne(
-                    "SELECT * FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                    "SELECT id, quantity_needed FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
                     [$pullsheetId, $item['item_id']]
                 );
-                
                 if ($existing) {
-                    // Increase quantity
                     $db->query(
-                        "UPDATE pullsheet_items SET quantity = quantity + ? WHERE id = ?",
-                        [$item['quantity'], $existing['id']]
+                        "UPDATE pullsheet_items SET quantity_needed = quantity_needed + ? WHERE id = ?",
+                        [$qty, $existing['id']]
                     );
                 } else {
-                    // Add new item
                     $db->query(
-                        "INSERT INTO pullsheet_items (pullsheet_id, item_id, quantity, change_order_id) VALUES (?, ?, ?, ?)",
-                        [$pullsheetId, $item['item_id'], $item['quantity'], $changeOrderId]
+                        "INSERT INTO pullsheet_items (pullsheet_id, item_id, quantity_needed) VALUES (?, ?, ?)",
+                        [$pullsheetId, $item['item_id'], $qty]
                     );
                 }
             } elseif ($item['type'] === 'remove') {
                 // Remove or decrease quantity in pullsheet
                 $existing = $db->fetchOne(
-                    "SELECT * FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                    "SELECT id, quantity_needed FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
                     [$pullsheetId, $item['item_id']]
                 );
-                
                 if ($existing) {
-                    if ($existing['quantity'] <= $item['quantity']) {
-                        // Remove completely
-                        $db->query(
-                            "DELETE FROM pullsheet_items WHERE id = ?",
-                            [$existing['id']]
-                        );
+                    if ($existing['quantity_needed'] <= $qty) {
+                        $db->query("DELETE FROM pullsheet_items WHERE id = ?", [$existing['id']]);
                     } else {
-                        // Decrease quantity
                         $db->query(
-                            "UPDATE pullsheet_items SET quantity = quantity - ? WHERE id = ?",
-                            [$item['quantity'], $existing['id']]
+                            "UPDATE pullsheet_items SET quantity_needed = quantity_needed - ? WHERE id = ?",
+                            [$qty, $existing['id']]
                         );
                     }
                 }
@@ -1474,14 +1699,16 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
         
     } catch (Exception $e) {
         $db->query("ROLLBACK");
-        error_log("Error updating pullsheet from change order: " . $e->getMessage());
+        logException($e, "Error updating pullsheet from change order");
         return false;
     }
 }
 
 /**
  * Process partial return
- * Creates a change order documenting the return and updates inventory
+ * Creates a finalized 'returned' change order and decrements quantity_returned on pullsheet_items.
+ * Prevents double-returns by capping qty against (quantity_needed - quantity_returned).
+ * All operations run in one transaction — no nested transactions.
  */
 function processPartialReturn($pullsheetId, $items, $userId) {
     $db = getDB();
@@ -1499,37 +1726,103 @@ function processPartialReturn($pullsheetId, $items, $userId) {
             throw new Exception("Pullsheet not found");
         }
         
-        // Create change order for the return
-        $db->query(
-            "INSERT INTO change_orders (show_id, status, created_by, is_partial_return, source_pullsheet_id, pullsheet_id, created_at) 
-             VALUES (?, 'finalized', ?, TRUE, ?, ?, NOW())",
-            [$pullsheet['show_id'], $userId, $pullsheetId, $pullsheetId]
-        );
-        $changeOrderId = $db->insert_id;
+        // Determine if PA user — always requires admin approval
+        $currentUser = getCurrentUser();
+        $isPA = $currentUser && $currentUser['role'] === 'production_audio';
         
-        // Add items to change order as 'remove' type
+        // Generate unique barcode for the change order (required NOT NULL)
+        $barcode = generateUniqueBarcode('CO');
+        if (empty($barcode)) {
+            throw new Exception('Failed to generate change order barcode');
+        }
+        
+        // Build list of validated items (cap at returnable qty to prevent double-return)
+        $validatedItems = [];
         foreach ($items as $item) {
+            $qty = (int)$item['quantity'];
+            if ($qty <= 0) continue;
+            
+            $pi = $db->fetchOne(
+                "SELECT id, quantity_needed, quantity_returned FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                [$pullsheetId, (int)$item['item_id']]
+            );
+            if (!$pi) continue;
+            
+            $returnable = max(0, (int)$pi['quantity_needed'] - (int)($pi['quantity_returned'] ?? 0));
+            if ($returnable <= 0) continue; // already fully returned
+            
+            $qty = min($qty, $returnable); // cap to what's left
+            $validatedItems[] = [
+                'item_id'       => (int)$item['item_id'],
+                'quantity'      => $qty,
+                'pi_id'         => $pi['id'],
+                'already_returned' => (int)($pi['quantity_returned'] ?? 0),
+            ];
+        }
+        
+        if (empty($validatedItems)) {
+            throw new Exception('No returnable items — everything has already been returned');
+        }
+        
+        // Valid change_orders.status values: 'draft','finalized','returned','processed','completed'
+        // 'returned' signals this CO was created by a partial return and stock has already been credited.
+        $db->query(
+            "INSERT INTO change_orders (show_id, barcode, status, created_by, requires_approval, approval_status,
+                                       is_partial_return, source_pullsheet_id, pullsheet_id,
+                                       returned_at, returned_by, created_at)
+             VALUES (?, ?, 'returned', ?, ?, ?, TRUE, ?, ?, NOW(), ?, NOW())",
+            [
+                $pullsheet['show_id'],
+                $barcode,
+                $userId,
+                $isPA ? 1 : 0,
+                $isPA ? 'pending' : null,
+                $pullsheetId,
+                $pullsheetId,
+                $userId,
+            ]
+        );
+        $changeOrderId = $db->lastInsertId();
+        
+        // Process each item
+        foreach ($validatedItems as $item) {
+            $qty = $item['quantity'];
+            
+            // Record in change order items as 'remove' (returning = removing from show)
             $db->query(
                 "INSERT INTO change_order_items (change_order_id, item_id, quantity, type) VALUES (?, ?, ?, 'remove')",
-                [$changeOrderId, $item['item_id'], $item['quantity']]
+                [$changeOrderId, $item['item_id'], $qty]
             );
             
-            // Return items to inventory
+            // Increment quantity_returned on the pullsheet item (tracks what's been returned)
+            $db->query(
+                "UPDATE pullsheet_items SET quantity_returned = quantity_returned + ? WHERE id = ?",
+                [$qty, $item['pi_id']]
+            );
+            
+            // Return items to inventory stock
             $db->query(
                 "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
-                [$item['quantity'], $item['item_id']]
+                [$qty, $item['item_id']]
             );
         }
         
-        // Update pullsheet using the change order
-        updatePullsheetFromChangeOrder($changeOrderId);
-        
         $db->query("COMMIT");
+        
+        // Notify admins if PA needs approval (after commit so IDs are valid)
+        if ($isPA) {
+            createNotificationForAdmins(
+                'partial_return_pending',
+                'Partial return from ' . ($currentUser['name'] ?? 'Unknown') . ' on shop order ' . $pullsheet['barcode'] . ' requires approval',
+                '/change-orders/view?id=' . $changeOrderId
+            );
+        }
+        
         return $changeOrderId;
         
     } catch (Exception $e) {
         $db->query("ROLLBACK");
-        error_log("Error processing partial return: " . $e->getMessage());
+        logException($e, "Error processing partial return");
         return false;
     }
 }
