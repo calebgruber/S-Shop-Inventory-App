@@ -1561,7 +1561,8 @@ function getPendingMigrations() {
             '011_link_change_orders_to_pullsheets',
             '012_add_partial_return_fields',
             '016_add_signature_mode_setting',
-            '017_add_partial_return_tracking'
+            '017_add_partial_return_tracking',
+            '018_add_student_request_id_to_pullsheets'
         ];
         
         // Get completed migrations

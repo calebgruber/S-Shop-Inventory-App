@@ -684,24 +684,13 @@ $currentUser = getCurrentUser();
                             <?php endif; ?>
                             
                             <?php if (hasPermission('pullsheets') && !isStudent()): ?>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle <?php echo in_array($currentPage, ['pullsheets', 'pullsheet_create', 'pullsheet_edit', 'pullsheet_view', 'change-orders', 'change_order_create', 'change_order_edit', 'change_order_view']) ? 'active' : ''; ?>" 
-                                   href="#" data-bs-toggle="dropdown" aria-expanded="false" role="button">
+                            <li class="nav-item <?php echo in_array($currentPage, ['pullsheets', 'pullsheet_create', 'pullsheet_edit', 'pullsheet_view']) ? 'active' : ''; ?>">
+                                <a class="nav-link" href="/pullsheets/">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-clipboard-list"></i>
                                     </span>
                                     <span class="nav-link-title">Shop Orders</span>
                                 </a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="/pullsheets/">
-                                        <i class="ti ti-clipboard-list me-2"></i>
-                                        Shop Orders
-                                    </a>
-                                    <a class="dropdown-item" href="/change-orders/">
-                                        <i class="ti ti-edit me-2"></i>
-                                        Change Orders
-                                    </a>
-                                </div>
                             </li>
                             <?php endif; ?>
                             
@@ -720,11 +709,6 @@ $currentUser = getCurrentUser();
                                     <?php endif; ?>
                                     <?php if (hasPermission('return_mode')): ?>
                                     <li><a class="dropdown-item" href="/operations/return">Return Mode</a></li>
-                                    <?php endif; ?>
-                                    <?php if (hasPermission('returns')): ?>
-                                    <li><a class="dropdown-item" href="/operations/partial-return">
-                                        <i class="ti ti-corner-down-left me-2"></i>Partial Return
-                                    </a></li>
                                     <?php endif; ?>
                                     <?php if (isAdmin()): ?>
                                     <li><hr class="dropdown-divider"></li>

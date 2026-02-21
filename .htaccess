@@ -2,12 +2,14 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Redirect to HTTPS (optional - enable in production)
-    # RewriteCond %{HTTPS} off
-    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-    
     # Redirect /settings to /settings/ (with trailing slash)
     RewriteRule ^settings$ /settings/ [R=301,L]
+    
+    # Redirect change-orders to shop orders (change orders have been removed)
+    RewriteRule ^change-orders(/.*)?$ /pullsheets/ [R=301,L]
+    
+    # Redirect partial-return to regular return (partial return merged into return flow)
+    RewriteRule ^operations/partial-return$ /operations/return [R=301,L]
     
     # Remove .php extension from URLs
     # If the request is for a file that doesn't exist, but a .php file does exist, serve it

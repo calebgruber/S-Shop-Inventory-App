@@ -65,6 +65,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             [$currentUser['id'], $requestId]
         );
         
+        // Auto-create a shop order (pullsheet) for this student request if none exists
+        if ($request) {
+            $existingPs = $db->fetchOne(
+                "SELECT id FROM pullsheets WHERE student_request_id = ? LIMIT 1",
+                [$requestId]
+            );
+            if (!$existingPs) {
+                $barcode   = generateUniqueBarcode('PS');
+                $createdBy = $currentUser['name'] ?? 'Unknown';
+                $db->query(
+                    "INSERT INTO pullsheets (show_id, barcode, created_by, status, student_request_id) VALUES (NULL, ?, ?, 'draft', ?)",
+                    [$barcode, $createdBy, $requestId]
+                );
+                $psId = $db->lastInsertId();
+                // Pre-populate with the requested item
+                $db->query(
+                    "INSERT INTO pullsheet_items (pullsheet_id, item_id, quantity_needed) VALUES (?, ?, ?)",
+                    [$psId, $request['item_id'], $request['quantity']]
+                );
+            }
+        }
+        
         // Notify the student
         if ($request) {
             createNotification(

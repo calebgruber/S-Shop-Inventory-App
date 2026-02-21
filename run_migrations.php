@@ -445,6 +445,19 @@ try {
                     $output[] = "  \u2713 returned_by already exists in change_orders";
                 }
             }
+        ],
+        [
+            'name' => '018_add_student_request_id_to_pullsheets',
+            'description' => 'Link pullsheets to student requests for per-request inventory',
+            'callback' => function($db, &$output) {
+                $col = $db->query("SHOW COLUMNS FROM pullsheets LIKE 'student_request_id'");
+                if (!$col || $col->rowCount() == 0) {
+                    $db->query("ALTER TABLE pullsheets ADD COLUMN student_request_id INT NULL AFTER show_id");
+                    $output[] = "  \u2713 Added student_request_id to pullsheets";
+                } else {
+                    $output[] = "  \u2713 student_request_id already exists in pullsheets";
+                }
+            }
         ]
     ];
     

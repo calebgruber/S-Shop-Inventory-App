@@ -13,14 +13,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         validateRequired($_POST['name'], 'Show name');
         
-        getDB()->query(
+        $db = getDB();
+        $db->query("START TRANSACTION");
+        
+        $db->query(
             "INSERT INTO shows (name, shop_lead, designer, theatre_space_id, status) VALUES (?, ?, ?, ?, 'active')",
             [$_POST['name'], $_POST['shop_lead'], $_POST['designer'], $_POST['theatre_space_id'] ?: null]
         );
+        $showId = $db->lastInsertId();
+        
+        // Auto-create a master shop order for the new show
+        $barcode   = generateUniqueBarcode('PS');
+        $createdBy = getCurrentUser()['name'] ?? 'Unknown';
+        $db->query(
+            "INSERT INTO pullsheets (show_id, barcode, created_by, status) VALUES (?, ?, ?, 'draft')",
+            [$showId, $barcode, $createdBy]
+        );
+        
+        $db->query("COMMIT");
         
         setAlert('Show created successfully');
         redirect();
     } catch (Exception $e) {
+        if (isset($db)) $db->query("ROLLBACK");
         setAlert($e->getMessage(), 'danger');
     }
 }
