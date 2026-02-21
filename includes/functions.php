@@ -1413,7 +1413,7 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
                 "INSERT INTO pullsheets (show_id, status, created_by, created_at) VALUES (?, 'draft', ?, NOW())",
                 [$changeOrder['show_id'], $changeOrder['created_by']]
             );
-            $pullsheetId = $db->insert_id;
+            $pullsheetId = $db->lastInsertId();
         } else {
             $pullsheetId = $pullsheet['id'];
         }
