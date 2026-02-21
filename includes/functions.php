@@ -694,7 +694,164 @@ function generatePullsheetPDF($pullsheetId) {
     return $pdf->output('pullsheet_' . $pullsheetId . '.pdf', 'S');
 }
 
-function generateChangeOrderPDF($changeOrderId) {
+/**
+ * Generate a Pick Receipt PDF (signed approval copy)
+ * Called after admin approves a shop order; embeds the signature,
+ * all items with qty-needed vs qty-picked, and approval metadata.
+ * Returns PDF binary string ('S' mode) or false on failure.
+ */
+function generatePickReceiptPDF($pullsheetId) {
+    $pullsheet = getPullsheetById($pullsheetId);
+    if (!$pullsheet) return false;
+
+    $items = getDB()->fetchAll(
+        "SELECT pi.*, i.name as item_name, i.barcode as item_barcode,
+                c.name as category_name
+         FROM pullsheet_items pi
+         JOIN items i ON pi.item_id = i.id
+         LEFT JOIN categories c ON i.category_id = c.id
+         WHERE pi.pullsheet_id = ?
+         ORDER BY c.name, i.name",
+        [$pullsheetId]
+    );
+
+    // Fetch the most recent admin approval signature
+    $signature = getDB()->fetchOne(
+        "SELECT sig.signature_data, sig.first_name, sig.last_name, sig.created_at,
+                u.full_name as approver_name
+         FROM signatures sig
+         LEFT JOIN users u ON sig.user_id = u.id
+         WHERE sig.pullsheet_id = ?
+         ORDER BY sig.created_at DESC LIMIT 1",
+        [$pullsheetId]
+    );
+
+    $pdf  = new SimplePDF();
+    $page = $pdf->addPage(612, 792);
+
+    // ── Header ──────────────────────────────────────────────────────
+    $appName = getSetting('app_name', 'Sound Shop Inventory');
+    $pdf->addText($page, 40, 760, $appName, 10);
+
+    // Barcode top-right
+    $barcodeData = generatePDF417Barcode($pullsheet['barcode']);
+    $barcodeFile = sys_get_temp_dir() . '/barcode_' . bin2hex(random_bytes(16)) . '.png';
+    file_put_contents($barcodeFile, $barcodeData);
+    if (file_exists($barcodeFile)) {
+        $pdf->addImage($page, file_get_contents($barcodeFile), 470, 730, 100, 40);
+        unlink($barcodeFile);
+    }
+
+    $pdf->addText($page, 40, 735, 'PICK RECEIPT — APPROVED', 16);
+
+    // ── Info box ─────────────────────────────────────────────────────
+    $approvedAt  = $pullsheet['approved_at'] ?? $signature['created_at'] ?? date('Y-m-d H:i:s');
+    $approverName = $signature
+        ? trim(($signature['first_name'] ?? '') . ' ' . ($signature['last_name'] ?? ''))
+        : ($pullsheet['approved_by'] ?? 'N/A');
+
+    $showFields = [
+        ['label' => 'Production',   'value' => $pullsheet['show_name'] ?? 'N/A'],
+        ['label' => 'Picked By',    'value' => $pullsheet['picked_by'] ?? 'N/A'],
+        ['label' => 'Picked At',    'value' => $pullsheet['picked_at'] ? date('m/d/Y H:i', strtotime($pullsheet['picked_at'])) : 'N/A'],
+        ['label' => 'Approved By',  'value' => $approverName],
+        ['label' => 'Approved At',  'value' => date('m/d/Y H:i', strtotime($approvedAt))],
+    ];
+    $pdf->addInfoBox($page, 40, 700, 250, 120, 'Receipt Information', $showFields);
+    $pdf->addText($page, 310, 650, 'Shop Order: ' . $pullsheet['barcode'], 8);
+
+    // ── Items table ──────────────────────────────────────────────────
+    $columns = [
+        ['field' => 'item_num',         'label' => '#',          'width' => 25,  'align' => 'center', 'maxlen' => 4],
+        ['field' => 'item_name',        'label' => 'Item',       'width' => 215, 'align' => 'left',   'maxlen' => 38],
+        ['field' => 'item_barcode',     'label' => 'Barcode',    'width' => 95,  'align' => 'left',   'maxlen' => 15],
+        ['field' => 'quantity_needed',  'label' => 'Needed',     'width' => 50,  'align' => 'center', 'maxlen' => 5],
+        ['field' => 'quantity_picked',  'label' => 'Picked',     'width' => 50,  'align' => 'center', 'maxlen' => 5],
+        ['field' => 'variance',         'label' => '+/-',        'width' => 45,  'align' => 'center', 'maxlen' => 5],
+        ['field' => 'category_name',    'label' => 'Category',   'width' => 82,  'align' => 'left',   'maxlen' => 13],
+    ];
+
+    $y = 620;
+    $itemNum = 1;
+
+    // Group by category
+    $byCategory = [];
+    foreach ($items as $item) {
+        $cat = $item['category_name'] ?? 'Uncategorized';
+        $byCategory[$cat][] = $item;
+    }
+
+    foreach ($byCategory as $catName => $catItems) {
+        if ($y < 100) {
+            $page = $pdf->addPage(612, 792);
+            $y = 750;
+        }
+        $pdf->setGray($page, 0.8);
+        $pdf->addRect($page, 40, $y - 18, 532, 18, true);
+        $pdf->setGray($page, 0);
+        $pdf->addText($page, 45, $y - 12, strtoupper($catName), 9);
+        $y -= 20;
+        $y = $pdf->addTableHeader($page, 40, $y, $columns, 18);
+
+        foreach ($catItems as $item) {
+            if ($y < 80) {
+                $page = $pdf->addPage(612, 792);
+                $y = 750;
+                $y = $pdf->addTableHeader($page, 40, $y, $columns, 18);
+            }
+            $needed  = (int)($item['quantity_needed'] ?? 0);
+            $picked  = (int)($item['quantity_picked'] ?? 0);
+            $variance = $picked - $needed;
+            $rowData = [
+                'item_num'        => $itemNum++,
+                'item_name'       => $item['item_name'],
+                'item_barcode'    => $item['item_barcode'],
+                'quantity_needed' => $needed,
+                'quantity_picked' => $picked,
+                'variance'        => ($variance >= 0 ? '+' : '') . $variance,
+                'category_name'   => $catName,
+            ];
+            $y = $pdf->addTableRow($page, 40, $y, $columns, $rowData, 18);
+        }
+        $y -= 8;
+    }
+
+    // ── Signature section ────────────────────────────────────────────
+    if ($y < 140) {
+        $page = $pdf->addPage(612, 792);
+        $y = 750;
+    }
+    $y -= 20;
+    $pdf->addText($page, 40, $y, 'APPROVAL AUTHORIZATION', 10);
+    $y -= 20;
+
+    if ($signature && $signature['signature_data']) {
+        $sigRaw = $signature['signature_data'];
+        if (strpos($sigRaw, 'data:image/png;base64,') === 0) {
+            $sigRaw = substr($sigRaw, strlen('data:image/png;base64,'));
+        }
+        $sigBinary = base64_decode($sigRaw);
+        $sigFile   = sys_get_temp_dir() . '/sig_' . bin2hex(random_bytes(16)) . '.png';
+        file_put_contents($sigFile, $sigBinary);
+        if (file_exists($sigFile)) {
+            $pdf->addImage($page, file_get_contents($sigFile), 310, $y - 50, 160, 55);
+            unlink($sigFile);
+        }
+        $pdf->addLine($page, 310, $y, 572, $y);
+        $sigName = trim(($signature['first_name'] ?? '') . ' ' . ($signature['last_name'] ?? ''));
+        $pdf->addText($page, 310, $y - 14, 'Approved by: ' . $sigName, 8);
+        $pdf->addText($page, 310, $y - 24, 'Date/Time: ' . date('m/d/Y H:i', strtotime($signature['created_at'])), 8);
+    } else {
+        $pdf->addSignatureLine($page, 310, $y, 262, 'Approved By / Date');
+    }
+    $pdf->addSignatureLine($page, 40, $y, 250, 'Picked By / Date');
+
+    $pdf->addPageNumber($page, 1, $pdf->getPageCount());
+
+    return $pdf->output('pick_receipt_' . $pullsheetId . '.pdf', 'S');
+}
+
+
     $changeOrder = getChangeOrderById($changeOrderId);
     $items = getChangeOrderItems($changeOrderId);
     
@@ -1349,7 +1506,8 @@ function getPendingMigrations() {
             '009_add_maintenance_mode_setting',
             '010_make_pullsheet_show_unique',
             '011_link_change_orders_to_pullsheets',
-            '012_add_partial_return_fields'
+            '012_add_partial_return_fields',
+            '016_add_signature_mode_setting'
         ];
         
         // Get completed migrations

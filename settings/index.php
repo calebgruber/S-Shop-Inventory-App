@@ -90,6 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     setSetting('app_name', $_POST['app_name']);
                     setSetting('support_email', $_POST['support_email'] ?? 'support@example.com');
                     setSetting('app_url', $_POST['app_url'] ?? '');
+                    // Signature mode: 'draw' (pad) or 'type' (auto-generated from name)
+                    $sigMode = ($_POST['signature_mode'] ?? 'draw') === 'type' ? 'type' : 'draw';
+                    setSetting('signature_mode', $sigMode);
                     
                     // Handle banner rotation interval
                     if (isset($_POST['banner_rotation_interval'])) {
@@ -705,6 +708,7 @@ $pdfMarginLeft = getSetting('pdf_margin_left', '15');
 $pdfMarginRight = getSetting('pdf_margin_right', '15');
 $pdfFontSize = getSetting('pdf_font_size', '10');
 $pdfShowLogo = getSetting('pdf_show_logo', '1');
+$signatureMode = getSetting('signature_mode', 'draw');
 ?>
 
 <!-- Settings Navigation Tabs -->
@@ -826,6 +830,23 @@ $pdfShowLogo = getSetting('pdf_show_logo', '1');
                             <input type="file" class="form-control" name="login_illustration" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
                             <small class="form-hint">Upload a default banner for the login page. This will be shown when no rotating banners are active. (PNG, JPG, GIF, WebP - max 5MB)</small>
                         </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Approval Signature Mode</label>
+                        <div>
+                            <label class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="signature_mode" value="draw"
+                                    <?php echo $signatureMode !== 'type' ? 'checked' : ''; ?>>
+                                <span class="form-check-label"><i class="ti ti-writing me-1"></i>Draw signature (pad)</span>
+                            </label>
+                            <label class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="signature_mode" value="type"
+                                    <?php echo $signatureMode === 'type' ? 'checked' : ''; ?>>
+                                <span class="form-check-label"><i class="ti ti-keyboard me-1"></i>Type name (auto-generate)</span>
+                            </label>
+                        </div>
+                        <small class="form-hint">Controls how admins sign off on approvals. "Type name" renders a cursive-style signature from the admin's name automatically.</small>
                     </div>
                     
                     <button type="submit" class="btn btn-primary">

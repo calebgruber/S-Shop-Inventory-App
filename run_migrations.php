@@ -406,6 +406,13 @@ try {
                     $output[] = "  ✓ Added quantity column to change_order_items";
                 }
             }
+        ],
+        [
+            'name' => '016_add_signature_mode_setting',
+            'description' => 'Add signature_mode setting (draw or type)',
+            'sql' => [
+                "INSERT IGNORE INTO settings (setting_key, setting_value) VALUES ('signature_mode', 'draw')"
+            ]
         ]
     ];
     
