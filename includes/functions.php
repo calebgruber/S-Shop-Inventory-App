@@ -3,6 +3,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/barcode/Code128.php';
 require_once __DIR__ . '/barcode/PDF417.php';
 require_once __DIR__ . '/pdf/SimplePDF.php';
+require_once __DIR__ . '/tcpdf/tcpdf.php';
 
 // Error logging function
 function logMessage($message, $level = 'INFO') {
@@ -695,10 +696,9 @@ function generatePullsheetPDF($pullsheetId) {
 }
 
 /**
- * Generate a Pick Receipt PDF (signed approval copy)
- * Called after admin approves a shop order; embeds the signature,
- * all items with qty-needed vs qty-picked, and approval metadata.
- * Returns PDF binary string ('S' mode) or false on failure.
+ * Generate a Pick Receipt PDF (signed approval copy) using TCPDF.
+ * Embeds the admin signature image, all picked items with qty-needed vs qty-picked,
+ * and full approval metadata.  Returns PDF binary string or false on failure.
  */
 function generatePickReceiptPDF($pullsheetId) {
     $pullsheet = getPullsheetById($pullsheetId);
@@ -717,62 +717,73 @@ function generatePickReceiptPDF($pullsheetId) {
 
     // Fetch the most recent admin approval signature
     $signature = getDB()->fetchOne(
-        "SELECT sig.signature_data, sig.first_name, sig.last_name, sig.created_at,
-                u.full_name as approver_name
+        "SELECT sig.signature_data, sig.first_name, sig.last_name, sig.created_at
          FROM signatures sig
-         LEFT JOIN users u ON sig.user_id = u.id
          WHERE sig.pullsheet_id = ?
          ORDER BY sig.created_at DESC LIMIT 1",
         [$pullsheetId]
     );
 
-    $pdf  = new SimplePDF();
-    $page = $pdf->addPage(612, 792);
-
-    // ── Header ──────────────────────────────────────────────────────
-    $appName = getSetting('app_name', 'Sound Shop Inventory');
-    $pdf->addText($page, 40, 760, $appName, 10);
-
-    // Barcode top-right
-    $barcodeData = generatePDF417Barcode($pullsheet['barcode']);
-    $barcodeFile = sys_get_temp_dir() . '/barcode_' . bin2hex(random_bytes(16)) . '.png';
-    file_put_contents($barcodeFile, $barcodeData);
-    if (file_exists($barcodeFile)) {
-        $pdf->addImage($page, file_get_contents($barcodeFile), 470, 730, 100, 40);
-        unlink($barcodeFile);
-    }
-
-    $pdf->addText($page, 40, 735, 'PICK RECEIPT — APPROVED', 16);
-
-    // ── Info box ─────────────────────────────────────────────────────
-    $approvedAt  = $pullsheet['approved_at'] ?? $signature['created_at'] ?? date('Y-m-d H:i:s');
+    $appName     = getSetting('app_name', 'Sound Shop Inventory');
+    $approvedAt  = $pullsheet['approved_at'] ?? ($signature['created_at'] ?? date('Y-m-d H:i:s'));
     $approverName = $signature
         ? trim(($signature['first_name'] ?? '') . ' ' . ($signature['last_name'] ?? ''))
-        : ($pullsheet['approved_by'] ?? 'N/A');
+        : 'N/A';
 
-    $showFields = [
-        ['label' => 'Production',   'value' => $pullsheet['show_name'] ?? 'N/A'],
-        ['label' => 'Picked By',    'value' => $pullsheet['picked_by'] ?? 'N/A'],
-        ['label' => 'Picked At',    'value' => $pullsheet['picked_at'] ? date('m/d/Y H:i', strtotime($pullsheet['picked_at'])) : 'N/A'],
-        ['label' => 'Approved By',  'value' => $approverName],
-        ['label' => 'Approved At',  'value' => date('m/d/Y H:i', strtotime($approvedAt))],
+    // ── Create TCPDF instance ──────────────────────────────────────────
+    $pdf = new TCPDF('P', 'mm', 'LETTER', true, 'UTF-8', false);
+    $pdf->SetCreator($appName);
+    $pdf->SetAuthor($appName);
+    $pdf->SetTitle('Pick Receipt – ' . $pullsheet['barcode']);
+    $pdf->SetSubject('Approved Pick Receipt');
+    $pdf->SetPrintHeader(false);
+    $pdf->SetPrintFooter(false);
+    $pdf->SetMargins(15, 15, 15);
+    $pdf->SetAutoPageBreak(true, 20);
+    $pdf->AddPage();
+
+    // ── Title bar ─────────────────────────────────────────────────────
+    $pdf->SetFont('helvetica', 'B', 18);
+    $pdf->SetFillColor(32, 107, 196);
+    $pdf->SetTextColor(255, 255, 255);
+    $pdf->Cell(0, 12, 'PICK RECEIPT — APPROVED', 0, 1, 'C', true);
+
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->SetFont('helvetica', '', 9);
+    $pdf->Cell(0, 6, $appName, 0, 1, 'C');
+    $pdf->Ln(4);
+
+    // ── Info table ────────────────────────────────────────────────────
+    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFillColor(240, 240, 240);
+    $pdf->Cell(0, 7, 'Receipt Information', 'B', 1, 'L', true);
+    $pdf->SetFont('helvetica', '', 9);
+
+    $infoRows = [
+        ['Production',  $pullsheet['show_name']  ?? 'N/A'],
+        ['Barcode',     $pullsheet['barcode']     ?? 'N/A'],
+        ['Picked By',   $pullsheet['picked_by']   ?? 'N/A'],
+        ['Picked At',   $pullsheet['picked_at']   ? date('m/d/Y H:i', strtotime($pullsheet['picked_at'])) : 'N/A'],
+        ['Approved By', $approverName],
+        ['Approved At', date('m/d/Y H:i', strtotime($approvedAt))],
     ];
-    $pdf->addInfoBox($page, 40, 700, 250, 120, 'Receipt Information', $showFields);
-    $pdf->addText($page, 310, 650, 'Shop Order: ' . $pullsheet['barcode'], 8);
+
+    foreach ($infoRows as [$label, $value]) {
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->Cell(40, 6, $label . ':', 0, 0, 'L');
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(0, 6, $value, 0, 1, 'L');
+    }
+    $pdf->Ln(5);
 
     // ── Items table ──────────────────────────────────────────────────
-    $columns = [
-        ['field' => 'item_num',         'label' => '#',          'width' => 25,  'align' => 'center', 'maxlen' => 4],
-        ['field' => 'item_name',        'label' => 'Item',       'width' => 215, 'align' => 'left',   'maxlen' => 38],
-        ['field' => 'item_barcode',     'label' => 'Barcode',    'width' => 95,  'align' => 'left',   'maxlen' => 15],
-        ['field' => 'quantity_needed',  'label' => 'Needed',     'width' => 50,  'align' => 'center', 'maxlen' => 5],
-        ['field' => 'quantity_picked',  'label' => 'Picked',     'width' => 50,  'align' => 'center', 'maxlen' => 5],
-        ['field' => 'variance',         'label' => '+/-',        'width' => 45,  'align' => 'center', 'maxlen' => 5],
-        ['field' => 'category_name',    'label' => 'Category',   'width' => 82,  'align' => 'left',   'maxlen' => 13],
-    ];
+    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFillColor(240, 240, 240);
+    $pdf->Cell(0, 7, 'Picked Items', 'B', 1, 'L', true);
+    $pdf->Ln(2);
 
-    $y = 620;
-    $itemNum = 1;
+    // Column widths (total ~180mm for LETTER with 15mm margins)
+    $colW = [8, 72, 35, 18, 18, 14, 30]; // #, Item, Barcode, Needed, Picked, +/-, Category
 
     // Group by category
     $byCategory = [];
@@ -781,51 +792,66 @@ function generatePickReceiptPDF($pullsheetId) {
         $byCategory[$cat][] = $item;
     }
 
+    $itemNum = 1;
     foreach ($byCategory as $catName => $catItems) {
-        if ($y < 100) {
-            $page = $pdf->addPage(612, 792);
-            $y = 750;
-        }
-        $pdf->setGray($page, 0.8);
-        $pdf->addRect($page, 40, $y - 18, 532, 18, true);
-        $pdf->setGray($page, 0);
-        $pdf->addText($page, 45, $y - 12, strtoupper($catName), 9);
-        $y -= 20;
-        $y = $pdf->addTableHeader($page, 40, $y, $columns, 18);
+        // Category header
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->SetFillColor(200, 220, 255);
+        $pdf->Cell(0, 6, strtoupper($catName), 1, 1, 'L', true);
 
-        foreach ($catItems as $item) {
-            if ($y < 80) {
-                $page = $pdf->addPage(612, 792);
-                $y = 750;
-                $y = $pdf->addTableHeader($page, 40, $y, $columns, 18);
-            }
-            $needed  = (int)($item['quantity_needed'] ?? 0);
-            $picked  = (int)($item['quantity_picked'] ?? 0);
-            $variance = $picked - $needed;
-            $rowData = [
-                'item_num'        => $itemNum++,
-                'item_name'       => $item['item_name'],
-                'item_barcode'    => $item['item_barcode'],
-                'quantity_needed' => $needed,
-                'quantity_picked' => $picked,
-                'variance'        => ($variance >= 0 ? '+' : '') . $variance,
-                'category_name'   => $catName,
-            ];
-            $y = $pdf->addTableRow($page, 40, $y, $columns, $rowData, 18);
+        // Table header
+        $pdf->SetFillColor(230, 230, 230);
+        $pdf->SetFont('helvetica', 'B', 8);
+        $headers = ['#', 'Item', 'Barcode', 'Needed', 'Picked', '+/-', 'Category'];
+        foreach ($headers as $i => $h) {
+            $pdf->Cell($colW[$i], 6, $h, 1, 0, 'C', true);
         }
-        $y -= 8;
+        $pdf->Ln();
+
+        // Table rows
+        $pdf->SetFont('helvetica', '', 8);
+        foreach ($catItems as $item) {
+            $needed   = (int)($item['quantity_needed'] ?? 0);
+            $picked   = (int)($item['quantity_picked'] ?? 0);
+            $variance = $picked - $needed;
+            $varStr   = ($variance >= 0 ? '+' : '') . $variance;
+
+            // Variance colour
+            if ($variance < 0) {
+                $pdf->SetTextColor(200, 30, 30);
+            } elseif ($variance > 0) {
+                $pdf->SetTextColor(200, 140, 0);
+            } else {
+                $pdf->SetTextColor(30, 150, 30);
+            }
+
+            $cells = [
+                [$colW[0], (string)$itemNum++, 'C'],
+                [$colW[1], $item['item_name'],  'L'],
+                [$colW[2], $item['item_barcode'], 'L'],
+                [$colW[3], (string)$needed,     'C'],
+                [$colW[4], (string)$picked,     'C'],
+            ];
+            foreach ($cells as [$w, $txt, $align]) {
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->Cell($w, 6, $txt, 1, 0, $align);
+            }
+            // Variance cell with colour
+            $pdf->Cell($colW[5], 6, $varStr, 1, 0, 'C');
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Cell($colW[6], 6, $catName, 1, 1, 'L');
+        }
+        $pdf->Ln(2);
     }
 
     // ── Signature section ────────────────────────────────────────────
-    if ($y < 140) {
-        $page = $pdf->addPage(612, 792);
-        $y = 750;
-    }
-    $y -= 20;
-    $pdf->addText($page, 40, $y, 'APPROVAL AUTHORIZATION', 10);
-    $y -= 20;
+    $pdf->Ln(6);
+    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFillColor(240, 240, 240);
+    $pdf->Cell(0, 7, 'Approval Authorization', 'B', 1, 'L', true);
+    $pdf->Ln(3);
 
-    if ($signature && $signature['signature_data']) {
+    if ($signature && !empty($signature['signature_data'])) {
         $sigRaw = $signature['signature_data'];
         if (strpos($sigRaw, 'data:image/png;base64,') === 0) {
             $sigRaw = substr($sigRaw, strlen('data:image/png;base64,'));
@@ -833,22 +859,49 @@ function generatePickReceiptPDF($pullsheetId) {
         $sigBinary = base64_decode($sigRaw);
         $sigFile   = sys_get_temp_dir() . '/sig_' . bin2hex(random_bytes(16)) . '.png';
         file_put_contents($sigFile, $sigBinary);
+
+        // Signature image (right column)
+        $sigName = trim(($signature['first_name'] ?? '') . ' ' . ($signature['last_name'] ?? ''));
+        $sigDate = date('m/d/Y H:i', strtotime($signature['created_at']));
+
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(90, 6, 'Picked By:', 'B', 0, 'L');
+        $pdf->Cell(0,  6, 'Approved By: ' . $sigName, 'B', 1, 'L');
+        $pdf->Ln(2);
+
+        // Left: blank picked-by line
+        $pdf->Cell(90, 20, '', 0, 0, 'L');
+        // Right: signature image
         if (file_exists($sigFile)) {
-            $pdf->addImage($page, file_get_contents($sigFile), 310, $y - 50, 160, 55);
+            $pdf->Image($sigFile, $pdf->GetX(), $pdf->GetY(), 70, 20, 'PNG', '', '', false, 150);
             unlink($sigFile);
         }
-        $pdf->addLine($page, 310, $y, 572, $y);
-        $sigName = trim(($signature['first_name'] ?? '') . ' ' . ($signature['last_name'] ?? ''));
-        $pdf->addText($page, 310, $y - 14, 'Approved by: ' . $sigName, 8);
-        $pdf->addText($page, 310, $y - 24, 'Date/Time: ' . date('m/d/Y H:i', strtotime($signature['created_at'])), 8);
+        $pdf->Ln(22);
+        $pdf->Cell(90, 5, '________________________________', 0, 0, 'L');
+        $pdf->Cell(0,  5, '________________________________', 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(90, 5, 'Signature / Date', 0, 0, 'L');
+        $pdf->Cell(0,  5, 'Signed: ' . $sigName . '  |  ' . $sigDate, 0, 1, 'L');
     } else {
-        $pdf->addSignatureLine($page, 310, $y, 262, 'Approved By / Date');
+        // No signature yet — blank lines
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(90, 6, 'Picked By:', 'B', 0, 'L');
+        $pdf->Cell(0,  6, 'Approved By:', 'B', 1, 'L');
+        $pdf->Ln(20);
+        $pdf->Cell(90, 5, '________________________________', 0, 0, 'L');
+        $pdf->Cell(0,  5, '________________________________', 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(90, 5, 'Signature / Date', 0, 0, 'L');
+        $pdf->Cell(0,  5, 'Signature / Date', 0, 1, 'L');
     }
-    $pdf->addSignatureLine($page, 40, $y, 250, 'Picked By / Date');
 
-    $pdf->addPageNumber($page, 1, $pdf->getPageCount());
+    // ── Footer ────────────────────────────────────────────────────────
+    $pdf->Ln(6);
+    $pdf->SetFont('helvetica', 'I', 7);
+    $pdf->SetTextColor(120, 120, 120);
+    $pdf->Cell(0, 5, 'Generated by ' . $appName . ' on ' . date('m/d/Y H:i:s'), 0, 1, 'C');
 
-    return $pdf->output('pick_receipt_' . $pullsheetId . '.pdf', 'S');
+    return $pdf->Output('pick_receipt_' . $pullsheetId . '.pdf', 'S');
 }
 
 function generateChangeOrderPDF($changeOrderId) {
@@ -1544,7 +1597,8 @@ function getPullsheetByShowId($showId) {
 
 /**
  * Update pullsheet from finalized change order
- * Automatically adds/removes items based on change order
+ * Automatically adds/removes items based on change order.
+ * Uses the CO's own pullsheet_id when set; falls back to show's first pullsheet.
  */
 function updatePullsheetFromChangeOrder($changeOrderId) {
     $db = getDB();
@@ -1562,25 +1616,33 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
             throw new Exception("Change order not found");
         }
         
-        // Get or create pullsheet for this show
-        $pullsheet = getPullsheetByShowId($changeOrder['show_id']);
-        
-        if (!$pullsheet) {
-            // Create new pullsheet if doesn't exist
-            $db->query(
-                "INSERT INTO pullsheets (show_id, status, created_by, created_at) VALUES (?, 'draft', ?, NOW())",
-                [$changeOrder['show_id'], $changeOrder['created_by']]
-            );
-            $pullsheetId = $db->lastInsertId();
+        // Use the CO's linked pullsheet if set; otherwise fall back to show's first pullsheet
+        if (!empty($changeOrder['pullsheet_id'])) {
+            $pullsheetId = (int)$changeOrder['pullsheet_id'];
+            // Verify it exists
+            $ps = $db->fetchOne("SELECT id FROM pullsheets WHERE id = ?", [$pullsheetId]);
+            if (!$ps) {
+                throw new Exception("Linked pullsheet ID {$pullsheetId} not found");
+            }
         } else {
-            $pullsheetId = $pullsheet['id'];
+            $pullsheet = getPullsheetByShowId($changeOrder['show_id']);
+            if (!$pullsheet) {
+                // Create new pullsheet if none exists for this show
+                $barcode = generateUniqueBarcode('PS');
+                $db->query(
+                    "INSERT INTO pullsheets (show_id, barcode, status, created_by, created_at) VALUES (?, ?, 'draft', ?, NOW())",
+                    [$changeOrder['show_id'], $barcode, $changeOrder['created_by']]
+                );
+                $pullsheetId = $db->lastInsertId();
+            } else {
+                $pullsheetId = $pullsheet['id'];
+            }
+            // Link change order to this pullsheet for future reference
+            $db->query(
+                "UPDATE change_orders SET pullsheet_id = ? WHERE id = ?",
+                [$pullsheetId, $changeOrderId]
+            );
         }
-        
-        // Link change order to pullsheet
-        $db->query(
-            "UPDATE change_orders SET pullsheet_id = ? WHERE id = ?",
-            [$pullsheetId, $changeOrderId]
-        );
         
         // Get all change order items
         $changeOrderItems = $db->fetchAll(
@@ -1589,45 +1651,39 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
         );
         
         foreach ($changeOrderItems as $item) {
+            $qty = (int)($item['quantity'] ?? $item['quantity_change'] ?? 0);
+            if ($qty <= 0) continue;
+            
             if ($item['type'] === 'add') {
                 // Add or increase quantity in pullsheet
                 $existing = $db->fetchOne(
-                    "SELECT * FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                    "SELECT id, quantity_needed FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
                     [$pullsheetId, $item['item_id']]
                 );
-                
                 if ($existing) {
-                    // Increase quantity
                     $db->query(
                         "UPDATE pullsheet_items SET quantity_needed = quantity_needed + ? WHERE id = ?",
-                        [$item['quantity'], $existing['id']]
+                        [$qty, $existing['id']]
                     );
                 } else {
-                    // Add new item
                     $db->query(
                         "INSERT INTO pullsheet_items (pullsheet_id, item_id, quantity_needed) VALUES (?, ?, ?)",
-                        [$pullsheetId, $item['item_id'], $item['quantity']]
+                        [$pullsheetId, $item['item_id'], $qty]
                     );
                 }
             } elseif ($item['type'] === 'remove') {
                 // Remove or decrease quantity in pullsheet
                 $existing = $db->fetchOne(
-                    "SELECT * FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                    "SELECT id, quantity_needed FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
                     [$pullsheetId, $item['item_id']]
                 );
-                
                 if ($existing) {
-                    if ($existing['quantity_needed'] <= $item['quantity']) {
-                        // Remove completely
-                        $db->query(
-                            "DELETE FROM pullsheet_items WHERE id = ?",
-                            [$existing['id']]
-                        );
+                    if ($existing['quantity_needed'] <= $qty) {
+                        $db->query("DELETE FROM pullsheet_items WHERE id = ?", [$existing['id']]);
                     } else {
-                        // Decrease quantity
                         $db->query(
                             "UPDATE pullsheet_items SET quantity_needed = quantity_needed - ? WHERE id = ?",
-                            [$item['quantity'], $existing['id']]
+                            [$qty, $existing['id']]
                         );
                     }
                 }
@@ -1639,7 +1695,7 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
         
     } catch (Exception $e) {
         $db->query("ROLLBACK");
-        error_log("Error updating pullsheet from change order: " . $e->getMessage());
+        logException($e, "Error updating pullsheet from change order");
         return false;
     }
 }
