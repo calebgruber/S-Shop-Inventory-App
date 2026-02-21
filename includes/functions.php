@@ -1560,7 +1560,8 @@ function getPendingMigrations() {
             '010_make_pullsheet_show_unique',
             '011_link_change_orders_to_pullsheets',
             '012_add_partial_return_fields',
-            '016_add_signature_mode_setting'
+            '016_add_signature_mode_setting',
+            '017_add_partial_return_tracking'
         ];
         
         // Get completed migrations
@@ -1651,6 +1652,8 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
         );
         
         foreach ($changeOrderItems as $item) {
+            // 'quantity' is the current column name (migration 015 renamed quantity_change→quantity).
+            // The fallback to 'quantity_change' guards against old records written before that migration.
             $qty = (int)($item['quantity'] ?? $item['quantity_change'] ?? 0);
             if ($qty <= 0) continue;
             
@@ -1702,7 +1705,8 @@ function updatePullsheetFromChangeOrder($changeOrderId) {
 
 /**
  * Process partial return
- * Creates a change order documenting the return and updates inventory + pullsheet counts.
+ * Creates a finalized 'returned' change order and decrements quantity_returned on pullsheet_items.
+ * Prevents double-returns by capping qty against (quantity_needed - quantity_returned).
  * All operations run in one transaction — no nested transactions.
  */
 function processPartialReturn($pullsheetId, $items, $userId) {
@@ -1731,10 +1735,41 @@ function processPartialReturn($pullsheetId, $items, $userId) {
             throw new Exception('Failed to generate change order barcode');
         }
         
-        // Create change order for the return
+        // Build list of validated items (cap at returnable qty to prevent double-return)
+        $validatedItems = [];
+        foreach ($items as $item) {
+            $qty = (int)$item['quantity'];
+            if ($qty <= 0) continue;
+            
+            $pi = $db->fetchOne(
+                "SELECT id, quantity_needed, quantity_returned FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
+                [$pullsheetId, (int)$item['item_id']]
+            );
+            if (!$pi) continue;
+            
+            $returnable = max(0, (int)$pi['quantity_needed'] - (int)($pi['quantity_returned'] ?? 0));
+            if ($returnable <= 0) continue; // already fully returned
+            
+            $qty = min($qty, $returnable); // cap to what's left
+            $validatedItems[] = [
+                'item_id'       => (int)$item['item_id'],
+                'quantity'      => $qty,
+                'pi_id'         => $pi['id'],
+                'already_returned' => (int)($pi['quantity_returned'] ?? 0),
+            ];
+        }
+        
+        if (empty($validatedItems)) {
+            throw new Exception('No returnable items — everything has already been returned');
+        }
+        
+        // Valid change_orders.status values: 'draft','finalized','returned','processed','completed'
+        // 'returned' signals this CO was created by a partial return and stock has already been credited.
         $db->query(
-            "INSERT INTO change_orders (show_id, barcode, status, created_by, requires_approval, approval_status, is_partial_return, source_pullsheet_id, pullsheet_id, created_at) 
-             VALUES (?, ?, 'finalized', ?, ?, ?, TRUE, ?, ?, NOW())",
+            "INSERT INTO change_orders (show_id, barcode, status, created_by, requires_approval, approval_status,
+                                       is_partial_return, source_pullsheet_id, pullsheet_id,
+                                       returned_at, returned_by, created_at)
+             VALUES (?, ?, 'returned', ?, ?, ?, TRUE, ?, ?, NOW(), ?, NOW())",
             [
                 $pullsheet['show_id'],
                 $barcode,
@@ -1742,49 +1777,38 @@ function processPartialReturn($pullsheetId, $items, $userId) {
                 $isPA ? 1 : 0,
                 $isPA ? 'pending' : null,
                 $pullsheetId,
-                $pullsheetId
+                $pullsheetId,
+                $userId,
             ]
         );
         $changeOrderId = $db->lastInsertId();
         
-        // Add items, return to inventory, and update pullsheet — all in this transaction
-        foreach ($items as $item) {
-            $qty = (int)$item['quantity'];
-            if ($qty <= 0) continue;
+        // Process each item
+        foreach ($validatedItems as $item) {
+            $qty = $item['quantity'];
             
-            // Add to change order as 'remove' type
+            // Record in change order items as 'remove' (returning = removing from show)
             $db->query(
                 "INSERT INTO change_order_items (change_order_id, item_id, quantity, type) VALUES (?, ?, ?, 'remove')",
                 [$changeOrderId, $item['item_id'], $qty]
             );
             
-            // Return items to inventory
+            // Increment quantity_returned on the pullsheet item (tracks what's been returned)
+            $db->query(
+                "UPDATE pullsheet_items SET quantity_returned = quantity_returned + ? WHERE id = ?",
+                [$qty, $item['pi_id']]
+            );
+            
+            // Return items to inventory stock
             $db->query(
                 "UPDATE items SET in_stock_quantity = in_stock_quantity + ? WHERE id = ?",
                 [$qty, $item['item_id']]
             );
-            
-            // Decrease quantity_needed in the pullsheet (inline — avoids nested transaction)
-            $existingPi = $db->fetchOne(
-                "SELECT id, quantity_needed FROM pullsheet_items WHERE pullsheet_id = ? AND item_id = ?",
-                [$pullsheetId, $item['item_id']]
-            );
-            if ($existingPi) {
-                $newQty = $existingPi['quantity_needed'] - $qty;
-                if ($newQty <= 0) {
-                    $db->query("DELETE FROM pullsheet_items WHERE id = ?", [$existingPi['id']]);
-                } else {
-                    $db->query(
-                        "UPDATE pullsheet_items SET quantity_needed = ? WHERE id = ?",
-                        [$newQty, $existingPi['id']]
-                    );
-                }
-            }
         }
         
         $db->query("COMMIT");
         
-        // Notify admins if PA needs approval (done after commit so IDs are valid)
+        // Notify admins if PA needs approval (after commit so IDs are valid)
         if ($isPA) {
             createNotificationForAdmins(
                 'partial_return_pending',

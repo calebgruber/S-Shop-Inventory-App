@@ -23,7 +23,8 @@ if (isset($_GET['pullsheet_barcode'])) {
     if ($pullsheet) {
         $pullsheetItems = getDB()->fetchAll(
             "SELECT pi.*, i.name as item_name, i.barcode as item_barcode,
-                    c.name as category, sc.name as subcategory
+                    c.name as category, sc.name as subcategory,
+                    (pi.quantity_needed - COALESCE(pi.quantity_returned, 0)) as quantity_returnable
              FROM pullsheet_items pi
              JOIN items i ON pi.item_id = i.id
              LEFT JOIN categories c ON i.category_id = c.id
@@ -32,8 +33,15 @@ if (isset($_GET['pullsheet_barcode'])) {
              ORDER BY i.name",
             [$pullsheet['id']]
         );
+        // Only expose items that still have something to return
         foreach ($pullsheetItems as $pi) {
-            $pullsheetItemsByBarcode[$pi['item_barcode']] = $pi;
+            if ((int)$pi['quantity_returnable'] > 0) {
+                $pullsheetItemsByBarcode[$pi['item_barcode']] = $pi;
+            }
+        }
+        if (empty($pullsheetItemsByBarcode)) {
+            setAlert('All items on this shop order have already been returned.', 'warning');
+            $pullsheet = null; // Reset so we show the scan form again
         }
     } else {
         setAlert('Shop order not found: ' . htmlspecialchars($barcode), 'danger');
@@ -134,7 +142,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_return'])) {
                         <p class="mb-0">
                             <strong>Show:</strong> <?php echo htmlspecialchars($pullsheet['show_title'] ?? 'N/A'); ?>&nbsp;&nbsp;
                             <strong>Barcode:</strong> <?php echo htmlspecialchars($pullsheet['barcode']); ?>&nbsp;&nbsp;
-                            <strong><?php echo count($pullsheetItems); ?> item type(s) on order</strong>
+                            <strong><?php echo count($pullsheetItemsByBarcode); ?> item type(s) returnable</strong>
+                            <span class="text-muted small ms-2">(already fully returned items are excluded)</span>
                         </p>
                     </div>
 
@@ -302,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_return'])) {
                                 name:     pi.item_name,
                                 barcode:  pi.item_barcode,
                                 qty:      1,
-                                max_qty:  pi.quantity_needed
+                                max_qty:  pi.quantity_returnable
                             };
                             showFeedback('Added: ' + pi.item_name, 'success');
                         }

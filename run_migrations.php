@@ -413,6 +413,38 @@ try {
             'sql' => [
                 "INSERT IGNORE INTO settings (setting_key, setting_value) VALUES ('signature_mode', 'draw')"
             ]
+        ],
+        [
+            'name' => '017_add_partial_return_tracking',
+            'description' => 'Track returned quantities per pullsheet item and mark change orders as returned',
+            'callback' => function($db, &$output) {
+                // Add quantity_returned to pullsheet_items
+                $col = $db->query("SHOW COLUMNS FROM pullsheet_items LIKE 'quantity_returned'");
+                if (!$col || $col->rowCount() == 0) {
+                    $db->query("ALTER TABLE pullsheet_items ADD COLUMN quantity_returned INT NOT NULL DEFAULT 0 AFTER quantity_needed");
+                    $output[] = "  \u2713 Added quantity_returned to pullsheet_items";
+                } else {
+                    $output[] = "  \u2713 quantity_returned already exists in pullsheet_items";
+                }
+
+                // Add returned_at to change_orders
+                $col2 = $db->query("SHOW COLUMNS FROM change_orders LIKE 'returned_at'");
+                if (!$col2 || $col2->rowCount() == 0) {
+                    $db->query("ALTER TABLE change_orders ADD COLUMN returned_at DATETIME NULL AFTER approved_at");
+                    $output[] = "  \u2713 Added returned_at to change_orders";
+                } else {
+                    $output[] = "  \u2713 returned_at already exists in change_orders";
+                }
+
+                // Add returned_by to change_orders
+                $col3 = $db->query("SHOW COLUMNS FROM change_orders LIKE 'returned_by'");
+                if (!$col3 || $col3->rowCount() == 0) {
+                    $db->query("ALTER TABLE change_orders ADD COLUMN returned_by INT NULL AFTER returned_at");
+                    $output[] = "  \u2713 Added returned_by to change_orders";
+                } else {
+                    $output[] = "  \u2713 returned_by already exists in change_orders";
+                }
+            }
         ]
     ];
     
