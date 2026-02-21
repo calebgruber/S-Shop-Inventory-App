@@ -365,7 +365,7 @@ include '../includes/header.php';
         if (typeof showLoading === 'function') showLoading();
         
         // Submit approval
-        fetch('admin_approvals', {
+        fetch('/admin/approvals', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
