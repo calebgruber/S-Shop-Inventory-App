@@ -851,7 +851,7 @@ function generatePickReceiptPDF($pullsheetId) {
     return $pdf->output('pick_receipt_' . $pullsheetId . '.pdf', 'S');
 }
 
-
+function generateChangeOrderPDF($changeOrderId) {
     $changeOrder = getChangeOrderById($changeOrderId);
     $items = getChangeOrderItems($changeOrderId);
     
